@@ -59,11 +59,7 @@ export default function Pricing() {
         '🚀 Role-Based Permissions (Admin, Editor)',
         '🚀 Priority Support',
         'Additional seats/client accounts available - Contact Sales'
-      ],
-      webFeatures: [
-        'Cloud Storage: 100 GB (or "Generous Fair Use")',
-        'AI Generations: 1000 tasks/month (or "Generous Fair Use")'
-      ],
+            ],      webFeatures: [        'Cloud Storage: 100 GB (or &ldquo;Generous Fair Use&rdquo;)',        'AI Generations: 1000 tasks/month (or &ldquo;Generous Fair Use&rdquo;)'      ],
       buttonText: 'Choose Agent Tier',
       popular: false,
       color: 'yellow'
@@ -80,7 +76,7 @@ export default function Pricing() {
 
   const faqs = [
     {
-      question: "What counts as an 'AI Generation Task'?",
+      question: "What counts as an &lsquo;AI Generation Task&rsquo;?",
       answer: "One AI generation task includes activities like generating one gallery, creating one caption, producing one highlight reel, or any single AI-powered content creation operation."
     },
     {
@@ -111,7 +107,7 @@ export default function Pricing() {
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-6">
-            Find the Perfect Crow's Eye Plan for You
+            Find the Perfect Crow&apos;s Eye Plan for You
           </h1>
           <p className="text-xl text-gray-300 max-w-4xl mx-auto">
             Powerful tools for every creator, from individuals to agencies. All plans include our 

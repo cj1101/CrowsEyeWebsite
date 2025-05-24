@@ -11,14 +11,14 @@ const Footer = () => {
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
               <Eye className="h-8 w-8 text-primary-500" />
-              <span className="text-xl font-bold gradient-text">Crow's Eye</span>
+              <span className="text-xl font-bold gradient-text">Crow&apos;s Eye</span>
             </div>
             <p className="text-gray-400 text-sm max-w-md">
               AI-powered marketing automation for visionary creators. Effortlessly organize, create, and publish stunning visual content for Instagram and Facebook.
             </p>
             <div className="mt-6">
               <p className="text-xs text-gray-500">
-                © 2024 Crow's Eye. All rights reserved.
+                © 2024 Crow&apos;s Eye. All rights reserved.
               </p>
             </div>
           </div>

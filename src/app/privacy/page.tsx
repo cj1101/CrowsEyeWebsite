@@ -20,23 +20,23 @@ export default function Privacy() {
     {
       icon: ArrowDownTrayIcon,
       title: "User Data Export",
-      description: "You have the right to export your data. Crow's Eye provides a GDPR/CCPA compliant data export feature, allowing you to download your information in a comprehensive JSON format. This includes media metadata, file information, presets, settings, and knowledge base content."
+      description: "You have the right to export your data. Crow&apos;s Eye provides a GDPR/CCPA compliant data export feature, allowing you to download your information in a comprehensive JSON format. This includes media metadata, file information, presets, settings, and knowledge base content."
     },
     {
       icon: LockClosedIcon,
       title: "Data Security",
-      description: "We implement industry-standard security measures to protect data accessed via Meta APIs and all user-generated content within Crow's Eye. This includes secure storage of access tokens and encrypted data transmission."
+      description: "We implement industry-standard security measures to protect data accessed via Meta APIs and all user-generated content within Crow&apos;s Eye. This includes secure storage of access tokens and encrypted data transmission."
     },
     {
       icon: DocumentTextIcon,
       title: "Transparent Permissions Usage",
-      description: "Crow's Eye requests permissions transparently and only for features essential to its functionality. These include instagram_basic, instagram_content_publish, instagram_manage_comments, instagram_manage_insights, pages_read_engagement, and instagram_business_manage_messages."
+      description: "Crow&apos;s Eye requests permissions transparently and only for features essential to its functionality. These include instagram_basic, instagram_content_publish, instagram_manage_comments, instagram_manage_insights, pages_read_engagement, and instagram_business_manage_messages."
     }
   ]
 
   const dataRights = [
     "Right to Access: Export your data at any time through the app",
-    "Right to Erasure (Deletion): Delete your data using the Factory Reset feature or by requesting deletion via Meta's channels",
+    "Right to Erasure (Deletion): Delete your data using the Factory Reset feature or by requesting deletion via Meta&apos;s channels",
     "Right to Portability: Receive your data in a common, machine-readable JSON format",
     "Right to Correction: Update and correct your personal information",
     "Right to Restriction: Limit how your data is processed",
@@ -49,10 +49,10 @@ export default function Privacy() {
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-6">
-            Your Privacy & Data Compliance at Crow's Eye
+            Your Privacy &amp; Data Compliance at Crow&apos;s Eye
           </h1>
           <p className="text-xl text-gray-300 max-w-4xl mx-auto">
-            At Crow's Eye, we are deeply committed to protecting your privacy and ensuring our 
+            At Crow&apos;s Eye, we are deeply committed to protecting your privacy and ensuring our 
             practices align with all relevant regulations, including the Meta Developer Platform policies.
           </p>
         </div>
@@ -82,7 +82,7 @@ export default function Privacy() {
             Meta Platform Compliance
           </h2>
           <p className="text-gray-300 text-center mb-12 max-w-3xl mx-auto">
-            Crow's Eye is designed and maintained to be fully compliant with Meta Developer Platform requirements.
+            Crow&apos;s Eye is designed and maintained to be fully compliant with Meta Developer Platform requirements.
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

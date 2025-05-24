@@ -2,8 +2,6 @@
 
 import React from 'react'
 import { 
-  EnvelopeIcon, 
-  PhoneIcon, 
   ChatBubbleLeftRightIcon,
   BuildingOfficeIcon,
   ShieldCheckIcon
@@ -14,7 +12,7 @@ export default function Contact() {
     {
       icon: ChatBubbleLeftRightIcon,
       title: "General Support & Feature Inquiries",
-      description: "For assistance with using Crow's Eye, feature suggestions, or general questions:",
+      description: "For assistance with using Crow&apos;s Eye, feature suggestions, or general questions:",
       contacts: [
         { type: "Email", value: "support@crowseyeapp.com", href: "mailto:support@crowseyeapp.com" },
         { type: "Community Forum", value: "Join our Discord server", href: "#" }
@@ -46,10 +44,10 @@ export default function Contact() {
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-6">
-            Get in Touch with Crow's Eye
+            Get in Touch with Crow&apos;s Eye
           </h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            We're here to help! Whether you have a question, feedback, or need support, please reach out.
+            We&apos;re here to help! Whether you have a question, feedback, or need support, please reach out.
           </p>
         </div>
 

@@ -25,7 +25,7 @@ export default function Features() {
       subtitle: "The foundation of your creative workflow",
       features: [
         "Universal Uploads: Seamlessly upload raw photos, videos, and existing post-ready media",
-        "Smart Categorization: Automatic sorting into 'Raw Photos,' 'Raw Videos,' and 'Post-Ready Content'",
+        "Smart Categorization: Automatic sorting into &lsquo;Raw Photos,&rsquo; &lsquo;Raw Videos,&rsquo; and &lsquo;Post-Ready Content&rsquo;",
         "Carousel Creator: Build engaging multi-image carousels directly from your raw uploads",
         "Desktop App Power: Unlimited local media uploads with our desktop application"
       ]
@@ -166,7 +166,7 @@ export default function Features() {
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-6">
-            Crow's Eye Features
+            Crow&apos;s Eye Features
           </h1>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
             Unleash Your Creative Potential

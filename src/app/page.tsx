@@ -63,7 +63,7 @@ export default function Home() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="text-center">
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6">
-              <span className="gradient-text">Crow's Eye:</span><br />
+              <span className="gradient-text">Crow&apos;s Eye:</span><br />
               AI-Powered Marketing Automation<br />
               <span className="text-3xl md:text-5xl lg:text-6xl">for Visionary Creators</span>
             </h1>
@@ -109,7 +109,7 @@ export default function Home() {
             
             <div className="border-t border-primary-600/30 pt-8">
               <h2 className="text-2xl md:text-3xl font-bold gradient-text mb-4">
-                Crow's Eye streamlines your workflow
+                Crow&apos;s Eye streamlines your workflow
               </h2>
               <p className="text-lg text-gray-300">
                 with intelligent media management, AI-driven content generation, and seamless publishing tools.
@@ -127,7 +127,7 @@ export default function Home() {
               Key Features Overview
             </h2>
             <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-              Discover the powerful tools that make Crow's Eye the ultimate creative partner
+              Discover the powerful tools that make Crow&apos;s Eye the ultimate creative partner
             </p>
           </div>
           
@@ -154,7 +154,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="bg-gradient-to-r from-primary-600/20 to-primary-500/20 rounded-2xl p-12">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-              See Crow's Eye in Action
+              See Crow&apos;s Eye in Action
             </h2>
             <p className="text-lg text-gray-300 mb-8">
               Experience the clean, intuitive interface designed for creators
@@ -194,7 +194,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold gradient-text mb-4">
-              Why Crow's Eye?
+              Why Crow&apos;s Eye?
             </h2>
             <p className="text-lg text-gray-300">
               Benefits that transform your creative workflow
@@ -234,12 +234,12 @@ export default function Home() {
           </h2>
           
           <blockquote className="text-2xl md:text-3xl text-primary-400 font-light italic mb-8 max-w-4xl mx-auto">
-            "This product is the best on the market until people wake up."
+            &ldquo;This product is the best on the market until people wake up.&rdquo;
           </blockquote>
           
           <div className="max-w-4xl mx-auto">
             <p className="text-lg text-gray-300 leading-relaxed">
-              Crow's Eye is a tool for survival in a system that rewards inauthenticity. 
+              Crow&apos;s Eye is a tool for survival in a system that rewards inauthenticity. 
               Our goal is not to entrench ourselves in that system, but to make it easier 
               for creators to move through it — and eventually beyond it.
             </p>

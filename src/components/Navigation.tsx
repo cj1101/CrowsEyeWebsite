@@ -26,7 +26,7 @@ const Navigation = () => {
                 <Eye className="h-8 w-8 text-primary-500 crow-eye-animation" />
                 <div className="absolute inset-0 h-8 w-8 rounded-full bg-primary-500/20 animate-ping"></div>
               </div>
-              <span className="text-xl font-bold gradient-text">Crow's Eye</span>
+              <span className="text-xl font-bold gradient-text">Crow&apos;s Eye</span>
             </Link>
           </div>
 
