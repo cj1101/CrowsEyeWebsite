@@ -15,7 +15,7 @@ export default function Privacy() {
     {
       icon: TrashIcon,
       title: "Data Deletion Requests",
-      description: "We provide robust mechanisms for users to request the deletion of their data. Our application includes a Data Deletion Request Callback to process requests initiated by Meta when users remove the app or request data deletion. Users can also perform a complete Factory Reset of all their data from within the application's compliance settings."
+      description: "We provide robust mechanisms for users to request the deletion of their data. Our application includes a Data Deletion Request Callback to process requests initiated by Meta when users remove the app or request data deletion. Users can also perform a complete Factory Reset of all their data from within the application&apos;s compliance settings."
     },
     {
       icon: ArrowDownTrayIcon,
