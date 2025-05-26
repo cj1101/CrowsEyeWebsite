@@ -10,7 +10,8 @@ import {
   ClockIcon,
   TrophyIcon,
   FolderIcon,
-  SparklesIcon
+  SparklesIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline'
 
 export default function Home() {
@@ -74,10 +75,10 @@ export default function Home() {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link
-                href="/pricing"
+                href="/download"
                 className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover-glow transition-all duration-300 inline-block"
               >
-                Start Creating (Free Desktop App)
+                Download Desktop App (Free)
               </Link>
               <Link
                 href="/pricing"
@@ -145,6 +146,54 @@ export default function Home() {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Download Section */}
+      <section className="py-20 bg-gradient-to-r from-green-900/20 to-green-600/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="bg-gradient-to-r from-primary-600/20 to-primary-500/20 rounded-2xl p-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+              Ready to Get Started?
+            </h2>
+            <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
+              Download the full desktop application now. Free core features, unlimited local storage, 
+              and complete privacy control over your creative assets.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
+              <Link
+                href="/download"
+                className="bg-gradient-to-r from-green-600 to-green-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover-glow transition-all duration-300 inline-flex items-center gap-3"
+              >
+                <ArrowDownTrayIcon className="h-6 w-6" />
+                Download Desktop App (Free)
+              </Link>
+              <Link
+                href="https://github.com/cj1101/offlineFinal"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="border border-primary-500 text-primary-400 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-500/10 transition-all duration-300 inline-block"
+              >
+                View on GitHub
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+              <div className="bg-black/30 rounded-lg p-4">
+                <div className="text-green-400 font-semibold mb-2">✓ Free Core Features</div>
+                <div className="text-gray-300 text-sm">Media library, AI generation, basic posting</div>
+              </div>
+              <div className="bg-black/30 rounded-lg p-4">
+                <div className="text-green-400 font-semibold mb-2">✓ No Upload Limits</div>
+                <div className="text-gray-300 text-sm">Store unlimited content locally</div>
+              </div>
+              <div className="bg-black/30 rounded-lg p-4">
+                <div className="text-green-400 font-semibold mb-2">✓ Open Source</div>
+                <div className="text-gray-300 text-sm">MIT license, full transparency</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -259,16 +308,16 @@ export default function Home() {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
-              href="/pricing"
+              href="/download"
               className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover-glow transition-all duration-300 inline-block"
             >
-              Choose Your Plan
+              Download Desktop App (Free)
             </Link>
             <Link
               href="/pricing"
               className="border border-primary-500 text-primary-400 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-500/10 transition-all duration-300 inline-block"
             >
-              Download Desktop App (Free Core Features)
+              Choose Your Plan
             </Link>
           </div>
         </div>

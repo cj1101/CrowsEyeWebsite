@@ -11,6 +11,7 @@ const Navigation = () => {
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'Features', href: '/features' },
+    { name: 'Download', href: '/download' },
     { name: 'Pricing', href: '/pricing' },
     { name: 'Contact', href: '/contact' },
   ]
@@ -54,10 +55,10 @@ const Navigation = () => {
               Login
             </Link>
             <Link
-              href="/pricing"
+              href="/download"
               className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover-glow transition-all duration-200"
             >
-              Start Creating
+              Download Free
             </Link>
           </div>
 
@@ -100,11 +101,11 @@ const Navigation = () => {
                 Login
               </Link>
               <Link
-                href="/pricing"
+                href="/download"
                 className="bg-gradient-to-r from-primary-600 to-primary-500 text-white block px-3 py-2 rounded-lg text-base font-medium mt-2 mx-3"
                 onClick={() => setIsOpen(false)}
               >
-                Start Creating
+                Download Free
               </Link>
             </div>
           </div>
