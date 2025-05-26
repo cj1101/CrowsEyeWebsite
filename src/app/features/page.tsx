@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Eye, Zap, Edit3, Film, Users, Layers, Globe, BarChart2, Settings, Bot } from 'lucide-react'
+import { Eye, Zap, Edit3, Film, Layers, Globe, BarChart2, Settings, Bot } from 'lucide-react'
 
 const features = [
   {
@@ -68,10 +68,10 @@ export default function FeaturesPage() {
       <section className="py-20 pt-32 md:py-28 md:pt-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            The <span className="gradient-text">Crow's Eye</span> Marketing Suite
+            The <span className="gradient-text">Crow&apos;s Eye</span> Marketing Suite
           </h1>
           <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto">
-            Unlock unparalleled content creation and social media management with the power of Google's Gemini 1.5 Flash AI.
+            Unlock unparalleled content creation and social media management with the power of Google&apos;s Gemini 1.5 Flash AI.
           </p>
         </div>
 

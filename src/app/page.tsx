@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { Eye, Zap, Edit3, Film, Users, Layers, Globe, BarChart2, Settings, Bot, DownloadCloudIcon, CheckCircleIcon, GiftIcon } from 'lucide-react'
+import { Zap, Edit3, Layers, Bot, DownloadCloudIcon, GiftIcon } from 'lucide-react'
 
 export default function Home() {
   const keyFeatures = [
@@ -38,11 +38,11 @@ export default function Home() {
         
         <div className="relative z-10 max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-            <span className="block gradient-text leading-tight">Crow's Eye Marketing Suite</span>
+            <span className="block gradient-text leading-tight">Crow&apos;s Eye Marketing Suite</span>
             <span className="block text-2xl md:text-3xl text-gray-300 mt-2">Your AI-Powered Command Center</span>
           </h1>
           <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
-            Leveraging Google's Gemini 1.5 Flash for unmatched content generation and media enhancement for intelligent, multi-platform social media marketing.
+            Leveraging Google&apos;s Gemini 1.5 Flash for unmatched content generation and media enhancement for intelligent, multi-platform social media marketing.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -68,7 +68,7 @@ export default function Home() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <GiftIcon className="h-16 w-16 text-primary-500 mx-auto mb-6" />
           <h2 className="text-3xl md:text-4xl font-bold gradient-text mb-4">
-            Be the First to Experience Crow's Eye Pro!
+            Be the First to Experience Crow&apos;s Eye Pro!
           </h2>
           <p className="text-lg text-gray-300 mb-8">
             Sign up for our pre-launch waitlist and get an exclusive early bird discount, plus bonus AI credits when we launch our premium features!
@@ -99,7 +99,7 @@ export default function Home() {
               Transform Your Social Media Workflow
             </h2>
             <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-              Discover the powerful tools that make Crow's Eye Marketing Suite the ultimate creative partner.
+              Discover the powerful tools that make Crow&apos;s Eye Marketing Suite the ultimate creative partner.
             </p>
           </div>
           
@@ -129,7 +129,7 @@ export default function Home() {
       <section className="py-16 md:py-24 bg-black/20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold gradient-text mb-6">
-            See Crow's Eye in Action
+            See Crow&apos;s Eye in Action
           </h2>
           <p className="text-lg text-gray-300 mb-8">
             Witness how our AI-powered suite simplifies content creation and management. (Teaser videos & screenshots coming soon!)
@@ -147,7 +147,7 @@ export default function Home() {
             Ready to Elevate Your Marketing?
           </h2>
           <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
-            Download the Crow's Eye Marketing Suite today and start creating smarter, faster, and more effectively.
+            Download the Crow&apos;s Eye Marketing Suite today and start creating smarter, faster, and more effectively.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">

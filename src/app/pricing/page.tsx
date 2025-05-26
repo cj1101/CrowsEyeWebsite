@@ -9,7 +9,7 @@ const pricingTiers = [
     name: "Spark",
     price: "$0",
     frequency: "/forever",
-    description: "For individuals exploring Crow's Eye and students.",
+    description: "For individuals exploring Crow&apos;s Eye and students.",
     features: [
       "Up to 2 Social Accounts (1 FB Page, 1 IG Profile)",
       "Limited AI Content Credits (50 generations/month)",
@@ -108,7 +108,7 @@ export default function PricingPage() {
               Flexible Pricing for <span className="gradient-text">Every Creator</span>
             </h1>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Choose the perfect plan to power your social media strategy with Crow's Eye Marketing Suite.
+              Choose the perfect plan to power your social media strategy with Crow&apos;s Eye Marketing Suite.
               Annual plans include a 15% discount.
             </p>
           </div>

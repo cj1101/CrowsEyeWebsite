@@ -23,14 +23,14 @@ export default function EmbeddedInstaller() {
   const [selectedOS, setSelectedOS] = useState<'windows' | 'mac' | 'linux'>('windows')
   const [isInstalling, setIsInstalling] = useState(false)
   const [installationComplete, setInstallationComplete] = useState(false)
-  const [currentStep, setCurrentStep] = useState(0)
+
   const [showCommands, setShowCommands] = useState(false)
 
   const getInstallSteps = (os: string): InstallStep[] => {
     const baseSteps = [
       {
         id: 'download',
-        title: 'Download Crow\'s Eye',
+        title: 'Download Crow&apos;s Eye',
         description: 'Downloading the latest version from GitHub...',
         status: 'pending' as const,
         command: 'curl -L -o crows-eye.zip https://github.com/cj1101/offlineFinal/archive/refs/heads/main.zip'
@@ -59,7 +59,7 @@ export default function EmbeddedInstaller() {
       {
         id: 'complete',
         title: 'Installation Complete',
-        description: 'Crow\'s Eye is ready to use!',
+        description: 'Crow&apos;s Eye is ready to use!',
         status: 'pending' as const
       }
     ]
@@ -82,7 +82,6 @@ export default function EmbeddedInstaller() {
     setSteps(installSteps)
 
     for (let i = 0; i < installSteps.length; i++) {
-      setCurrentStep(i)
       const step = installSteps[i]
       
       // Mark step as running
@@ -110,22 +109,22 @@ export default function EmbeddedInstaller() {
     
     const script = selectedOS === 'windows' 
       ? `@echo off
-echo Installing Crow's Eye...
+echo Installing Crow&apos;s Eye...
 cd %USERPROFILE%
 mkdir CrowsEye 2>nul
 cd CrowsEye
 ${commands}
 echo.
-echo Installation complete! Run 'python main.py' to start Crow's Eye.
+echo Installation complete! Run 'python main.py' to start Crow&apos;s Eye.
 pause`
       : `#!/bin/bash
-echo "Installing Crow's Eye..."
+echo "Installing Crow&apos;s Eye..."
 cd ~
 mkdir -p CrowsEye
 cd CrowsEye
 ${commands}
 echo
-echo "Installation complete! Run 'python3 main.py' to start Crow's Eye."
+echo "Installation complete! Run 'python3 main.py' to start Crow&apos;s Eye."
 read -p "Press Enter to continue..."`
 
     return script
@@ -160,7 +159,7 @@ read -p "Press Enter to continue..."`
           🚀 One-Click Installation
         </h2>
         <p className="text-gray-300">
-          Install Crow's Eye directly from your browser - no downloads required!
+          Install Crow&apos;s Eye directly from your browser - no downloads required!
         </p>
       </div>
 
@@ -174,7 +173,6 @@ read -p "Press Enter to continue..."`
                 setSelectedOS(os)
                 setSteps(getInstallSteps(os))
                 setInstallationComplete(false)
-                setCurrentStep(0)
               }}
               className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
                 selectedOS === os
@@ -310,7 +308,7 @@ read -p "Press Enter to continue..."`
             🎉 Installation Complete!
           </h3>
           <p className="text-gray-300 mb-4">
-            Crow's Eye has been successfully installed on your system.
+            Crow&apos;s Eye has been successfully installed on your system.
           </p>
           
           <div className="bg-black/30 rounded-lg p-4 mb-4">
@@ -333,7 +331,6 @@ read -p "Press Enter to continue..."`
               onClick={() => {
                 setInstallationComplete(false)
                 setSteps(getInstallSteps(selectedOS))
-                setCurrentStep(0)
               }}
               className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
             >
@@ -353,7 +350,7 @@ read -p "Press Enter to continue..."`
               Make sure you have Python 3.8+ installed and added to your system PATH. 
               <a href="https://python.org/downloads/" target="_blank" rel="noopener noreferrer" className="underline hover:text-yellow-100">
                 Download Python here
-              </a> if you haven't already.
+              </a> if you haven&apos;t already.
             </p>
           </div>
         </div>
