@@ -2,251 +2,178 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { CheckIcon, StarIcon } from '@heroicons/react/24/solid'
+import { CheckCircleIcon } from '@heroicons/react/24/solid'
 
-export default function Pricing() {
-  const pricingTiers = [
-    {
-      name: 'Creator',
-      price: '$5',
-      description: 'Perfect for individual creators and those just starting out.',
-      features: [
-        'Desktop App: Unlimited Local Media Uploads & Organization',
-        'Smart Media Library (Auto-Sort, Carousel Builder)',
-        'AI Gallery Generator (NL Prompts, Basic Auto-Enhance, AI Captions)',
-        'Post Formatting Options (Single, Carousel, Story)',
-        'Interface Language Selection (10+ Languages)',
-        'Smart Media Search (Content & Prompt-based)'
-      ],
-      webFeatures: [
-        'Cloud Storage: 1 GB (approx. 100 high-res media items)',
-        'AI Generations: 20 tasks/month (gallery, caption, etc.)',
-        'Overage: Prompts to upgrade to Pro'
-      ],
-      buttonText: 'Get Started with Creator',
-      popular: false,
-      color: 'primary'
-    },
-    {
-      name: 'Pro',
-      price: '$30',
-      description: 'For serious creators, professionals, and small businesses needing advanced AI power.',
-      features: [
-        'Everything in Creator, PLUS:',
-        '✨ Highlight Reel Generator (AI Video Shorts)',
-        '✨ Audio Importer & Natural Language Editor',
-        '✨ Story Assistant (Video Slicing, Vertical Formatting, Overlays)',
-        '✨ Reel Thumbnail Selector (AI Suggestions & Custom Upload)',
-        '✨ Post Performance Graphs (Internal App Tracking)'
-      ],
-      webFeatures: [
-        'Cloud Storage: 10 GB (approx. 1000 high-res media items)',
-        'AI Generations: 150 tasks/month',
-        'Overage: Prompts to upgrade to Agent or contact for custom plan'
-      ],
-      buttonText: 'Go Pro',
-      popular: true,
-      color: 'primary'
-    },
-    {
-      name: 'Agent',
-      price: '$300',
-      description: 'Tailored for marketing agencies, social media managers, and teams.',
-      features: [
-        'Everything in Pro, PLUS:',
-        '🚀 Multi-User Collaboration (e.g., Up to 5 Team Seats included)',
-        '🚀 Multi-Account Management (e.g., Connect up to 10 Client Social Profiles)',
-        '🚀 Role-Based Permissions (Admin, Editor)',
-        '🚀 Priority Support',
-        'Additional seats/client accounts available - Contact Sales'
-            ],      webFeatures: [        'Cloud Storage: 100 GB (or &ldquo;Generous Fair Use&rdquo;)',        'AI Generations: 1000 tasks/month (or &ldquo;Generous Fair Use&rdquo;)'      ],
-      buttonText: 'Choose Agent Tier',
-      popular: false,
-      color: 'yellow'
-    }
-  ]
+const pricingTiers = [
+  {
+    name: "Spark",
+    price: "$0",
+    frequency: "/forever",
+    description: "For individuals exploring Crow's Eye and students.",
+    features: [
+      "Up to 2 Social Accounts (1 FB Page, 1 IG Profile)",
+      "Limited AI Content Credits (50 generations/month)",
+      "Basic Gemini 1.5 Flash Image Analysis",
+      "Limited AI Image Editing (5 edits/month)",
+      "Basic Scheduling",
+      "Basic Meta Insights",
+      "1 Context File Limit",
+      "Limited Preset Manager (3 presets)",
+      "Limited Media Library Storage (1GB)",
+      "All 10 Languages Supported",
+      "Community Forum & Basic FAQ Support"
+    ],
+    cta: "Get Started for Free",
+    href: "/download",
+    mostPopular: false
+  },
+  {
+    name: "Creator",
+    price: "$29",
+    frequency: "/month",
+    description: "For solopreneurs, content creators, and freelancers.",
+    features: [
+      "Up to 5 Social Accounts",
+      "Moderate AI Content Credits (300 generations/month)",
+      "Full Image & Basic Video Analysis (Gemini 1.5 Flash)",
+      "Full Access to AI Image Editing",
+      "Basic Video Processing Tools (Trim, Basic Audio Overlay)",
+      "Advanced Scheduling & Content Calendar View",
+      "Standard Meta Insights & Basic Reports",
+      "Up to 3 Context Files",
+      "Full Preset Manager Access",
+      "Moderate Media Library Storage (10GB)",
+      "Email Support (Standard Response)",
+      "Access to Knowledge Base System"
+    ],
+    cta: "Choose Creator Plan",
+    href: "/download?tier=creator", // Placeholder for checkout/signup
+    mostPopular: true
+  },
+  {
+    name: "Pro Agency",
+    price: "$79",
+    frequency: "/month",
+    description: "For SMBs, marketing agencies, and power users.",
+    features: [
+      "Up to 15 Social Accounts (or per client add-on)",
+      "Ample AI Content Credits (1000 generations/month)",
+      "Full Image & Advanced Video Analysis (mood, theme, narrative)",
+      "Full Video Processing Suite (Highlight Reels, Advanced Audio, Thumbnails)",
+      "Full Direct Posting & Management for LinkedIn & X (once V1.1 available)",
+      "Advanced Scheduling, Bulk Upload, Team Calendar",
+      "Advanced Analytics, Customizable Reports, Competitor Tracking (future)",
+      "Up to 10 Context Files (or per client)",
+      "Preset Manager with Team Sharing (future)",
+      "Large Media Library Storage (50GB)",
+      "Priority Email Support & Dedicated Onboarding Session",
+      "White-Label Option (Available as Add-on / Higher Sub-tier)"
+    ],
+    cta: "Choose Pro Agency Plan",
+    href: "/download?tier=pro-agency", // Placeholder for checkout/signup
+    mostPopular: false
+  },
+  {
+    name: "Business Scale",
+    price: "Custom",
+    frequency: "",
+    description: "For larger agencies and enterprises with custom needs.",
+    features: [
+      "Unlimited / Custom Social Accounts",
+      "Very High / Custom AI Content Credits",
+      "Full Image & Advanced Video Analysis",
+      "Full Video Processing Suite",
+      "Full Direct Posting & Management for All Supported Platforms",
+      "Advanced Scheduling & Custom Workflows",
+      "Custom Reporting & API Access (Future)",
+      "Unlimited / Custom Context Files",
+      "Preset Manager with Team Sharing",
+      "Custom / Unlimited Media Library Storage",
+      "Dedicated Account Manager & SLA",
+      "White-Label Option Included / Custom"
+    ],
+    cta: "Contact Sales",
+    href: "/contact",
+    mostPopular: false
+  }
+];
 
-  const allTiersInclude = [
-    'Full-featured Desktop Application',
-    'Access to Web Platform (with tier-specific limits)',
-    'Meta Compliance Features (Data Export, Deletion)',
-    'Regular Updates & New Features',
-    'Community Support'
-  ]
-
-  const faqs = [
-    {
-      question: "What counts as an &lsquo;AI Generation Task&rsquo;?",
-      answer: "One AI generation task includes activities like generating one gallery, creating one caption, producing one highlight reel, or any single AI-powered content creation operation."
-    },
-    {
-      question: "What happens if I exceed my web platform limits on the Creator or Pro tier?",
-      answer: "When you approach your limits, you'll receive upgrade prompts. For storage, you can always use the unlimited desktop app. For AI tasks, you'll be prompted to upgrade to access more monthly generations."
-    },
-    {
-      question: "Is the Desktop App truly unlimited?",
-      answer: "Yes, for local storage and organization. AI tasks might still be tied to your account's monthly quota if they require cloud processing, even if initiated from desktop."
-    },
-    {
-      question: "Can I change my plan later?",
-      answer: "Absolutely! You can upgrade or downgrade your plan anytime. Changes take effect at your next billing cycle."
-    },
-    {
-      question: "Is there an annual discount?",
-      answer: "Yes! Get 2 months free with annual billing on any plan."
-    },
-    {
-      question: "What payment methods do you accept?",
-      answer: "We accept all major credit cards, PayPal, and bank transfers for enterprise plans."
-    }
-  ]
-
+export default function PricingPage() {
   return (
-    <div className="min-h-screen py-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-6">
-            Find the Perfect Crow&apos;s Eye Plan for You
-          </h1>
-          <p className="text-xl text-gray-300 max-w-4xl mx-auto">
-            Powerful tools for every creator, from individuals to agencies. All plans include our 
-            full-featured Desktop App with unlimited local media organization.
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-crowseye-dark via-crowseye-dark-light to-black text-white">
+      <section className="py-20 pt-32 md:py-28 md:pt-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">
+              Flexible Pricing for <span className="gradient-text">Every Creator</span>
+            </h1>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              Choose the perfect plan to power your social media strategy with Crow's Eye Marketing Suite.
+              Annual plans include a 15% discount.
+            </p>
+          </div>
 
-        {/* Pricing Tiers */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-20">
-          {pricingTiers.map((tier, index) => (
-            <div
-              key={index}
-              className={`relative feature-card rounded-lg p-8 ${
-                tier.popular ? 'border-primary-500 scale-105' : 'border-primary-600/30'
-              }`}
-            >
-              {tier.popular && (
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <div className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center">
-                    <StarIcon className="h-4 w-4 mr-1" />
-                    Most Popular
-                  </div>
-                </div>
-              )}
-
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-white mb-2">{tier.name}</h3>
-                <div className="mb-4">
-                  <span className="text-4xl font-bold text-white">{tier.price}</span>
-                  <span className="text-gray-400"> / month</span>
-                </div>
-                <p className="text-gray-400 text-sm">{tier.description}</p>
-              </div>
-
-              <div className="mb-6">
-                <h4 className="text-lg font-semibold text-white mb-4">Key Features:</h4>
-                <ul className="space-y-3">
-                  {tier.features.map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-start">
-                      <CheckIcon className="h-5 w-5 text-primary-500 mr-3 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-300 text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mb-8">
-                <h4 className="text-lg font-semibold text-white mb-4">Web Platform Usage:</h4>
-                <ul className="space-y-2">
-                  {tier.webFeatures.map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-start">
-                      <div className="w-2 h-2 bg-primary-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                      <span className="text-gray-300 text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <button
-                className={`w-full py-4 px-6 rounded-lg font-semibold transition-all duration-300 ${
-                  tier.popular
-                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white hover-glow'
-                    : tier.color === 'yellow'
-                    ? 'border border-yellow-500 text-yellow-400 hover:bg-yellow-500/10'
-                    : 'border border-primary-500 text-primary-400 hover:bg-primary-500/10'
-                }`}
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-8 items-stretch">
+            {pricingTiers.map((tier) => (
+              <div 
+                key={tier.name} 
+                className={`pricing-card bg-black/30 backdrop-blur-sm rounded-xl shadow-2xl p-8 flex flex-col ${tier.mostPopular ? 'border-2 border-primary-500 shadow-primary-500/30' : 'border border-gray-700/50'}`}
               >
-                {tier.buttonText}
-              </button>
-
-              {tier.name === 'Agent' && (
-                <div className="mt-4 text-center">
-                  <Link
-                    href="/contact"
-                    className="text-yellow-400 hover:text-yellow-300 text-sm underline"
-                  >
-                    Contact Sales for Custom Agency Solutions
-                  </Link>
+                {tier.mostPopular && (
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                    <span className="bg-primary-500 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
+                      Most Popular
+                    </span>
+                  </div>
+                )}
+                <div className="flex-grow">
+                  <h2 className="text-2xl font-bold text-white mb-2">{tier.name}</h2>
+                  <p className="text-gray-400 text-sm mb-4 h-12">{tier.description}</p>
+                  <div className="mb-6">
+                    <span className="text-4xl font-extrabold text-white">{tier.price}</span>
+                    {tier.frequency && <span className="text-gray-400 text-sm">{tier.frequency}</span>}
+                  </div>
+                  <ul className="space-y-3 mb-8">
+                    {tier.features.map((feature, index) => (
+                      <li key={index} className="flex items-start">
+                        <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                        <span className="text-gray-300 text-sm">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* All Tiers Include */}
-        <div className="bg-gradient-to-r from-primary-900/20 to-primary-600/20 rounded-2xl p-8 mb-20">
-          <h3 className="text-2xl font-bold text-white text-center mb-6">
-            All Tiers Include:
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {allTiersInclude.map((item, index) => (
-              <div key={index} className="flex items-center">
-                <CheckIcon className="h-5 w-5 text-primary-500 mr-3 flex-shrink-0" />
-                <span className="text-gray-300 text-sm">{item}</span>
+                <Link 
+                  href={tier.href} 
+                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-300 text-center ${tier.mostPopular ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white hover-glow' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}`}
+                >
+                  {tier.cta}
+                </Link>
               </div>
             ))}
           </div>
-        </div>
 
-        {/* FAQ Section */}
-        <div className="mb-20">
-          <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-12">
-            Frequently Asked Questions
-          </h2>
-          <div className="max-w-4xl mx-auto space-y-6">
-            {faqs.map((faq, index) => (
-              <div key={index} className="feature-card rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-white mb-3">
-                  {faq.question}
-                </h3>
-                <p className="text-gray-300 text-sm leading-relaxed">
-                  {faq.answer}
-                </p>
-              </div>
-            ))}
+          <div className="text-center mt-16">
+            <p className="text-gray-400">
+              All plans include access to our comprehensive knowledge base and community support. 
+              <Link href="/features" className="text-primary-400 hover:text-primary-300"> Explore all features</Link>.
+            </p>
           </div>
         </div>
+      </section>
 
-        {/* Final CTA */}
-        <div className="text-center">
-          <h2 className="text-3xl md:text-4xl font-bold gradient-text mb-6">
-            Ready to Transform Your Creative Workflow?
-          </h2>
-          <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
-            Start with our free desktop app or choose the plan that fits your needs.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <button className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-8 py-4 rounded-lg text-lg font-semibold hover-glow transition-all duration-300">
-              Download Free Desktop App
-            </button>
-            <Link
-              href="/contact"
-              className="border border-primary-500 text-primary-400 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-500/10 transition-all duration-300"
-            >
-              Need Custom Pricing?
-            </Link>
-          </div>
-        </div>
-      </div>
+      <style jsx global>{`
+        .gradient-text {
+          background: -webkit-linear-gradient(45deg, var(--color-primary-500), var(--color-primary-400));
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .pricing-card {
+          transition: all 0.3s ease-in-out;
+        }
+        .pricing-card:hover {
+          transform: translateY(-5px);
+        }
+      `}</style>
     </div>
   )
 } 

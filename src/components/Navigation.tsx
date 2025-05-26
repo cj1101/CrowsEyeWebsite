@@ -11,8 +11,9 @@ const Navigation = () => {
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'Features', href: '/features' },
-    { name: 'Download', href: '/download' },
     { name: 'Pricing', href: '/pricing' },
+    { name: 'Download', href: '/download' },
+    { name: 'Blog', href: '/blog' },
     { name: 'Contact', href: '/contact' },
   ]
 
@@ -49,7 +50,7 @@ const Navigation = () => {
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
             <Link
-              href="/pricing"
+              href="/download"
               className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
             >
               Login
@@ -94,7 +95,7 @@ const Navigation = () => {
             ))}
             <div className="border-t border-gray-700 pt-4">
               <Link
-                href="/pricing"
+                href="/download"
                 className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
                 onClick={() => setIsOpen(false)}
               >
