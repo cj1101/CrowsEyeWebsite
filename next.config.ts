@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Enable static export for GitHub Pages
+  // Enable static export for Firebase Hosting
   output: 'export',
   trailingSlash: true,
   images: {
@@ -16,10 +16,7 @@ const nextConfig: NextConfig = {
   },
   // Explicitly disable middleware for static export
   skipMiddlewareUrlNormalize: true,
-  skipTrailingSlashRedirect: true,
-  // Add base path for GitHub Pages if needed
-  basePath: process.env.NODE_ENV === 'production' ? '/CrowsEyeWebsite' : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/CrowsEyeWebsite/' : ''
+  skipTrailingSlashRedirect: true
 };
 
 export default nextConfig;
