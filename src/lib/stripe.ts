@@ -60,12 +60,15 @@ export const getStripeProduct = (tier: string, hasByok: boolean = false) => {
   const amount = hasByok ? product.amountByok : product.amount;
   
   // Check if price ID is properly configured
-  if (!priceId || priceId.startsWith('price_') && priceId.includes('_monthly')) {
-    console.warn('⚠️ Using placeholder price ID:', priceId, 'for tier:', tier);
-    console.warn('Please set up actual Stripe products and update the price IDs in your environment variables');
+  if (!priceId || priceId === 'undefined' || priceId.includes('your_') || priceId.includes('_monthly')) {
+    const envVar = hasByok ? `STRIPE_${tier.toUpperCase()}_BYOK_PRICE_ID` : `STRIPE_${tier.toUpperCase()}_PRICE_ID`;
+    console.error('❌ Invalid or missing Stripe price ID for tier:', tier);
+    console.error('❌ Environment variable:', envVar, '=', priceId);
+    console.error('❌ Please set up actual Stripe products in your dashboard and update the price IDs');
+    throw new Error(`Missing or invalid Stripe price ID for ${tier} plan. Please check your environment variables.`);
   }
   
-  console.log('Stripe product config:', { tier, priceId, amount, hasByok });
+  console.log('✅ Stripe product config:', { tier, priceId, amount, hasByok });
   
   return {
     ...product,

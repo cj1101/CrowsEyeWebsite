@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
+    "check-stripe": "node scripts/check-stripe-env.js",
     "export": "next build",
     "setup": "node scripts/setup.js",
     "setup-firebase": "node scripts/setup-firebase.js",
