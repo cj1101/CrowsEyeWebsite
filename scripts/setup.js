@@ -86,8 +86,8 @@ STRIPE_BYOK_COUPON_ID=
   console.log('- Set up Firebase Authentication in the Firebase Console');
   console.log('- Configure Firestore database rules');
   console.log('- Add GitHub secrets for automatic deployment:');
-  console.log('  - FIREBASE_SERVICE_ACCOUNT (from Firebase Console)');
-  console.log('  - FIREBASE_PROJECT_ID (your project ID)');
+  console.log('  - FIREBASE_SERVICE_ACCOUNT_CROWS_EYE_WEBSITE (Firebase service account JSON)');
+  console.log('  - GITHUB_TOKEN (automatically provided by GitHub Actions)\n');
 
   rl.close();
 }
@@ -107,10 +107,8 @@ async function setupGitHubSecrets() {
   console.log('- NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID');
   console.log('- NEXT_PUBLIC_FIREBASE_APP_ID\n');
   
-  console.log('Optional secrets for Vercel deployment:');
-  console.log('- VERCEL_TOKEN (from Vercel dashboard)');
-  console.log('- VERCEL_ORG_ID (from Vercel project settings)');
-  console.log('- VERCEL_PROJECT_ID (from Vercel project settings)\n');
+  console.log('Required secrets for Firebase deployment:');
+  console.log('- FIREBASE_SERVICE_ACCOUNT_CROWS_EYE_WEBSITE (Firebase service account JSON)\n');
   
   await askQuestion('Press Enter to continue...');
 }
