@@ -23,9 +23,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
         pip install pyinstaller
-        pip install auto-py-to-exe
+        # Install any dependencies from requirements.txt if they exist
+        if (Test-Path requirements.txt) { pip install -r requirements.txt }
     
     - name: Build Windows executable
       run: |
@@ -44,9 +44,9 @@ jobs:
         echo '!define VERSIONMAJOR 1' >> installer.nsi
         echo '!define VERSIONMINOR 0' >> installer.nsi
         echo '!define VERSIONBUILD 0' >> installer.nsi
-        echo '!define HELPURL "https://crowseye.tech"' >> installer.nsi
-        echo '!define UPDATEURL "https://crowseye.tech"' >> installer.nsi
-        echo '!define ABOUTURL "https://crowseye.tech"' >> installer.nsi
+        echo '!define HELPURL "https://crows-eye-website.web.app"' >> installer.nsi
+        echo '!define UPDATEURL "https://crows-eye-website.web.app"' >> installer.nsi
+        echo '!define ABOUTURL "https://crows-eye-website.web.app"' >> installer.nsi
         echo '!define INSTALLSIZE 50000' >> installer.nsi
         echo '' >> installer.nsi
         echo 'RequestExecutionLevel admin' >> installer.nsi
@@ -102,9 +102,31 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
         pip install pyinstaller
         pip install dmgbuild
+        # Install any dependencies from requirements.txt if they exist
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Create macOS icon
+      run: |
+        # Convert ico to icns for macOS
+        mkdir -p icon.iconset
+        # Create different sizes (simplified - using sips if available)
+        if command -v sips &> /dev/null; then
+          sips -z 16 16 assets/icon.ico --out icon.iconset/icon_16x16.png 2>/dev/null || true
+          sips -z 32 32 assets/icon.ico --out icon.iconset/icon_16x16@2x.png 2>/dev/null || true
+          sips -z 32 32 assets/icon.ico --out icon.iconset/icon_32x32.png 2>/dev/null || true
+          sips -z 64 64 assets/icon.ico --out icon.iconset/icon_32x32@2x.png 2>/dev/null || true
+          sips -z 128 128 assets/icon.ico --out icon.iconset/icon_128x128.png 2>/dev/null || true
+          sips -z 256 256 assets/icon.ico --out icon.iconset/icon_128x128@2x.png 2>/dev/null || true
+          sips -z 256 256 assets/icon.ico --out icon.iconset/icon_256x256.png 2>/dev/null || true
+          sips -z 512 512 assets/icon.ico --out icon.iconset/icon_256x256@2x.png 2>/dev/null || true
+          sips -z 512 512 assets/icon.ico --out icon.iconset/icon_512x512.png 2>/dev/null || true
+          sips -z 1024 1024 assets/icon.ico --out icon.iconset/icon_512x512@2x.png 2>/dev/null || true
+          iconutil -c icns icon.iconset -o assets/icon.icns 2>/dev/null || cp assets/icon.ico assets/icon.icns
+        else
+          cp assets/icon.ico assets/icon.icns
+        fi
     
     - name: Build macOS app bundle
       run: |
@@ -118,7 +140,7 @@ jobs:
         cp dist/CrowsEye "Crow's Eye.app/Contents/MacOS/"
         
         # Copy icon
-        cp assets/icon.icns "Crow's Eye.app/Contents/Resources/"
+        cp assets/icon.icns "Crow's Eye.app/Contents/Resources/" 2>/dev/null || cp assets/icon.ico "Crow's Eye.app/Contents/Resources/icon.icns"
         
         # Create Info.plist
         cat > "Crow's Eye.app/Contents/Info.plist" << EOF
@@ -224,14 +246,14 @@ jobs:
           libasound2 \
           libxi6 \
           libxtst6 \
-          libqt6-dev \
-          qt6-base-dev
+          imagemagick
     
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
         pip install pyinstaller
+        # Install any dependencies from requirements.txt if they exist
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     
     - name: Build Linux executable
       run: |
@@ -251,13 +273,8 @@ jobs:
         # Copy executable
         cp dist/CrowsEye CrowsEye.AppDir/usr/bin/
         
-        # Copy icon (convert if needed)
-        if [ -f "assets/icon.png" ]; then
-          cp assets/icon.png CrowsEye.AppDir/usr/share/icons/hicolor/256x256/apps/crowseye.png
-        else
-          # Create a simple icon if none exists
-          convert -size 256x256 xc:blue CrowsEye.AppDir/usr/share/icons/hicolor/256x256/apps/crowseye.png
-        fi
+        # Convert icon to PNG for Linux
+        convert assets/icon.ico CrowsEye.AppDir/usr/share/icons/hicolor/256x256/apps/crowseye.png 2>/dev/null || cp assets/icon.ico CrowsEye.AppDir/usr/share/icons/hicolor/256x256/apps/crowseye.png
         
         # Create desktop file
         cat > CrowsEye.AppDir/usr/share/applications/crowseye.desktop << EOF
@@ -274,10 +291,10 @@ jobs:
         # Create AppRun
         cat > CrowsEye.AppDir/AppRun << EOF
         #!/bin/bash
-        HERE="\$(dirname "\$(readlink -f "\${0}")")"
-        export PATH="\${HERE}/usr/bin:\${PATH}"
-        export LD_LIBRARY_PATH="\${HERE}/usr/lib:\${LD_LIBRARY_PATH}"
-        exec "\${HERE}/usr/bin/CrowsEye" "\$@"
+        HERE="$(dirname "$(readlink -f "${0}")")"
+        export PATH="${HERE}/usr/bin:${PATH}"
+        export LD_LIBRARY_PATH="${HERE}/usr/lib:${LD_LIBRARY_PATH}"
+        exec "${HERE}/usr/bin/CrowsEye" "$@"
         EOF
         chmod +x CrowsEye.AppDir/AppRun
         
