@@ -22,6 +22,12 @@ const Navigation = () => {
     { name: t('nav.contact'), href: '/contact' },
   ]
 
+  // Add Marketing Tool for logged-in users
+  const userNavigation = user ? [
+    ...navigation,
+    { name: 'Marketing Tool', href: '/marketing-tool' }
+  ] : navigation
+
   return (
     <nav className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-primary-600/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -40,7 +46,7 @@ const Navigation = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-8">
-              {navigation.map((item) => (
+              {userNavigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
@@ -125,7 +131,7 @@ const Navigation = () => {
       {isOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-black/90 backdrop-blur-md">
-            {navigation.map((item) => (
+            {userNavigation.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
