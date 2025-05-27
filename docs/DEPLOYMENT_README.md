@@ -1,14 +1,13 @@
 # 🚀 Crow's Eye Website Deployment Guide
 
-This guide will help you set up Firebase, run the website locally, and deploy it to GitHub Pages and Vercel.
+This guide will help you set up Firebase, run the website locally, and deploy it to Firebase Hosting.
 
 ## 📋 Prerequisites
 
 - Node.js 18+ installed
-- Git installed
+- npm or yarn package manager
 - Firebase account
-- GitHub account
-- (Optional) Vercel account
+- GitHub account (for automatic deployment)
 
 ## 🔧 Quick Setup
 
@@ -119,116 +118,95 @@ The website will be available at `http://localhost:3000`
 
 ## 🌐 Deployment
 
-### GitHub Pages Deployment
+### Firebase Deployment
 
-#### 1. Enable GitHub Pages
+The website is configured for automatic deployment to Firebase Hosting via GitHub Actions.
 
-1. Go to your GitHub repository
-2. Go to **Settings** → **Pages**
-3. Under **Source**, select **"GitHub Actions"**
+#### Manual Deployment
 
-#### 2. Add GitHub Secrets
-
-Go to **Settings** → **Secrets and variables** → **Actions** and add:
-
-**Required Firebase Secrets:**
-- `NEXT_PUBLIC_FIREBASE_API_KEY`
-- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
-- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
-- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
-- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
-- `NEXT_PUBLIC_FIREBASE_APP_ID`
-
-#### 3. Deploy
-
-Push to your main branch:
+If you need to deploy manually:
 
 ```bash
-git add .
-git commit -m "Deploy Crow's Eye Website"
-git push origin main
+# Build and deploy
+npm run deploy
+
+# Or step by step
+npm run clean-build
+firebase deploy --only hosting
 ```
 
-The GitHub Action will automatically build and deploy your site.
+#### Automatic Deployment
 
-### Vercel Deployment (Optional)
+The website automatically deploys to Firebase Hosting when you push to the main branch via GitHub Actions.
 
-#### 1. Install Vercel CLI
+**Required GitHub Secrets:**
+- `FIREBASE_SERVICE_ACCOUNT_CROWS_EYE_WEBSITE` - Firebase service account JSON
 
-```bash
-npm i -g vercel
-```
+**Required GitHub Variables:**
+- `NEXT_PUBLIC_FIREBASE_API_KEY` - From Firebase project settings
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` - From Firebase project settings  
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID` - From Firebase project settings
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` - From Firebase project settings
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` - From Firebase project settings
+- `NEXT_PUBLIC_FIREBASE_APP_ID` - From Firebase project settings
 
-#### 2. Deploy to Vercel
+## Deployment URLs
 
-```bash
-vercel
-```
-
-Follow the prompts to deploy.
-
-#### 3. Add Environment Variables
-
-In Vercel dashboard, go to your project → **Settings** → **Environment Variables** and add your Firebase configuration.
-
-#### 4. Automatic Deployment
-
-For automatic deployment, add these GitHub secrets:
-- `VERCEL_TOKEN` - From Vercel dashboard
-- `VERCEL_ORG_ID` - From Vercel project settings
-- `VERCEL_PROJECT_ID` - From Vercel project settings
+After successful deployment, your website will be available at:
+- `https://crows-eye-website.web.app` (Firebase Hosting)
+- `https://crows-eye-website.firebaseapp.com` (Firebase Hosting alternative)
 
 ## 🔐 Security Configuration
 
 ### Firebase Security Rules
 
-Update Firestore rules in Firebase Console:
+Make sure your Firestore security rules are properly configured:
 
 ```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can only access their own data
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Add your security rules here
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
 ```
 
-### Firebase Auth Domains
+### Environment Variables
 
-Add your deployment domains to Firebase:
-1. Go to **Authentication** → **Settings** → **Authorized domains**
-2. Add your domains:
-   - `localhost` (for development)
-   - `your-username.github.io` (for GitHub Pages)
-   - `your-vercel-domain.vercel.app` (for Vercel)
+Keep your environment variables secure:
+- Never commit `.env.local` to version control
+- Use GitHub secrets for deployment
+- Regularly rotate your Firebase API keys
+
+## 📱 Testing
+
+Before deploying, test your application:
+
+```bash
+# Run tests
+npm test
+
+# Build and test locally
+npm run build
+npm start
+```
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-1. **"Firebase: Error (auth/unauthorized-domain)"**
-   - Add your domain to Firebase Auth authorized domains
-
-2. **"Missing or insufficient permissions"**
-   - Check Firestore security rules
-   - Ensure user is authenticated
-
-3. **Build fails on deployment**
-   - Check that all environment variables are set in GitHub secrets
-   - Verify Firebase configuration is correct
-
-4. **Google Sign-In not working**
-   - Configure OAuth in Google Cloud Console
-   - Add authorized domains
+1. **Build Failures**: Check your environment variables
+2. **Firebase Connection**: Verify your Firebase configuration
+3. **Deployment Errors**: Check GitHub Actions logs
 
 ### Getting Help
 
 - Check the [Firebase Documentation](https://firebase.google.com/docs)
-- Review [Next.js Documentation](https://nextjs.org/docs)
-- Check GitHub Actions logs for deployment issues
+- Review GitHub Actions logs for deployment issues
+- Ensure all required secrets and variables are set in GitHub
 
 ## 📱 Python Integration
 
