@@ -1,0 +1,5 @@
+# Crow's Eye Marketing Suite - Desktop Launcher Dependencies
+# Minimal requirements for the desktop application launcher
+
+# No external dependencies required - uses only Python standard library
+# The launcher simply opens the web application in the default browser 
