@@ -1,6 +1,6 @@
 import { initializeApp, FirebaseApp, getApps } from 'firebase/app';
-import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { GoogleAuthProvider } from 'firebase/auth';
 
 // Firebase configuration interface for type safety
@@ -120,7 +120,7 @@ const initializeFirebaseServices = (app: FirebaseApp | null) => {
         connectAuthEmulator(auth, 'http://localhost:9099');
         connectFirestoreEmulator(db, 'localhost', 8080);
         console.log('🧪 Connected to Firebase emulators');
-      } catch (emulatorError) {
+      } catch {
         console.warn('⚠️ Could not connect to Firebase emulators (this is normal if not running)');
       }
     }

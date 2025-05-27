@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { CalendarIcon, ClockIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 export default function SchedulingPanel() {
-  const [scheduledPosts, setScheduledPosts] = useState([
+  const [scheduledPosts] = useState([
     {
       id: '1',
       title: 'Summer Collection Launch',

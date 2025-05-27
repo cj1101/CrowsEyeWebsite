@@ -37,12 +37,12 @@ export async function POST(request: NextRequest) {
 
       case 'customer.subscription.created':
         const createdSubscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionCreated(createdSubscription, updateUserSubscription, getSubscriptionTierFromPriceId, stripe);
+        await handleSubscriptionCreated(createdSubscription, updateUserSubscription, getSubscriptionTierFromPriceId);
         break;
 
       case 'customer.subscription.updated':
         const updatedSubscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionUpdated(updatedSubscription, updateUserSubscription, getSubscriptionTierFromPriceId, stripe);
+        await handleSubscriptionUpdated(updatedSubscription, updateUserSubscription, getSubscriptionTierFromPriceId);
         break;
 
       case 'customer.subscription.deleted':
@@ -75,7 +75,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   console.log('✅ Checkout completed:', session.id);
   
   const userId = session.metadata?.userId;
-  const hasByok = session.metadata?.hasByok === 'true';
   
   if (!userId) {
     console.error('❌ No user ID in checkout session metadata');
@@ -92,8 +91,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 async function handleSubscriptionCreated(
   subscription: Stripe.Subscription, 
   updateUserSubscription: any, 
-  getSubscriptionTierFromPriceId: any,
-  stripe: Stripe
+  getSubscriptionTierFromPriceId: any
 ) {
   console.log('🆕 Subscription created:', subscription.id);
   await updateSubscriptionFromStripe(subscription, updateUserSubscription, getSubscriptionTierFromPriceId);
@@ -102,8 +100,7 @@ async function handleSubscriptionCreated(
 async function handleSubscriptionUpdated(
   subscription: Stripe.Subscription, 
   updateUserSubscription: any, 
-  getSubscriptionTierFromPriceId: any,
-  stripe: Stripe
+  getSubscriptionTierFromPriceId: any
 ) {
   console.log('📝 Subscription updated:', subscription.id);
   await updateSubscriptionFromStripe(subscription, updateUserSubscription, getSubscriptionTierFromPriceId);

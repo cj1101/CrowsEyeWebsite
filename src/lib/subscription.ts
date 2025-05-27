@@ -1,6 +1,6 @@
 import { doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from './firebase';
-import { SubscriptionStatus, SubscriptionTier } from './stripe';
+import { SubscriptionTier } from './stripe';
 
 export interface UserSubscription {
   tier: SubscriptionTier | 'spark' | 'enterprise';

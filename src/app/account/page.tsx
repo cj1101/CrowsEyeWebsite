@@ -29,7 +29,6 @@ export default function AccountPage() {
 
   // Check for success message from Stripe checkout
   const success = searchParams.get('success');
-  const sessionId = searchParams.get('session_id');
 
   useEffect(() => {
     if (!loading && !user) {
