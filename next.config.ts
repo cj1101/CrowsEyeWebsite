@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Remove output: 'export' temporarily to fix middleware issues
-  // output: 'export',
+  // Enable static export for GitHub Pages
+  output: 'export',
   trailingSlash: true,
   images: {
     unoptimized: true
@@ -16,7 +16,10 @@ const nextConfig: NextConfig = {
   },
   // Explicitly disable middleware for static export
   skipMiddlewareUrlNormalize: true,
-  skipTrailingSlashRedirect: true
+  skipTrailingSlashRedirect: true,
+  // Add base path for GitHub Pages if needed
+  basePath: process.env.NODE_ENV === 'production' ? '/CrowsEyeWebsite' : '',
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/CrowsEyeWebsite/' : ''
 };
 
 export default nextConfig;
