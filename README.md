@@ -1,138 +1,121 @@
-# Crow's Eye Marketing Suite
+# Crow's Eye Website
 
-Your AI-Powered Command Center for intelligent, multi-platform social media marketing.
+A modern, responsive website for Crow's Eye software built with Next.js, TypeScript, and Tailwind CSS.
 
-## 🚀 Features
+## 🚀 Quick Start
 
-- **AI-Powered Content Generation**: Leveraging Google's Gemini 1.5 Flash for unmatched content creation
-- **Multi-Platform Management**: Manage Instagram, Facebook, and soon LinkedIn & X from one dashboard
-- **AI-Instructed Media Editing**: Edit images and process videos using natural language commands
-- **Streamlined Productivity Tools**: Presets, context files, and comprehensive media library
-- **Multi-Language Support**: Available in English, French, German, Spanish, Portuguese, Russian, Chinese, Japanese, Hindi, and Arabic
-
-## 🌐 Live Demo
-
-Try the web demo at: [Your Website URL]
-
-## 📱 Desktop Application
-
-Download the full desktop application for complete functionality:
-- Advanced AI features
-- Video editing capabilities
-- Social media posting
-- Offline functionality
-
-## 🛠️ Development
-
-This is a Next.js application built with:
-- **Framework**: Next.js 15 with Turbopack
-- **Styling**: Tailwind CSS
-- **Language**: TypeScript
-- **Internationalization**: Custom i18n implementation
-- **AI Integration**: Google Gemini 1.5 Flash
-
-### Getting Started
-
-1. Clone the repository:
 ```bash
-git clone [your-repo-url]
-cd crows-eye-website
-```
-
-2. Install dependencies:
-```bash
+# Install dependencies
 npm install
-```
 
-3. Run the development server:
-```bash
+# Start development server
 npm run dev
+
+# Build for production
+npm run build
+
+# Deploy to Firebase
+npm run deploy
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Project Structure
+## 📁 Project Structure
 
 ```
-├── src/
-│   ├── app/                 # Next.js app directory
-│   │   ├── demo/           # Demo page
-│   │   ├── download/       # Download page
-│   │   ├── features/       # Features page
-│   │   ├── pricing/        # Pricing page
-│   │   └── ...
-│   ├── components/         # React components
-│   │   ├── Navigation.tsx
-│   │   ├── LanguageSelector.tsx
-│   │   ├── I18nProvider.tsx
-│   │   └── ...
-│   └── lib/               # Utility functions
-├── public/
-│   └── translations/      # Translation files
-├── build.py              # Desktop app build script
-├── build_enhanced.py     # Enhanced build script with GitHub Actions
-└── ...
+├── src/                    # Source code
+│   ├── app/               # Next.js app router pages
+│   ├── components/        # Reusable React components
+│   ├── lib/              # Utility functions and configurations
+│   ├── types/            # TypeScript type definitions
+│   ├── data/             # Static data and content
+│   └── contexts/         # React context providers
+├── public/               # Static assets
+├── docs/                 # Documentation files
+├── scripts/              # Build and deployment scripts
+├── config/               # Configuration files
+├── tests/                # Test files
+└── .github/              # GitHub workflows and templates
 ```
 
-## 🌍 Internationalization
+## 🛠️ Available Scripts
 
-The application supports multiple languages with complete translations for:
-- Navigation and UI elements
-- Demo functionality
-- Download instructions
-- Feature descriptions
+- `npm run dev` - Start development server with Turbopack
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run test` - Run Jest tests
+- `npm run test:watch` - Run tests in watch mode
+- `npm run clean` - Clean build artifacts
+- `npm run clean-build` - Clean and build
+- `npm run deploy` - Deploy to Firebase Hosting
+- `npm run setup` - Run initial project setup
+- `npm run setup-firebase` - Setup Firebase configuration
 
-Translation files are located in `public/translations/`.
+## 🔧 Configuration
 
-## 🏗️ Building Desktop Application
+Configuration files are organized in the `config/` directory:
 
-The project includes automated build scripts for creating desktop applications:
+- `config/jest.config.js` - Jest testing configuration
+- `config/jest.setup.js` - Jest setup file
+- `config/eslint.config.mjs` - ESLint configuration
+- `config/tailwind.config.ts` - Tailwind CSS configuration
+- `config/postcss.config.mjs` - PostCSS configuration
 
-### Basic Build
+## 📚 Documentation
+
+Detailed documentation is available in the `docs/` directory:
+
+- [Firebase Setup](docs/FIREBASE_SETUP.md)
+- [Deployment Guide](docs/DEPLOYMENT_README.md)
+- [Authentication](docs/AUTHENTICATION_README.md)
+- [Build Process](docs/BUILD_README.md)
+- [Translation Guide](docs/TRANSLATION_GUIDE.md)
+
+## 🚀 Deployment
+
+The project is configured for deployment to Firebase Hosting with automatic CI/CD via GitHub Actions.
+
+### Prerequisites
+
+1. Firebase project setup
+2. GitHub repository secrets configured
+3. Domain configuration (if using custom domain)
+
+### Deploy
+
 ```bash
-python build.py
+npm run deploy
 ```
 
-### Enhanced Build with GitHub Actions
+## 🧪 Testing
+
 ```bash
-python build_enhanced.py
+# Run all tests
+npm run test
+
+# Run tests in watch mode
+npm run test:watch
 ```
 
-This creates cross-platform installers for Windows, macOS, and Linux.
+## 🔍 Development
 
-## 📋 Requirements
+### Environment Setup
 
-- Node.js 18+ 
-- npm or yarn
-- Python 3.8+ (for desktop app building)
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Copy environment variables: `cp .env.example .env.local`
+4. Start development server: `npm run dev`
 
-## 🤝 Contributing
+### Code Style
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+- ESLint for code linting
+- Prettier for code formatting
+- TypeScript for type safety
+- Tailwind CSS for styling
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is private and proprietary.
 
-## 🆘 Support
+## 🤝 Contributing
 
-- **Documentation**: Check our comprehensive guides
-- **Community**: Join our community for help and tips
-- **Issues**: Report bugs or request features via GitHub Issues
-
-## 🔮 Roadmap
-
-- [ ] LinkedIn integration
-- [ ] X (Twitter) integration
-- [ ] Advanced video editing features
-- [ ] Team collaboration tools
-- [ ] Analytics dashboard
-- [ ] Mobile app
-
----
-
-Built with ❤️ using Next.js, TypeScript, and Google's Gemini AI
+Please read the documentation in the `docs/` directory before contributing.

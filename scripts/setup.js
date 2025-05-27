@@ -40,40 +40,56 @@ async function setupFirebase() {
   
   if (hasEnvFile) {
     const overwrite = await askQuestion('Found existing .env.local file. Overwrite? (y/N): ');
-    if (overwrite.toLowerCase() !== 'y') {
-      console.log('Skipping Firebase setup...\n');
+    if (overwrite.toLowerCase() !== 'y' && overwrite.toLowerCase() !== 'yes') {
+      console.log('Setup cancelled. Existing .env.local file preserved.');
+      rl.close();
       return;
     }
   }
   
-  console.log('Please provide your Firebase configuration values.');
-  console.log('Get these from: Firebase Console > Project Settings > General > Your apps > Web app\n');
+  console.log('\n📋 Please provide your Firebase configuration:');
+  console.log('You can find these values in your Firebase Console → Project Settings → General → Your apps\n');
   
-  const config = {};
-  const questions = [
-    { key: 'NEXT_PUBLIC_FIREBASE_API_KEY', prompt: 'Firebase API Key: ' },
-    { key: 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', prompt: 'Auth Domain (project-id.firebaseapp.com): ' },
-    { key: 'NEXT_PUBLIC_FIREBASE_PROJECT_ID', prompt: 'Project ID: ' },
-    { key: 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET', prompt: 'Storage Bucket (project-id.appspot.com): ' },
-    { key: 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', prompt: 'Messaging Sender ID: ' },
-    { key: 'NEXT_PUBLIC_FIREBASE_APP_ID', prompt: 'App ID: ' }
-  ];
+  const apiKey = await askQuestion('Firebase API Key: ');
+  const authDomain = await askQuestion('Auth Domain (project-id.firebaseapp.com): ');
+  const projectId = await askQuestion('Project ID: ');
+  const storageBucket = await askQuestion('Storage Bucket (project-id.appspot.com): ');
+  const messagingSenderId = await askQuestion('Messaging Sender ID: ');
+  const appId = await askQuestion('App ID: ');
   
-  for (const question of questions) {
-    config[question.key] = await askQuestion(question.prompt);
-  }
-  
-  const envContent = `# Firebase Configuration for Crow's Eye Website
-# Generated on ${new Date().toISOString()}
+  // Create .env.local content
+  const envContent = `# Firebase Configuration
+NEXT_PUBLIC_FIREBASE_API_KEY=${apiKey}
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${authDomain}
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=${projectId}
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${storageBucket}
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${messagingSenderId}
+NEXT_PUBLIC_FIREBASE_APP_ID=${appId}
 
-${Object.entries(config).map(([key, value]) => `${key}=${value}`).join('\n')}
+# Optional: Custom API Key for BYOK users
+NEXT_PUBLIC_CUSTOM_API_KEY=
 
-# Optional: For development
-NEXT_PUBLIC_ENVIRONMENT=development
+# Optional: Stripe Configuration (for payments)
+STRIPE_SECRET_KEY=
+STRIPE_BYOK_COUPON_ID=
 `;
 
+  // Write to .env.local
   fs.writeFileSync('.env.local', envContent);
   console.log('✅ Firebase configuration saved to .env.local\n');
+
+  console.log('🎯 Next steps:');
+  console.log('1. Run: npm run dev (to test locally)');
+  console.log('2. Run: npm run deploy (to deploy to Firebase)');
+  console.log('3. Set up custom domain in Firebase Console');
+  console.log('\n📚 Additional setup:');
+  console.log('- Set up Firebase Authentication in the Firebase Console');
+  console.log('- Configure Firestore database rules');
+  console.log('- Add GitHub secrets for automatic deployment:');
+  console.log('  - FIREBASE_SERVICE_ACCOUNT (from Firebase Console)');
+  console.log('  - FIREBASE_PROJECT_ID (your project ID)');
+
+  rl.close();
 }
 
 async function setupGitHubSecrets() {
@@ -139,4 +155,4 @@ async function main() {
   }
 }
 
-main(); 
+main().catch(console.error); 

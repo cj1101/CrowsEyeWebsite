@@ -10,8 +10,15 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "export": "next build",
-    "setup": "node setup.js",
-    "setup-firebase": "node setup-firebase.js"
+    "setup": "node scripts/setup.js",
+    "setup-firebase": "node scripts/setup-firebase.js",
+    "create-env": "node scripts/create-env-file.js",
+    "clean": "node scripts/clean-build.js",
+    "clean-build": "node scripts/clean-build.js && npm run build",
+    "clean-deploy": "npm run clean-build && firebase deploy --only hosting",
+    "deploy": "npm run clean-deploy",
+    "firebase:init": "firebase init hosting",
+    "firebase:serve": "npm run clean-build && firebase serve"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
