@@ -4,9 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { 
   ArrowDownTrayIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon,
-  ComputerDesktopIcon,
-  DevicePhoneMobileIcon
+  ComputerDesktopIcon
 } from '@heroicons/react/24/outline'
 
 export default function EmbeddedInstaller() {

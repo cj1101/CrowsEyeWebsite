@@ -2,14 +2,16 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
+import { Bars3Icon, XMarkIcon, UserIcon } from '@heroicons/react/24/outline'
 import { Eye } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
+import { useAuth } from '@/contexts/AuthContext'
 import LanguageSelector from './LanguageSelector'
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false)
   const { t } = useI18n()
+  const { user, loading } = useAuth()
 
   const navigation = [
     { name: t('nav.home'), href: '/' },
@@ -59,6 +61,42 @@ const Navigation = () => {
             >
               {t('nav.try_demo')}
             </Link>
+            {!loading && (
+              <>
+                {user ? (
+                  <Link
+                    href="/account"
+                    className="flex items-center space-x-2 text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                  >
+                    {user.photoURL ? (
+                      <img
+                        src={user.photoURL}
+                        alt="Profile"
+                        className="h-6 w-6 rounded-full"
+                      />
+                    ) : (
+                      <UserIcon className="h-5 w-5" />
+                    )}
+                    <span>Account</span>
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      href="/auth/signin"
+                      className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      href="/auth/signup"
+                      className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover-glow transition-all duration-200"
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
             <Link
               href="/download"
               className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover-glow transition-all duration-200"
@@ -108,6 +146,45 @@ const Navigation = () => {
               >
                 {t('nav.try_demo')}
               </Link>
+              {!loading && (
+                <>
+                  {user ? (
+                    <Link
+                      href="/account"
+                      className="flex items-center space-x-2 text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      {user.photoURL ? (
+                        <img
+                          src={user.photoURL}
+                          alt="Profile"
+                          className="h-6 w-6 rounded-full"
+                        />
+                      ) : (
+                        <UserIcon className="h-5 w-5" />
+                      )}
+                      <span>Account</span>
+                    </Link>
+                  ) : (
+                    <>
+                      <Link
+                        href="/auth/signin"
+                        className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        Sign In
+                      </Link>
+                      <Link
+                        href="/auth/signup"
+                        className="bg-gradient-to-r from-primary-600 to-primary-500 text-white block px-3 py-2 rounded-lg text-base font-medium mt-2 mx-3"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        Sign Up
+                      </Link>
+                    </>
+                  )}
+                </>
+              )}
               <Link
                 href="/download"
                 className="bg-gradient-to-r from-primary-600 to-primary-500 text-white block px-3 py-2 rounded-lg text-base font-medium mt-2 mx-3"
