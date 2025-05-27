@@ -5,9 +5,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { getAuthErrorMessage } from '@/lib/auth';
+import { sendPasswordReset, getAuthErrorMessage } from '@/lib/auth';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -29,20 +27,24 @@ export default function ForgotPasswordPage() {
   });
 
   const onSubmit = async (data: ForgotPasswordFormData) => {
-    if (!auth) {
-      setError('Authentication service is not available');
-      return;
-    }
-
+    console.log('🔐 Starting password reset process');
+    console.log('📧 Email:', data.email);
+    
     setLoading(true);
     setError('');
     setSuccess(false);
 
     try {
-      await sendPasswordResetEmail(auth, data.email);
+      console.log('📧 Sending password reset email...');
+      await sendPasswordReset(data.email);
+      console.log('✅ Password reset email sent successfully');
       setSuccess(true);
     } catch (error: unknown) {
+      console.error('❌ Password reset failed:', error);
       const errorCode = (error as { code?: string })?.code || 'unknown';
+      const errorMessage = (error as { message?: string })?.message || 'Unknown error';
+      console.error('Error code:', errorCode);
+      console.error('Error message:', errorMessage);
       setError(getAuthErrorMessage(errorCode));
     } finally {
       setLoading(false);
