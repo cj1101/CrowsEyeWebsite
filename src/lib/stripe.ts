@@ -1,5 +1,11 @@
 import Stripe from 'stripe';
 
+// Check for required environment variables
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.error('❌ STRIPE_SECRET_KEY is not set in environment variables');
+  throw new Error('Stripe secret key is required');
+}
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-04-30.basil',
 });
@@ -42,13 +48,29 @@ export interface SubscriptionStatus {
 }
 
 export const getStripeProduct = (tier: string, hasByok: boolean = false) => {
+  console.log('Getting Stripe product for tier:', tier, 'hasByok:', hasByok);
+  
   const product = STRIPE_PRODUCTS[tier as SubscriptionTier];
-  if (!product) return null;
+  if (!product) {
+    console.error('Invalid tier:', tier, 'Available tiers:', Object.keys(STRIPE_PRODUCTS));
+    return null;
+  }
+  
+  const priceId = hasByok ? product.priceIdByok : product.priceId;
+  const amount = hasByok ? product.amountByok : product.amount;
+  
+  // Check if price ID is properly configured
+  if (!priceId || priceId.startsWith('price_') && priceId.includes('_monthly')) {
+    console.warn('⚠️ Using placeholder price ID:', priceId, 'for tier:', tier);
+    console.warn('Please set up actual Stripe products and update the price IDs in your environment variables');
+  }
+  
+  console.log('Stripe product config:', { tier, priceId, amount, hasByok });
   
   return {
     ...product,
-    priceId: hasByok ? product.priceIdByok : product.priceId,
-    amount: hasByok ? product.amountByok : product.amount,
+    priceId,
+    amount,
   };
 };
 
