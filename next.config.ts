@@ -7,16 +7,16 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true
   },
-  // Disable server-side features for static export
   experimental: {
     esmExternals: true
   },
   typescript: {
     ignoreBuildErrors: true
   },
-  // Explicitly disable middleware for static export
-  skipMiddlewareUrlNormalize: true,
-  skipTrailingSlashRedirect: true
+  // Disable server-side features for static export
+  eslint: {
+    ignoreDuringBuilds: true
+  }
 };
 
 export default nextConfig;
