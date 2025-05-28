@@ -3,7 +3,7 @@ import { db, isFirebaseConfigured } from './firebase';
 import { SubscriptionTier } from './stripe';
 
 export interface UserSubscription {
-  tier: SubscriptionTier | 'spark' | 'enterprise';
+  tier: SubscriptionTier | 'free' | 'enterprise';
   status: 'active' | 'inactive' | 'cancelled' | 'past_due' | 'trialing';
   currentPeriodEnd?: Date;
   cancelAtPeriodEnd?: boolean;
@@ -61,7 +61,7 @@ export const getUserSubscription = async (userId: string): Promise<UserSubscript
   if (!isFirebaseConfigured() || !db) {
     console.log('🎭 Demo mode: Returning mock subscription');
     return {
-      tier: 'spark',
+      tier: 'free',
       status: 'active',
       updatedAt: new Date(),
     };
@@ -126,9 +126,20 @@ export const getSubscriptionFeatures = (tier: string): {
   analytics: string;
   support: string;
   seats: number | string;
+  // New API features
+  basicLibrary: boolean;
+  galleries: boolean;
+  stories: boolean;
+  highlightVideo: boolean;
+  audioImport: boolean;
+  analyticsExport: boolean;
+  bulkReports: boolean;
+  multiAccount: boolean;
+  prioritySupport: boolean;
+  byokDiscount: boolean;
 } => {
   const features = {
-    spark: {
+    free: {
       socialSets: 1,
       aiCredits: 50,
       aiEdits: 5,
@@ -138,6 +149,17 @@ export const getSubscriptionFeatures = (tier: string): {
       analytics: 'Basic',
       support: 'Community',
       seats: 1,
+      // API features
+      basicLibrary: true,
+      galleries: true,
+      stories: true,
+      highlightVideo: false,
+      audioImport: false,
+      analyticsExport: false,
+      bulkReports: false,
+      multiAccount: false,
+      prioritySupport: false,
+      byokDiscount: false,
     },
     creator: {
       socialSets: 3,
@@ -149,17 +171,17 @@ export const getSubscriptionFeatures = (tier: string): {
       analytics: 'Basic',
       support: 'Email',
       seats: 1,
-    },
-    growth: {
-      socialSets: 6,
-      aiCredits: 600,
-      aiEdits: 60,
-      videoSuite: 'Basic Video Processing',
-      storageGB: 50,
-      contextFiles: 5,
-      analytics: 'Advanced',
-      support: 'Priority',
-      seats: 3,
+      // API features
+      basicLibrary: true,
+      galleries: true,
+      stories: true,
+      highlightVideo: true,
+      audioImport: true,
+      analyticsExport: false,
+      bulkReports: false,
+      multiAccount: false,
+      prioritySupport: false,
+      byokDiscount: false,
     },
     pro: {
       socialSets: 15,
@@ -171,6 +193,17 @@ export const getSubscriptionFeatures = (tier: string): {
       analytics: 'Advanced',
       support: 'Priority',
       seats: 10,
+      // API features
+      basicLibrary: true,
+      galleries: true,
+      stories: true,
+      highlightVideo: true,
+      audioImport: true,
+      analyticsExport: true,
+      bulkReports: true,
+      multiAccount: false,
+      prioritySupport: true,
+      byokDiscount: false,
     },
     enterprise: {
       socialSets: 'Unlimited',
@@ -182,19 +215,54 @@ export const getSubscriptionFeatures = (tier: string): {
       analytics: 'Custom',
       support: 'Dedicated Account Manager',
       seats: 'Unlimited',
+      // API features
+      basicLibrary: true,
+      galleries: true,
+      stories: true,
+      highlightVideo: true,
+      audioImport: true,
+      analyticsExport: true,
+      bulkReports: true,
+      multiAccount: true,
+      prioritySupport: true,
+      byokDiscount: true,
     },
   };
 
-  return features[tier as keyof typeof features] || features.spark;
+  return features[tier as keyof typeof features] || features.free;
 };
 
 export const hasFeatureAccess = (
   userTier: string,
   requiredTier: string
 ): boolean => {
-  const tierHierarchy = ['spark', 'creator', 'growth', 'pro', 'enterprise'];
+  const tierHierarchy = ['free', 'creator', 'pro', 'enterprise'];
   const userIndex = tierHierarchy.indexOf(userTier);
   const requiredIndex = tierHierarchy.indexOf(requiredTier);
   
   return userIndex >= requiredIndex;
-}; 
+};
+
+// Pricing information
+export const PRICING_TIERS = {
+  free: {
+    name: 'Free',
+    price: 0,
+    description: 'Basic library, galleries, stories',
+  },
+  creator: {
+    name: 'Creator',
+    price: 9,
+    description: 'Everything in Free + highlight video, audio import',
+  },
+  pro: {
+    name: 'Pro',
+    price: 19,
+    description: 'Everything in Creator + analytics export, bulk reports',
+  },
+  enterprise: {
+    name: 'Enterprise',
+    price: 'Custom',
+    description: 'Custom pricing: multi-account, priority support, BYO-key discount',
+  },
+} as const; 

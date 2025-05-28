@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
+    "gen:api": "openapi-typescript https://api.crowseye.tech/openapi.json -o src/types/api.d.ts",
     "check-stripe": "node scripts/check-stripe-env.js",
     "export": "next build",
     "setup": "node scripts/setup.js",
@@ -38,6 +39,7 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.56.4",
     "stripe": "^18.1.1",
+    "swr": "^2.3.0",
     "zod": "^3.25.30"
   },
   "devDependencies": {
@@ -53,6 +55,7 @@
     "eslint-config-next": "15.1.8",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^30.0.0-beta.3",
+    "openapi-typescript": "^7.4.4",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "ts-jest": "^29.3.4",

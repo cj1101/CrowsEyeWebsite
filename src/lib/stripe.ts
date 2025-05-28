@@ -16,29 +16,22 @@ export const STRIPE_PRODUCTS = {
     priceId: process.env.STRIPE_CREATOR_PRICE_ID!,
     priceIdByok: process.env.STRIPE_CREATOR_BYOK_PRICE_ID!,
     name: 'Creator',
-    amount: 1900, // $19.00 in cents
-    amountByok: 1330, // $13.30 in cents (30% discount)
-  },
-  growth: {
-    priceId: process.env.STRIPE_GROWTH_PRICE_ID!,
-    priceIdByok: process.env.STRIPE_GROWTH_BYOK_PRICE_ID!,
-    name: 'Growth',
-    amount: 4900, // $49.00 in cents
-    amountByok: 3430, // $34.30 in cents (30% discount)
+    amount: 900, // $9.00 in cents
+    amountByok: 630, // $6.30 in cents (30% discount)
   },
   pro: {
     priceId: process.env.STRIPE_PRO_PRICE_ID!,
     priceIdByok: process.env.STRIPE_PRO_BYOK_PRICE_ID!,
-    name: 'Pro Agency',
-    amount: 8900, // $89.00 in cents
-    amountByok: 6230, // $62.30 in cents (30% discount)
+    name: 'Pro',
+    amount: 1900, // $19.00 in cents
+    amountByok: 1330, // $13.30 in cents (30% discount)
   },
 } as const;
 
 export type SubscriptionTier = keyof typeof STRIPE_PRODUCTS;
 
 export interface SubscriptionStatus {
-  tier: SubscriptionTier | 'spark' | 'enterprise';
+  tier: SubscriptionTier | 'free' | 'enterprise';
   status: 'active' | 'inactive' | 'cancelled' | 'past_due' | 'trialing';
   currentPeriodEnd?: Date;
   cancelAtPeriodEnd?: boolean;

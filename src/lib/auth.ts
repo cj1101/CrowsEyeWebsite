@@ -26,7 +26,7 @@ export interface UserProfile {
   createdAt: Date;
   lastLoginAt: Date;
   subscription?: {
-    plan: 'free' | 'pro' | 'enterprise';
+    tier: 'free' | 'creator' | 'pro' | 'enterprise';
     status: 'active' | 'inactive' | 'cancelled';
     expiresAt?: Date;
   };
@@ -71,7 +71,7 @@ export const createUserProfile = async (
       createdAt: new Date(),
       lastLoginAt: new Date(),
       subscription: {
-        plan: 'free' as const,
+        tier: 'free' as const,
         status: 'active' as const,
       },
       ...additionalData,
@@ -99,7 +99,7 @@ export const createUserProfile = async (
         createdAt: now,
         lastLoginAt: now,
         subscription: {
-          plan: 'free' as const,
+          tier: 'free' as const,
           status: 'active' as const,
         },
         ...additionalData,
@@ -164,7 +164,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
       createdAt: new Date(),
       lastLoginAt: new Date(),
       subscription: {
-        plan: 'free',
+        tier: 'free',
         status: 'active',
       },
     };
