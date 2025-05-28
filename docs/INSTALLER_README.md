@@ -4,7 +4,7 @@ This repository contains both the marketing website and the automated build syst
 
 ## 🎯 How It Works
 
-The build system automatically monitors the [offlineFinal repository](https://github.com/cj1101/offlineFinal) for updates and creates installers when new code is pushed. This keeps everything centralized in one place while maintaining separation between the application code and the website.
+The build system automatically monitors the [Crow-s-Eye-Marketing-Agent repository](https://github.com/cj1101/Crow-s-Eye-Marketing-Agent) for updates and creates installers when new code is pushed. This keeps everything centralized in one place while maintaining separation between the application code and the website.
 
 ## 🚀 Automated Build Process
 
@@ -53,9 +53,9 @@ The `EmbeddedInstaller.tsx` component provides:
 ### Download URLs
 The website automatically downloads from:
 ```
-https://github.com/cj1101/offlineFinal/releases/latest/download/CrowsEye-Setup-Windows.exe
-https://github.com/cj1101/offlineFinal/releases/latest/download/CrowsEye-Setup-macOS.dmg
-https://github.com/cj1101/offlineFinal/releases/latest/download/CrowsEye-Setup-Linux.AppImage
+https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-Windows.exe
+https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-macOS.dmg
+https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-Linux.AppImage
 ```
 
 ## 🎮 Manual Build Trigger

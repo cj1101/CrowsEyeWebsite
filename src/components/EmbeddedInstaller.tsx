@@ -27,9 +27,9 @@ export default function EmbeddedInstaller() {
 
   // Download URLs for each platform
   const downloadUrls = {
-    windows: 'https://github.com/cj1101/offlineFinal/releases/latest/download/CrowsEye-Setup-Windows.exe',
-    mac: 'https://github.com/cj1101/offlineFinal/releases/latest/download/CrowsEye-Setup-macOS.dmg',
-    linux: 'https://github.com/cj1101/offlineFinal/releases/latest/download/CrowsEye-Setup-Linux.AppImage'
+    windows: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-Windows.exe',
+    mac: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-macOS.dmg',
+    linux: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-Linux.AppImage'
   }
 
   const platformInfo = {
