@@ -6,6 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { signOutUser } from '@/lib/auth';
 import { getUserSubscription, UserSubscription } from '@/lib/subscription';
 import { getSubscriptionFeatures } from '@/lib/subscription';
+import { useUsageTracking } from '@/hooks/useUsageTracking';
+import { UsageIndicator } from '@/components/FeatureGate';
 import { 
   UserIcon, 
   EnvelopeIcon, 
@@ -20,6 +22,7 @@ import {
 
 export default function AccountPage() {
   const { user, userProfile, loading } = useAuth();
+  const { usage, featureUsage, loading: usageLoading } = useUsageTracking();
   const [signOutLoading, setSignOutLoading] = useState(false);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
@@ -339,6 +342,104 @@ export default function AccountPage() {
               </button>
             </div>
           )}
+        </div>
+
+        {/* Usage Dashboard */}
+        <div className="bg-white/10 backdrop-blur-lg rounded-lg p-8 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-white">Usage Dashboard</h3>
+            <span className="text-sm text-gray-400">
+              Current billing period
+            </span>
+          </div>
+
+          {usageLoading ? (
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-700 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-700 rounded w-1/2"></div>
+              <div className="h-4 bg-gray-700 rounded w-2/3"></div>
+            </div>
+          ) : usage ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* AI Credits */}
+              <div className="bg-gray-800/50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-white font-medium">AI Credits</h4>
+                  <span className="text-sm text-gray-400">
+                    {usage.aiCredits} / {features.aiCredits === 'Custom' ? '∞' : features.aiCredits}
+                  </span>
+                </div>
+                <UsageIndicator feature="ai_credits" showLabel={false} />
+              </div>
+
+              {/* AI Edits */}
+              <div className="bg-gray-800/50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-white font-medium">AI Edits</h4>
+                  <span className="text-sm text-gray-400">
+                    {usage.aiEdits} / {features.aiEdits === 'Custom' ? '∞' : features.aiEdits}
+                  </span>
+                </div>
+                <UsageIndicator feature="ai_edits" showLabel={false} />
+              </div>
+
+              {/* Storage */}
+              <div className="bg-gray-800/50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-white font-medium">Storage Used</h4>
+                  <span className="text-sm text-gray-400">
+                    {usage.storageUsedGB.toFixed(1)}GB / {features.storageGB === 'Custom' ? '∞' : features.storageGB}GB
+                  </span>
+                </div>
+                <UsageIndicator feature="storage_gb" showLabel={false} />
+              </div>
+
+              {/* Social Sets */}
+              <div className="bg-gray-800/50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-white font-medium">Social Accounts</h4>
+                  <span className="text-sm text-gray-400">
+                    {usage.socialSets} / {features.socialSets === 'Unlimited' ? '∞' : features.socialSets}
+                  </span>
+                </div>
+                <UsageIndicator feature="social_sets" showLabel={false} />
+              </div>
+
+              {/* Context Files */}
+              <div className="bg-gray-800/50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-white font-medium">Context Files</h4>
+                  <span className="text-sm text-gray-400">
+                    {usage.contextFiles} / {features.contextFiles === 'Custom' ? '∞' : features.contextFiles}
+                  </span>
+                </div>
+                <UsageIndicator feature="context_files" showLabel={false} />
+              </div>
+
+              {/* API Calls */}
+              <div className="bg-gray-800/50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-white font-medium">API Calls</h4>
+                  <span className="text-sm text-gray-400">
+                    {usage.apiCalls}
+                  </span>
+                </div>
+                <UsageIndicator feature="api_calls" showLabel={false} />
+              </div>
+            </div>
+          ) : (
+            <div className="text-center text-gray-400">
+              <p>Unable to load usage data</p>
+            </div>
+          )}
+
+          {/* Usage Notes */}
+          <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <p className="text-blue-300 text-sm">
+              <strong>Note:</strong> Usage resets at the beginning of each billing period. 
+              Upgrade your plan for higher limits and additional features.
+            </p>
+          </div>
         </div>
 
         {/* Sign Out */}

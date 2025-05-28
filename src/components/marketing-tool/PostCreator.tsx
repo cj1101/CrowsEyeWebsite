@@ -13,6 +13,8 @@ import {
   DocumentTextIcon,
   MicrophoneIcon
 } from '@heroicons/react/24/outline';
+import FeatureGate from '@/components/FeatureGate';
+import { useUsageTracking } from '@/hooks/useUsageTracking';
 
 interface MediaFile {
   file: File;
@@ -21,6 +23,7 @@ interface MediaFile {
 }
 
 export default function PostCreator() {
+  const { trackUsage } = useUsageTracking();
   const [selectedMedia, setSelectedMedia] = useState<MediaFile | null>(null);
   const [caption, setCaption] = useState('');
   const [instructions, setInstructions] = useState('');
@@ -44,6 +47,13 @@ export default function PostCreator() {
   const generateCaption = async () => {
     if (!selectedMedia && !instructions) return;
     
+    // Track AI credit usage
+    const result = await trackUsage('ai_credits', 1);
+    if (!result.success) {
+      alert(result.message || 'Unable to generate caption - usage limit reached');
+      return;
+    }
+    
     setIsGenerating(true);
     
     // Simulate AI caption generation
@@ -62,6 +72,13 @@ export default function PostCreator() {
 
   const applyPhotoEdits = async () => {
     if (!selectedMedia || !photoEditInstructions) return;
+    
+    // Track AI edit usage
+    const result = await trackUsage('ai_edits', 1);
+    if (!result.success) {
+      alert(result.message || 'Unable to apply edits - usage limit reached');
+      return;
+    }
     
     setIsGenerating(true);
     
@@ -164,34 +181,36 @@ export default function PostCreator() {
 
           {/* Photo Editing */}
           {selectedMedia?.type === 'image' && (
-            <div className="bg-gray-700/50 rounded-lg p-6">
-              <h3 className="text-xl font-semibold text-white mb-4">AI Photo Editing</h3>
-              <div className="space-y-4">
-                <textarea
-                  value={photoEditInstructions}
-                  onChange={(e) => setPhotoEditInstructions(e.target.value)}
-                  placeholder="Describe how you want to edit this photo... (e.g., 'Make it brighter and add a vintage filter', 'Remove the background', 'Enhance colors')"
-                  className="w-full h-24 p-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-                <button
-                  onClick={applyPhotoEdits}
-                  disabled={!photoEditInstructions || isGenerating}
-                  className="w-full flex items-center justify-center space-x-2 py-2 px-4 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
-                >
-                  {isGenerating ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      <span>Applying Edits...</span>
-                    </>
-                  ) : (
-                    <>
-                      <PaintBrushIcon className="h-4 w-4" />
-                      <span>Apply AI Edits</span>
-                    </>
-                  )}
-                </button>
+            <FeatureGate feature="ai_edits" requiredTier="creator">
+              <div className="bg-gray-700/50 rounded-lg p-6">
+                <h3 className="text-xl font-semibold text-white mb-4">AI Photo Editing</h3>
+                <div className="space-y-4">
+                  <textarea
+                    value={photoEditInstructions}
+                    onChange={(e) => setPhotoEditInstructions(e.target.value)}
+                    placeholder="Describe how you want to edit this photo... (e.g., 'Make it brighter and add a vintage filter', 'Remove the background', 'Enhance colors')"
+                    className="w-full h-24 p-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                  <button
+                    onClick={applyPhotoEdits}
+                    disabled={!photoEditInstructions || isGenerating}
+                    className="w-full flex items-center justify-center space-x-2 py-2 px-4 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Applying Edits...</span>
+                      </>
+                    ) : (
+                      <>
+                        <PaintBrushIcon className="h-4 w-4" />
+                        <span>Apply AI Edits</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
+            </FeatureGate>
           )}
         </div>
 
@@ -230,51 +249,53 @@ export default function PostCreator() {
           </div>
 
           {/* Caption Generation */}
-          <div className="bg-gray-700/50 rounded-lg p-6">
-            <h3 className="text-xl font-semibold text-white mb-4">AI Caption Generation</h3>
-            <div className="space-y-4">
-              <button
-                onClick={generateCaption}
-                disabled={isGenerating}
-                className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-all"
-              >
-                {isGenerating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    <span>Generating Caption...</span>
-                  </>
-                ) : (
-                  <>
-                    <SparklesIcon className="h-5 w-5" />
-                    <span>Generate AI Caption</span>
-                  </>
-                )}
-              </button>
+          <FeatureGate feature="ai_credits" requiredTier="spark">
+            <div className="bg-gray-700/50 rounded-lg p-6">
+              <h3 className="text-xl font-semibold text-white mb-4">AI Caption Generation</h3>
+              <div className="space-y-4">
+                <button
+                  onClick={generateCaption}
+                  disabled={isGenerating}
+                  className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-all"
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span>Generating Caption...</span>
+                    </>
+                  ) : (
+                    <>
+                      <SparklesIcon className="h-5 w-5" />
+                      <span>Generate AI Caption</span>
+                    </>
+                  )}
+                </button>
 
-              <textarea
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                placeholder="Your generated caption will appear here, or write your own..."
-                className="w-full h-40 p-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
+                <textarea
+                  value={caption}
+                  onChange={(e) => setCaption(e.target.value)}
+                  placeholder="Your generated caption will appear here, or write your own..."
+                  className="w-full h-40 p-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
 
-              {/* Caption Tools */}
-              <div className="flex space-x-2">
-                <button className="flex items-center space-x-2 px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg text-sm transition-colors">
-                  <AdjustmentsHorizontalIcon className="h-4 w-4" />
-                  <span>Tone</span>
-                </button>
-                <button className="flex items-center space-x-2 px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg text-sm transition-colors">
-                  <DocumentTextIcon className="h-4 w-4" />
-                  <span>Length</span>
-                </button>
-                <button className="flex items-center space-x-2 px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg text-sm transition-colors">
-                  <MicrophoneIcon className="h-4 w-4" />
-                  <span>Voice</span>
-                </button>
+                {/* Caption Tools */}
+                <div className="flex space-x-2">
+                  <button className="flex items-center space-x-2 px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg text-sm transition-colors">
+                    <AdjustmentsHorizontalIcon className="h-4 w-4" />
+                    <span>Tone</span>
+                  </button>
+                  <button className="flex items-center space-x-2 px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg text-sm transition-colors">
+                    <DocumentTextIcon className="h-4 w-4" />
+                    <span>Length</span>
+                  </button>
+                  <button className="flex items-center space-x-2 px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg text-sm transition-colors">
+                    <MicrophoneIcon className="h-4 w-4" />
+                    <span>Voice</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          </FeatureGate>
 
           {/* Post Actions */}
           <div className="bg-gray-700/50 rounded-lg p-6">

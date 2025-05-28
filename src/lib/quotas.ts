@@ -7,35 +7,40 @@ export const QUOTA_LIMITS = {
     aiCredits: 50,
     aiEdits: 5,
     storageGB: 1,
-    contextFiles: 1
+    contextFiles: 1,
+    apiCalls: 1000
   },
   creator: {
     socialSets: 3,
     aiCredits: 300,
     aiEdits: 30,
     storageGB: 10,
-    contextFiles: 3
+    contextFiles: 3,
+    apiCalls: 5000
   },
   growth: {
     socialSets: 6,
     aiCredits: 600,
     aiEdits: 60,
     storageGB: 50,
-    contextFiles: 5
+    contextFiles: 5,
+    apiCalls: 15000
   },
   pro: {
     socialSets: 15,
     aiCredits: 1000,
     aiEdits: 120,
     storageGB: 200,
-    contextFiles: 10
+    contextFiles: 10,
+    apiCalls: 50000
   },
   enterprise: {
     socialSets: Infinity,
     aiCredits: Infinity,
     aiEdits: Infinity,
     storageGB: Infinity,
-    contextFiles: Infinity
+    contextFiles: Infinity,
+    apiCalls: Infinity
   }
 } as const;
 
