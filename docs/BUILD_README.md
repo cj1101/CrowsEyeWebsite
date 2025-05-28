@@ -195,9 +195,9 @@ Your website's download component expects these exact file names:
 The GitHub Actions workflow creates files with these exact names and uploads them to releases, making them available at:
 
 ```
-https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-Windows.exe
-https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-macOS.dmg
-https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-Linux.AppImage
+https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-Windows.exe
+https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-macOS.dmg
+https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-Linux.AppImage
 ```
 
 ## 📋 Checklist

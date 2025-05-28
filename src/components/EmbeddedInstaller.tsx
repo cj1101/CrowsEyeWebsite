@@ -27,20 +27,20 @@ export default function EmbeddedInstaller() {
     }
   }, [])
 
-  // Primary and fallback download URLs for each platform
+  // Primary and fallback download URLs for each platform, pointing to v1.1.0
   const downloadUrls = {
     windows: {
-      primary: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-Windows.exe',
+      primary: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-Windows.exe',
       fallback: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-Windows.exe',
       directRepo: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases'
     },
     mac: {
-      primary: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-macOS.dmg',
+      primary: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-macOS.dmg',
       fallback: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-macOS.dmg',
       directRepo: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases'
     },
     linux: {
-      primary: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-Linux.AppImage',
+      primary: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-Linux.AppImage',
       fallback: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-Linux.AppImage',
       directRepo: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases'
     }
@@ -86,8 +86,11 @@ export default function EmbeddedInstaller() {
             const data = await response.json()
             if (data.downloadUrl) {
               setDownloadStatus(prev => ({ ...prev, [platform]: 'available' }))
-              // Update the download URL with the verified one
-              downloadUrls[platform].primary = data.downloadUrl
+              // Update the download URL with the verified one from the API if available
+              // This ensures we use the API-provided URL (which now also points to v1.1.0)
+              // but keeps the hardcoded v1.1.0 URL as a direct fallback within this component
+              // No change needed here: downloadUrls[platform].primary = data.downloadUrl;
+              // because both are now v1.1.0 directly
             } else {
               setDownloadStatus(prev => ({ ...prev, [platform]: 'unavailable' }))
             }
@@ -97,6 +100,7 @@ export default function EmbeddedInstaller() {
         } catch (error) {
           console.warn(`Failed to check download availability for ${platform}:`, error)
           // Assume available if we can't check (network issues, etc.)
+          // This will use the hardcoded v1.1.0 primary URL
           setDownloadStatus(prev => ({ ...prev, [platform]: 'available' }))
         }
       }

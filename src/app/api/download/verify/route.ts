@@ -18,9 +18,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid platform' }, { status: 400 })
     }
 
-    // GitHub API to get latest release
+    // GitHub API to get specific release by tag
     const response = await fetch(
-      'https://api.github.com/repos/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest',
+      'https://api.github.com/repos/cj1101/Crow-s-Eye-Marketing-Agent/releases/tags/v1.1.0',
       {
         headers: {
           'Accept': 'application/vnd.github.v3+json',
@@ -66,11 +66,11 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Download verification error:', error)
     
-    // Return fallback URLs if API fails
+    // Return fallback URLs if API fails, using specific v1.1.0 tag
     const fallbackUrls = {
-      windows: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-Windows.exe',
-      mac: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-macOS.dmg',
-      linux: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-Linux.AppImage'
+      windows: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-Windows.exe',
+      mac: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-macOS.dmg',
+      linux: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-Linux.AppImage'
     }
 
     const platform = new URL(request.url).searchParams.get('platform') as keyof typeof fallbackUrls

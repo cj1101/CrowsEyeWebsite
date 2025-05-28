@@ -35,7 +35,7 @@ I've implemented a comprehensive download verification system that ensures the C
 ```javascript
 const downloadUrls = {
   windows: {
-    primary: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-Windows.exe',
+    primary: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-Windows.exe',
     fallback: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-Windows.exe',
     directRepo: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases'
   },
