@@ -53,9 +53,9 @@ The `EmbeddedInstaller.tsx` component provides:
 ### Download URLs
 The website automatically downloads from:
 ```
-https://github.com/cj1101/CrowsEyeWebsite/releases/latest/download/CrowsEye-Setup-Windows.exe
-https://github.com/cj1101/CrowsEyeWebsite/releases/latest/download/CrowsEye-Setup-macOS.dmg
-https://github.com/cj1101/CrowsEyeWebsite/releases/latest/download/CrowsEye-Setup-Linux.AppImage
+https://github.com/cj1101/offlineFinal/releases/latest/download/CrowsEye-Setup-Windows.exe
+https://github.com/cj1101/offlineFinal/releases/latest/download/CrowsEye-Setup-macOS.dmg
+https://github.com/cj1101/offlineFinal/releases/latest/download/CrowsEye-Setup-Linux.AppImage
 ```
 
 ## 🎮 Manual Build Trigger
