@@ -42,8 +42,8 @@ export default function Download() {
                 Check out our comprehensive documentation and user guides on GitHub.
               </p>
               <a 
-                href="https://github.com/cj1101/offlineFinal" 
-                target="_blank" 
+                href="https://github.com/cj1101/Crow-s-Eye-Marketing-Agent"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="border border-primary-500 text-primary-400 px-6 py-2 rounded-lg hover:bg-primary-500/10 transition-all duration-300 inline-block"
               >
@@ -59,8 +59,8 @@ export default function Download() {
                 Join our community for help, tips, and to share your creations.
               </p>
               <a 
-                href="https://github.com/cj1101/offlineFinal/issues" 
-                target="_blank" 
+                href="https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/issues"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="border border-primary-500 text-primary-400 px-6 py-2 rounded-lg hover:bg-primary-500/10 transition-all duration-300 inline-block"
               >

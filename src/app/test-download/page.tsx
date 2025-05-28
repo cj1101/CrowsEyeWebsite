@@ -34,7 +34,7 @@ export default function TestDownload() {
             
             <div>
               <a 
-                href="https://github.com/cj1101/offlineFinal/archive/refs/heads/main.zip" 
+                href="https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/archive/refs/heads/main.zip" 
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-purple-600 text-white px-4 py-2 rounded inline-block mr-4"

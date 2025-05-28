@@ -4,12 +4,14 @@ import React, { useState, useEffect } from 'react'
 import { 
   ArrowDownTrayIcon,
   CheckCircleIcon,
-  ComputerDesktopIcon
+  ComputerDesktopIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline'
 
 export default function EmbeddedInstaller() {
   const [downloadStarted, setDownloadStarted] = useState<string | null>(null)
   const [userOS, setUserOS] = useState<'windows' | 'mac' | 'linux' | null>(null)
+  const [downloadStatus, setDownloadStatus] = useState<{[key: string]: 'checking' | 'available' | 'unavailable'}>({})
 
   // Detect user's OS automatically
   useEffect(() => {
@@ -25,11 +27,23 @@ export default function EmbeddedInstaller() {
     }
   }, [])
 
-  // Download URLs for each platform
+  // Primary and fallback download URLs for each platform
   const downloadUrls = {
-    windows: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-Windows.exe',
-    mac: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-macOS.dmg',
-    linux: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-Linux.AppImage'
+    windows: {
+      primary: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-Windows.exe',
+      fallback: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-Windows.exe',
+      directRepo: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases'
+    },
+    mac: {
+      primary: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-macOS.dmg',
+      fallback: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-macOS.dmg',
+      directRepo: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases'
+    },
+    linux: {
+      primary: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest/download/CrowsEye-Setup-Linux.AppImage',
+      fallback: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/download/v1.1.0/CrowsEye-Setup-Linux.AppImage',
+      directRepo: 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases'
+    }
   }
 
   const platformInfo = {
@@ -56,21 +70,149 @@ export default function EmbeddedInstaller() {
     }
   }
 
-  const handleDownload = (platform: 'windows' | 'mac' | 'linux') => {
+  // Check if download URLs are available
+  useEffect(() => {
+    const checkDownloadAvailability = async () => {
+      const platforms = Object.keys(downloadUrls) as Array<keyof typeof downloadUrls>
+      
+      for (const platform of platforms) {
+        setDownloadStatus(prev => ({ ...prev, [platform]: 'checking' }))
+        
+        try {
+          // Use our API endpoint to verify downloads
+          const response = await fetch(`/api/download/verify?platform=${platform}`)
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (data.downloadUrl) {
+              setDownloadStatus(prev => ({ ...prev, [platform]: 'available' }))
+              // Update the download URL with the verified one
+              downloadUrls[platform].primary = data.downloadUrl
+            } else {
+              setDownloadStatus(prev => ({ ...prev, [platform]: 'unavailable' }))
+            }
+          } else {
+            setDownloadStatus(prev => ({ ...prev, [platform]: 'unavailable' }))
+          }
+        } catch (error) {
+          console.warn(`Failed to check download availability for ${platform}:`, error)
+          // Assume available if we can't check (network issues, etc.)
+          setDownloadStatus(prev => ({ ...prev, [platform]: 'available' }))
+        }
+      }
+    }
+
+    checkDownloadAvailability()
+  }, [])
+
+  const handleDownload = async (platform: 'windows' | 'mac' | 'linux') => {
     setDownloadStarted(platform)
     
-    // Create a temporary link and trigger download
-    const link = document.createElement('a')
-    link.href = downloadUrls[platform]
-    link.download = `CrowsEye-Setup-${platformInfo[platform].name}${platformInfo[platform].fileType}`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    try {
+      // Get the latest download URL from our API
+      const response = await fetch(`/api/download/verify?platform=${platform}`)
+      
+      if (response.ok) {
+        const data = await response.json()
+        
+        if (data.downloadUrl) {
+          // Use the verified download URL
+          const link = document.createElement('a')
+          link.href = data.downloadUrl
+          link.download = data.fileName || `CrowsEye-Setup-${platformInfo[platform].name}${platformInfo[platform].fileType}`
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+        } else {
+          // Fallback to releases page
+          window.open(data.releasesUrl || downloadUrls[platform].directRepo, '_blank')
+        }
+      } else {
+        // Fallback to primary URL
+        const link = document.createElement('a')
+        link.href = downloadUrls[platform].primary
+        link.download = `CrowsEye-Setup-${platformInfo[platform].name}${platformInfo[platform].fileType}`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
+    } catch (error) {
+      console.warn('Download API failed, using fallback:', error)
+      // Fallback to primary URL
+      const link = document.createElement('a')
+      link.href = downloadUrls[platform].primary
+      link.download = `CrowsEye-Setup-${platformInfo[platform].name}${platformInfo[platform].fileType}`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
 
     // Reset download state after 3 seconds
     setTimeout(() => {
       setDownloadStarted(null)
     }, 3000)
+  }
+
+  const getDownloadButtonContent = (platform: 'windows' | 'mac' | 'linux') => {
+    const status = downloadStatus[platform]
+    const isDownloading = downloadStarted === platform
+    
+    if (isDownloading) {
+      return (
+        <div className="flex items-center justify-center gap-3">
+          <CheckCircleIcon className="h-6 w-6" />
+          Download Started!
+        </div>
+      )
+    }
+    
+    if (status === 'checking') {
+      return (
+        <div className="flex items-center justify-center gap-3">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+          Checking availability...
+        </div>
+      )
+    }
+    
+    if (status === 'unavailable') {
+      return (
+        <div className="flex items-center justify-center gap-3">
+          <ExclamationTriangleIcon className="h-5 w-5" />
+          View Releases Page
+        </div>
+      )
+    }
+    
+    return (
+      <div className="flex items-center justify-center gap-3">
+        <ArrowDownTrayIcon className="h-6 w-6" />
+        Download for {platformInfo[platform].name} ({platformInfo[platform].size})
+      </div>
+    )
+  }
+
+  const getButtonStyles = (platform: 'windows' | 'mac' | 'linux', isRecommended: boolean = false) => {
+    const status = downloadStatus[platform]
+    const isDownloading = downloadStarted === platform
+    
+    if (isDownloading) {
+      return 'bg-green-700 text-green-200 cursor-not-allowed'
+    }
+    
+    if (status === 'checking') {
+      return 'bg-gray-600 text-gray-300 cursor-not-allowed'
+    }
+    
+    if (status === 'unavailable') {
+      return 'bg-yellow-600 text-yellow-100 hover:bg-yellow-500'
+    }
+    
+    if (isRecommended) {
+      return 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-500 hover:to-green-400 hover:scale-105 hover:shadow-lg hover:shadow-green-500/25'
+    }
+    
+    return 'bg-gradient-to-r from-primary-600 to-primary-500 text-white hover:from-primary-500 hover:to-primary-400'
   }
 
   return (
@@ -107,24 +249,10 @@ export default function EmbeddedInstaller() {
             
             <button
               onClick={() => handleDownload(userOS)}
-              disabled={downloadStarted === userOS}
-              className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 ${
-                downloadStarted === userOS
-                  ? 'bg-green-700 text-green-200 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-500 hover:to-green-400 hover:scale-105 hover:shadow-lg hover:shadow-green-500/25'
-              }`}
+              disabled={downloadStarted === userOS || downloadStatus[userOS] === 'checking'}
+              className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 ${getButtonStyles(userOS, true)}`}
             >
-              {downloadStarted === userOS ? (
-                <div className="flex items-center justify-center gap-3">
-                  <CheckCircleIcon className="h-6 w-6" />
-                  Download Started!
-                </div>
-              ) : (
-                <div className="flex items-center justify-center gap-3">
-                  <ArrowDownTrayIcon className="h-6 w-6" />
-                  Download for {platformInfo[userOS].name} ({platformInfo[userOS].size})
-                </div>
-              )}
+              {getDownloadButtonContent(userOS)}
             </button>
           </div>
         </div>
@@ -164,26 +292,10 @@ export default function EmbeddedInstaller() {
                 
                 <button
                   onClick={() => handleDownload(platform)}
-                  disabled={isDownloading}
-                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-300 ${
-                    isDownloading
-                      ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                      : isRecommended
-                      ? 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-500 hover:to-green-400'
-                      : 'bg-gradient-to-r from-primary-600 to-primary-500 text-white hover:from-primary-500 hover:to-primary-400'
-                  }`}
+                  disabled={isDownloading || downloadStatus[platform] === 'checking'}
+                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-300 ${getButtonStyles(platform, isRecommended)}`}
                 >
-                  {isDownloading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <CheckCircleIcon className="h-5 w-5" />
-                      Downloaded!
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center gap-2">
-                      <ArrowDownTrayIcon className="h-5 w-5" />
-                      Download {info.fileType}
-                    </div>
-                  )}
+                  {getDownloadButtonContent(platform)}
                 </button>
               </div>
             )
