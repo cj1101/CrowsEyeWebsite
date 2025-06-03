@@ -4,20 +4,12 @@ import React from 'react';
 import { useMediaLibrary } from '@/hooks/api/useMediaLibrary';
 
 export default function LibraryTab() {
-  const { media, loading, error } = useMediaLibrary();
+  const { media, loading } = useMediaLibrary();
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-red-400">Error loading media: {error}</p>
       </div>
     );
   }

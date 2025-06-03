@@ -1,7 +1,4 @@
 {
-  "functions": {
-    "source": "functions"
-  },
   "hosting": {
     "public": "out",
     "ignore": [
@@ -10,18 +7,6 @@
       "**/node_modules/**"
     ],
     "rewrites": [
-      {
-        "source": "/api/marketing-tool/posts",
-        "function": "marketingPosts"
-      },
-      {
-        "source": "/api/marketing-tool/stats", 
-        "function": "marketingStats"
-      },
-      {
-        "source": "/api/marketing-tool/media",
-        "function": "marketingMedia"
-      },
       {
         "source": "**",
         "destination": "/index.html"

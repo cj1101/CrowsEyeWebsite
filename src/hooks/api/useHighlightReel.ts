@@ -11,7 +11,6 @@ export interface HighlightReel {
 export function useHighlightReel() {
   const [highlights, setHighlights] = useState<HighlightReel[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const mockHighlights: HighlightReel[] = [
@@ -27,8 +26,8 @@ export function useHighlightReel() {
     setTimeout(() => {
       setHighlights(mockHighlights);
       setLoading(false);
-    }, 300);
+    }, 400);
   }, []);
 
-  return { highlights, loading, error };
+  return { highlights, loading };
 } 

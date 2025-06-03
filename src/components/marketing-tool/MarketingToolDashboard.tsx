@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   PhotoIcon, 
-  VideoCameraIcon, 
   PaintBrushIcon,
   CalendarIcon,
   ChartBarIcon,
@@ -15,8 +14,7 @@ import {
   UserGroupIcon,
   PlusIcon,
   CloudArrowUpIcon,
-  DocumentTextIcon,
-  PlayIcon
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 
 // Import sub-components

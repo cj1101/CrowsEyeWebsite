@@ -4,20 +4,12 @@ import React from 'react';
 import { useHighlightReel } from '@/hooks/api/useHighlightReel';
 
 export default function HighlightsTab() {
-  const { highlights, loading, error } = useHighlightReel();
+  const { highlights, loading } = useHighlightReel();
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-red-400">Error loading highlights: {error}</p>
       </div>
     );
   }

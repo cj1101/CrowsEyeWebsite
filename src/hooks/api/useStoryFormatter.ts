@@ -11,7 +11,6 @@ export interface Story {
 export function useStoryFormatter() {
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const mockStories: Story[] = [
@@ -27,8 +26,8 @@ export function useStoryFormatter() {
     setTimeout(() => {
       setStories(mockStories);
       setLoading(false);
-    }, 300);
+    }, 350);
   }, []);
 
-  return { stories, loading, error };
+  return { stories, loading };
 } 

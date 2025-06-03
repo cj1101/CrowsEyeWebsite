@@ -14,7 +14,6 @@ export interface MediaItem {
 export function useMediaLibrary() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Mock media data for static site
@@ -79,5 +78,5 @@ export function useMediaLibrary() {
     setMedia(prev => prev.filter(item => item.id !== id));
   };
 
-  return { media, loading, error, uploadMedia, deleteMedia };
+  return { media, loading, uploadMedia, deleteMedia };
 } 

@@ -14,7 +14,6 @@ interface FeatureGateProps {
   children: React.ReactNode;
   fallback?: React.ReactNode;
   showUpgradePrompt?: boolean;
-  trackOnAccess?: boolean;
   className?: string;
 }
 
@@ -30,7 +29,6 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
   children,
   fallback,
   showUpgradePrompt = true,
-  trackOnAccess = false,
   className = '',
 }) => {
   const { user, userProfile } = useAuth();

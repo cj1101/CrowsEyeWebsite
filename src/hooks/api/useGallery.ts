@@ -10,7 +10,6 @@ export interface GalleryItem {
 export function useGallery() {
   const [galleries, setGalleries] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const mockGalleries: GalleryItem[] = [
@@ -28,5 +27,5 @@ export function useGallery() {
     }, 300);
   }, []);
 
-  return { galleries, loading, error };
+  return { galleries, loading };
 } 

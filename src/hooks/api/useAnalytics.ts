@@ -26,29 +26,38 @@ export function useAnalytics() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Mock data for static site
-    const mockData: AnalyticsData = {
-      totalPosts: 156,
-      totalViews: 45230,
-      totalLikes: 3420,
-      totalComments: 892,
-      engagementRate: 8.7,
-      topPosts: [
-        { id: '1', title: 'Summer Campaign Launch', views: 2340, likes: 156, platform: 'Instagram' },
-        { id: '2', title: 'Product Showcase Video', views: 1890, likes: 134, platform: 'Facebook' },
-        { id: '3', title: 'Behind the Scenes', views: 1560, likes: 98, platform: 'Instagram' }
-      ],
-      platformStats: [
-        { platform: 'Instagram', posts: 89, engagement: 9.2 },
-        { platform: 'Facebook', posts: 45, engagement: 7.8 },
-        { platform: 'Twitter', posts: 22, engagement: 6.5 }
-      ]
+    const fetchAnalytics = async () => {
+      try {
+        // Mock data for static site
+        const mockData: AnalyticsData = {
+          totalPosts: 156,
+          totalViews: 45230,
+          totalLikes: 3420,
+          totalComments: 892,
+          engagementRate: 8.7,
+          topPosts: [
+            { id: '1', title: 'Summer Campaign Launch', views: 2340, likes: 156, platform: 'Instagram' },
+            { id: '2', title: 'Product Showcase Video', views: 1890, likes: 134, platform: 'Facebook' },
+            { id: '3', title: 'Behind the Scenes', views: 1560, likes: 98, platform: 'Instagram' }
+          ],
+          platformStats: [
+            { platform: 'Instagram', posts: 89, engagement: 9.2 },
+            { platform: 'Facebook', posts: 45, engagement: 7.8 },
+            { platform: 'Twitter', posts: 22, engagement: 6.5 }
+          ]
+        };
+
+        setTimeout(() => {
+          setData(mockData);
+          setLoading(false);
+        }, 500);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'An error occurred');
+        setLoading(false);
+      }
     };
 
-    setTimeout(() => {
-      setData(mockData);
-      setLoading(false);
-    }, 500);
+    fetchAnalytics();
   }, []);
 
   return { data, loading, error };

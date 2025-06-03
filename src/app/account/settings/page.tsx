@@ -61,7 +61,7 @@ export default function AccountSettingsPage() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (_error) {
+    } catch {
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 3000);
     }
@@ -85,7 +85,7 @@ export default function AccountSettingsPage() {
         confirmPassword: ''
       }));
       setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (_error) {
+    } catch {
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 3000);
     }

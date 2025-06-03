@@ -3,10 +3,7 @@
 import React, { useState } from 'react'
 import { 
   CheckCircleIcon,
-  ComputerDesktopIcon,
   ExclamationTriangleIcon,
-  ShieldCheckIcon,
-  CloudArrowDownIcon,
   ArrowDownTrayIcon
 } from '@heroicons/react/24/outline'
 
@@ -49,30 +46,6 @@ export default function EmbeddedInstaller() {
       setDownloadStatus('error')
     } finally {
       setIsDownloading(false)
-    }
-  }
-
-  const platformInfo = {
-    windows: {
-      name: 'Windows',
-      icon: '🪟',
-      fileType: '.exe',
-      size: '~2 MB (Web Installer)',
-      description: 'Compatible with Windows 10 and 11'
-    },
-    mac: {
-      name: 'macOS',
-      icon: '🍎',
-      fileType: '.dmg',
-      size: '~2 MB (Web Installer)',
-      description: 'Compatible with macOS 10.15 and later'
-    },
-    linux: {
-      name: 'Linux',
-      icon: '🐧',
-      fileType: '.AppImage',
-      size: '~2 MB (Web Installer)',
-      description: 'Compatible with most Linux distributions'
     }
   }
 

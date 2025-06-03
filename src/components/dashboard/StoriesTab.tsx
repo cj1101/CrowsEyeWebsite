@@ -4,20 +4,12 @@ import React from 'react';
 import { useStoryFormatter } from '@/hooks/api/useStoryFormatter';
 
 export default function StoriesTab() {
-  const { stories, loading, error } = useStoryFormatter();
+  const { stories, loading } = useStoryFormatter();
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-red-400">Error loading stories: {error}</p>
       </div>
     );
   }

@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useAnalytics } from '@/hooks/api/useAnalytics';
-import { ChartBarIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 export default function AnalyticsTab() {
   const { data: analytics, loading, error } = useAnalytics();

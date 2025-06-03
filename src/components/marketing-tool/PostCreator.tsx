@@ -4,9 +4,7 @@ import React, { useState } from 'react';
 import { 
   PhotoIcon, 
   SparklesIcon,
-  CalendarIcon,
   PaperAirplaneIcon,
-  DocumentTextIcon,
   HashtagIcon
 } from '@heroicons/react/24/outline';
 
