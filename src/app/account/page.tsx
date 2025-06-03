@@ -19,6 +19,7 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
+import Link from 'next/link';
 
 export default function AccountPage() {
   const { user, userProfile, loading } = useAuth();
@@ -217,38 +218,32 @@ export default function AccountPage() {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <button className="bg-white/10 backdrop-blur-lg rounded-lg p-6 text-left hover:bg-white/20 transition-colors">
+          <Link href="/account/settings" className="bg-white/10 backdrop-blur-lg rounded-lg p-6 text-left hover:bg-white/20 transition-colors">
             <div className="flex items-center justify-between mb-4">
-              <CogIcon className="h-8 w-8 text-purple-400" />
+              <CogIcon className="h-8 w-8 text-green-400" />
               <span className="text-sm text-gray-400">Settings</span>
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">Account Settings</h3>
             <p className="text-gray-300 text-sm">Update your profile, password, and preferences</p>
-          </button>
+          </Link>
 
-          <button 
-            onClick={handleManageBilling}
-            disabled={portalLoading}
-            className="bg-white/10 backdrop-blur-lg rounded-lg p-6 text-left hover:bg-white/20 transition-colors disabled:opacity-50"
-          >
+          <Link href="/account/subscription" className="bg-white/10 backdrop-blur-lg rounded-lg p-6 text-left hover:bg-white/20 transition-colors">
             <div className="flex items-center justify-between mb-4">
               <CreditCardIcon className="h-8 w-8 text-green-400" />
               <span className="text-sm text-gray-400">Billing</span>
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">
-              {portalLoading ? 'Loading...' : 'Subscription'}
-            </h3>
+            <h3 className="text-lg font-semibold text-white mb-2">Subscription</h3>
             <p className="text-gray-300 text-sm">Manage your subscription and billing information</p>
-          </button>
+          </Link>
 
-          <button className="bg-white/10 backdrop-blur-lg rounded-lg p-6 text-left hover:bg-white/20 transition-colors">
+          <Link href="/account/security" className="bg-white/10 backdrop-blur-lg rounded-lg p-6 text-left hover:bg-white/20 transition-colors">
             <div className="flex items-center justify-between mb-4">
               <ShieldCheckIcon className="h-8 w-8 text-blue-400" />
               <span className="text-sm text-gray-400">Security</span>
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">Security</h3>
             <p className="text-gray-300 text-sm">Two-factor authentication and security settings</p>
-          </button>
+          </Link>
         </div>
 
         {/* Subscription Details */}
@@ -268,7 +263,7 @@ export default function AccountPage() {
               <p className="text-gray-300 text-sm">Current Plan</p>
               <p className="text-white font-semibold text-lg capitalize">
                 {currentTier}
-                {subscription?.hasByok && <span className="text-sm text-purple-300 ml-2">(BYOK Discount)</span>}
+                {subscription?.hasByok && <span className="text-sm text-green-300 ml-2">(BYOK Discount)</span>}
               </p>
             </div>
             <div>

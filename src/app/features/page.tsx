@@ -6,7 +6,7 @@ import { Eye, Zap, Edit3, Film, Layers, Globe, BarChart2, Settings, Bot } from '
 const features = [
   {
     icon: <Bot className="h-10 w-10 text-primary-500" />,
-    title: "Advanced AI Content Generation (Gemini 1.5 Flash)",
+    title: "Advanced AI Content Generation (Google's Gemini)",
     description: "Deep analysis of images/videos for context-aware captions, posts, and narratives. Identifies subjects, settings, mood, and themes.",
     category: "AI & Content Creation"
   },
@@ -71,7 +71,7 @@ export default function FeaturesPage() {
             The <span className="gradient-text">Crow&apos;s Eye</span> Marketing Suite
           </h1>
           <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto">
-            Unlock unparalleled content creation and social media management with the power of Google&apos;s Gemini 1.5 Flash AI.
+            Unlock unparalleled content creation and social media management with the power of Google&apos;s Gemini AI.
           </p>
         </div>
 

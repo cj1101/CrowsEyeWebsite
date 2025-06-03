@@ -15,7 +15,7 @@ export default function Contact() {
       description: "For assistance with using Crow&apos;s Eye, feature suggestions, or general questions:",
       contacts: [
         { type: "Email", value: "support@crowseyeapp.com", href: "mailto:support@crowseyeapp.com" },
-        { type: "Community Forum", value: "Join our Discord server", href: "#" }
+        { type: "Phone", value: "(512) 987-4449", href: "tel:+15129874449" }
       ]
     },
     {
@@ -23,8 +23,8 @@ export default function Contact() {
       title: "Sales & Agency Plans",
       description: "For information on our Agent Tier, custom agency solutions, or volume pricing:",
       contacts: [
-        { type: "Email", value: "sales@crowseyeapp.com", href: "mailto:sales@crowseyeapp.com" },
-        { type: "Book a Demo", value: "Schedule a consultation", href: "#" }
+        { type: "Email", value: "support@crowseyeapp.com", href: "mailto:support@crowseyeapp.com" },
+        { type: "Phone", value: "(512) 987-4449", href: "tel:+15129874449" }
       ]
     },
     {
@@ -32,8 +32,8 @@ export default function Contact() {
       title: "Privacy & Data Compliance Inquiries",
       description: "For questions specifically related to your privacy, data rights, or our compliance practices:",
       contacts: [
-        { type: "Email", value: "privacy@crowseyeapp.com", href: "mailto:privacy@crowseyeapp.com" },
-        { type: "Phone", value: "(555) 123-4567", href: "tel:+15551234567" }
+        { type: "Email", value: "support@crowseyeapp.com", href: "mailto:support@crowseyeapp.com" },
+        { type: "Phone", value: "(512) 987-4449", href: "tel:+15129874449" }
       ]
     }
   ]

@@ -1,39 +1,100 @@
-# Crow's Eye Website
+# Crow's Eye Marketing Suite Website
 
-A modern, responsive website for Crow's Eye software built with Next.js, TypeScript, and Tailwind CSS.
+A modern, responsive website for the Crow's Eye Marketing Suite - an AI-powered social media management platform built with Next.js, TypeScript, and Tailwind CSS.
 
-## 🚀 Quick Start
+## 🚀 About Crow's Eye Marketing Suite
 
-```bash
-# Install dependencies
-npm install
+Crow's Eye Marketing Suite is your AI-powered command center for intelligent, multi-platform social media marketing. Leveraging Google's Gemini AI for unmatched content generation and media enhancement, it provides creators and businesses with powerful tools to streamline their social media workflow.
 
-# Start development server
-npm run dev
+### Key Features
+- **AI-Powered Content Generation** using Google's Gemini
+- **Multi-Platform Management** (Instagram, Facebook, LinkedIn, X)
+- **AI-Instructed Media Editing** with natural language commands
+- **Video Processing Suite** with highlight reels and thumbnails
+- **Comprehensive Analytics** with integrated platform insights
+- **Secure Desktop Application** with local processing capabilities
 
-# Build for production
-npm run build
+## 🛠️ Technology Stack
 
-# Deploy to Firebase
-npm run deploy
-```
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **Styling**: Tailwind CSS, Framer Motion
+- **Authentication**: Firebase Auth with Google OAuth
+- **Database**: Cloud Firestore
+- **Payments**: Stripe integration with subscription management
+- **Deployment**: Firebase Hosting
+- **AI Integration**: Google's Gemini API
+- **Internationalization**: 10 languages supported
 
 ## 📁 Project Structure
 
 ```
-├── src/                    # Source code
-│   ├── app/               # Next.js app router pages
-│   ├── components/        # Reusable React components
-│   ├── lib/              # Utility functions and configurations
-│   ├── types/            # TypeScript type definitions
-│   ├── data/             # Static data and content
-│   └── contexts/         # React context providers
-├── public/               # Static assets
-├── docs/                 # Documentation files
-├── scripts/              # Build and deployment scripts
-├── config/               # Configuration files
-├── tests/                # Test files
-└── .github/              # GitHub workflows and templates
+├── src/
+│   ├── app/                    # Next.js app router pages
+│   │   ├── (dashboard)/        # Protected dashboard routes
+│   │   ├── account/           # Account management pages
+│   │   ├── api/               # API routes (Stripe, downloads, usage)
+│   │   ├── auth/              # Authentication pages
+│   │   └── ...                # Public pages (home, pricing, features)
+│   ├── components/            # Reusable React components
+│   ├── contexts/              # React context providers (Auth, etc.)
+│   ├── hooks/                 # Custom React hooks
+│   ├── lib/                   # Utility functions and configurations
+│   ├── types/                 # TypeScript type definitions
+│   └── data/                  # Static data (pricing tiers, etc.)
+├── public/
+│   ├── translations/          # i18n translation files
+│   └── ...                    # Static assets
+├── docs/                      # Documentation
+├── scripts/                   # Build and deployment scripts
+└── config/                    # Configuration files
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+ and npm
+- Firebase project with Authentication and Firestore enabled
+- Stripe account for payment processing
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/cj1101/CrowsEyeWebsite.git
+cd CrowsEyeWebsite
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your Firebase and Stripe credentials
+
+# Start development server
+npm run dev
+```
+
+### Environment Variables
+
+Create a `.env.local` file with:
+
+```env
+# Firebase Configuration
+NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+
+# Stripe Configuration
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Application Configuration
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXTAUTH_SECRET=your_nextauth_secret
 ```
 
 ## 🛠️ Available Scripts
@@ -43,48 +104,72 @@ npm run deploy
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
 - `npm run test` - Run Jest tests
-- `npm run test:watch` - Run tests in watch mode
+- `npm run deploy` - Clean build and deploy to Firebase
 - `npm run clean` - Clean build artifacts
-- `npm run clean-build` - Clean and build
-- `npm run deploy` - Deploy to Firebase Hosting
 - `npm run setup` - Run initial project setup
-- `npm run setup-firebase` - Setup Firebase configuration
 
-## 🔧 Configuration
+## 🔧 Key Features Implementation
 
-Configuration files are organized in the `config/` directory:
+### Authentication System
+- Firebase Authentication with Google OAuth
+- Protected routes with middleware
+- User profile management
+- Session persistence
 
-- `config/jest.config.js` - Jest testing configuration
-- `config/jest.setup.js` - Jest setup file
-- `config/eslint.config.mjs` - ESLint configuration
-- `config/tailwind.config.ts` - Tailwind CSS configuration
-- `config/postcss.config.mjs` - PostCSS configuration
+### Subscription Management
+- Stripe integration for payments
+- Multiple pricing tiers (Spark, Creator, Pro, Enterprise)
+- BYOK (Bring Your Own Key) discounts
+- Usage tracking and limits
+- Customer portal for billing management
 
-## 📚 Documentation
+### Account Management
+- Comprehensive account settings
+- Security settings with 2FA support
+- Subscription management
+- API key management for BYOK
 
-Detailed documentation is available in the `docs/` directory:
+### Download System
+- Secure installer distribution
+- Platform detection (Windows, macOS, Linux)
+- Web installer with automatic updates
+- Download analytics and tracking
 
-- [Firebase Setup](docs/FIREBASE_SETUP.md)
-- [Deployment Guide](docs/DEPLOYMENT_README.md)
-- [Authentication](docs/AUTHENTICATION_README.md)
-- [Build Process](docs/BUILD_README.md)
-- [Translation Guide](docs/TRANSLATION_GUIDE.md)
+### Internationalization
+- Support for 10 languages
+- Dynamic language switching
+- Localized content and UI
 
 ## 🚀 Deployment
 
-The project is configured for deployment to Firebase Hosting with automatic CI/CD via GitHub Actions.
-
-### Prerequisites
-
-1. Firebase project setup
-2. GitHub repository secrets configured
-3. Domain configuration (if using custom domain)
-
-### Deploy
+### Firebase Hosting
 
 ```bash
+# Build and deploy
 npm run deploy
+
+# Deploy hosting only
+firebase deploy --only hosting
+
+# Deploy with functions
+firebase deploy
 ```
+
+### Environment Setup
+
+1. **Firebase Project Setup**
+   - Enable Authentication (Google provider)
+   - Enable Cloud Firestore
+   - Configure hosting
+
+2. **Stripe Configuration**
+   - Set up products and pricing
+   - Configure webhooks
+   - Add API keys to environment
+
+3. **Domain Configuration** (Optional)
+   - Configure custom domain in Firebase
+   - Update environment variables
 
 ## 🧪 Testing
 
@@ -94,28 +179,74 @@ npm run test
 
 # Run tests in watch mode
 npm run test:watch
+
+# Run linting
+npm run lint
 ```
 
-## 🔍 Development
+## 📊 Analytics & Monitoring
 
-### Environment Setup
+- Firebase Analytics integration
+- Stripe webhook monitoring
+- Usage tracking for subscription limits
+- Download analytics
+- Error tracking and reporting
 
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Copy environment variables: `cp .env.example .env.local`
-4. Start development server: `npm run dev`
+## 🔒 Security Features
 
-### Code Style
+- Firebase Security Rules for Firestore
+- Stripe webhook signature verification
+- Protected API routes
+- Input validation with Zod
+- CSRF protection
+- Secure download system
 
-- ESLint for code linting
-- Prettier for code formatting
-- TypeScript for type safety
+## 🌍 Internationalization
+
+Supported languages:
+- English (en)
+- Spanish (es)
+- French (fr)
+- German (de)
+- Portuguese (pt)
+- Chinese (zh)
+- Japanese (ja)
+- Russian (ru)
+- Arabic (ar)
+- Hindi (hi)
+
+## 📱 Responsive Design
+
+- Mobile-first approach
 - Tailwind CSS for styling
-
-## 📄 License
-
-This project is private and proprietary.
+- Framer Motion for animations
+- Optimized for all screen sizes
+- Progressive Web App features
 
 ## 🤝 Contributing
 
-Please read the documentation in the `docs/` directory before contributing.
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
+
+## 📄 License
+
+This project is proprietary and confidential. All rights reserved.
+
+## 🆘 Support
+
+For support and questions:
+- Email: support@crowseyeapp.com
+- Phone: (512) 987-4449
+- Documentation: [GitHub Wiki](https://github.com/cj1101/CrowsEyeWebsite/wiki)
+
+## 🔗 Related Repositories
+
+- [Crow's Eye Desktop Application](https://github.com/cj1101/Crow-s-Eye-Marketing-Agent)
+- [API Documentation](https://api.crowseye.tech/docs)
+
+---
+
+Built with ❤️ for creators and marketers worldwide.

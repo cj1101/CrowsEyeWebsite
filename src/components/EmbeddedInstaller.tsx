@@ -35,7 +35,6 @@ export default function EmbeddedInstaller() {
       icon: '🪟',
       fileType: '.exe',
       size: '~2 MB (Web Installer)',
-      fullSize: '~45 MB (Full App)',
       description: 'Compatible with Windows 10 and 11'
     },
     mac: {
@@ -43,7 +42,6 @@ export default function EmbeddedInstaller() {
       icon: '🍎',
       fileType: '.dmg',
       size: '~2 MB (Web Installer)',
-      fullSize: '~50 MB (Full App)',
       description: 'Compatible with macOS 10.15 and later'
     },
     linux: {
@@ -51,7 +49,6 @@ export default function EmbeddedInstaller() {
       icon: '🐧',
       fileType: '.AppImage',
       size: '~2 MB (Web Installer)',
-      fullSize: '~48 MB (Full App)',
       description: 'Compatible with most Linux distributions'
     }
   }
@@ -84,8 +81,8 @@ export default function EmbeddedInstaller() {
     checkDownloadAvailability()
   }, [])
 
-  const handleSecureDownload = async (type: 'web-installer' | 'full-app', platform: 'windows' | 'mac' | 'linux') => {
-    const downloadKey = `${type}-${platform}`
+  const handleSecureDownload = async (platform: 'windows' | 'mac' | 'linux') => {
+    const downloadKey = `web-installer-${platform}`
     setDownloadStarted(downloadKey)
     
     try {
@@ -94,7 +91,7 @@ export default function EmbeddedInstaller() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type,
+          type: 'web-installer',
           userInfo: {
             platform,
             userAgent: navigator.userAgent,
@@ -105,13 +102,8 @@ export default function EmbeddedInstaller() {
 
       // For Windows, we have actual secure installers
       if (platform === 'windows') {
-        if (type === 'web-installer') {
-          // Download the web installer
-          window.open('/api/download/secure?type=web-installer', '_blank')
-        } else {
-          // Download the full application
-          window.open('/api/download/secure?type=full-app', '_blank')
-        }
+        // Download the web installer
+        window.open('/api/download/secure?type=web-installer', '_blank')
       } else {
         // For Mac/Linux, redirect to GitHub releases for now
         const githubUrl = 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest'
@@ -130,8 +122,8 @@ export default function EmbeddedInstaller() {
     }, 3000)
   }
 
-  const getDownloadButtonContent = (type: 'web-installer' | 'full-app', platform: 'windows' | 'mac' | 'linux') => {
-    const downloadKey = `${type}-${platform}`
+  const getDownloadButtonContent = (platform: 'windows' | 'mac' | 'linux') => {
+    const downloadKey = `web-installer-${platform}`
     const status = downloadStatus[platform]
     const isDownloading = downloadStarted === downloadKey
     
@@ -162,25 +154,16 @@ export default function EmbeddedInstaller() {
       )
     }
     
-    if (type === 'web-installer') {
-      return (
-        <div className="flex items-center justify-center gap-3">
-          <CloudArrowDownIcon className="h-5 w-5" />
-          Web Installer ({platformInfo[platform].size})
-        </div>
-      )
-    } else {
-      return (
-        <div className="flex items-center justify-center gap-3">
-          <ArrowDownTrayIcon className="h-5 w-5" />
-          Full Download ({platformInfo[platform].fullSize})
-        </div>
-      )
-    }
+    return (
+      <div className="flex items-center justify-center gap-3">
+        <CloudArrowDownIcon className="h-5 w-5" />
+        Web Installer ({platformInfo[platform].size})
+      </div>
+    )
   }
 
-  const getButtonStyles = (type: 'web-installer' | 'full-app', platform: 'windows' | 'mac' | 'linux', isRecommended: boolean = false) => {
-    const downloadKey = `${type}-${platform}`
+  const getButtonStyles = (platform: 'windows' | 'mac' | 'linux', isRecommended: boolean = false) => {
+    const downloadKey = `web-installer-${platform}`
     const status = downloadStatus[platform]
     const isDownloading = downloadStarted === downloadKey
     
@@ -196,15 +179,11 @@ export default function EmbeddedInstaller() {
       return 'bg-yellow-600 text-yellow-100 hover:bg-yellow-500'
     }
     
-    if (type === 'web-installer' && isRecommended) {
+    if (isRecommended) {
       return 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-500 hover:to-green-400 hover:scale-105 hover:shadow-lg hover:shadow-green-500/25'
     }
     
-    if (type === 'web-installer') {
-      return 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400'
-    }
-    
-    return 'bg-gradient-to-r from-primary-600 to-primary-500 text-white hover:from-primary-500 hover:to-primary-400'
+    return 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400'
   }
 
   return (
@@ -252,27 +231,19 @@ export default function EmbeddedInstaller() {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex justify-center">
               <button
-                onClick={() => handleSecureDownload('web-installer', userOS)}
+                onClick={() => handleSecureDownload(userOS)}
                 disabled={downloadStarted?.includes(userOS) || downloadStatus[userOS] === 'checking'}
-                className={`py-3 px-4 rounded-xl font-bold transition-all duration-300 ${getButtonStyles('web-installer', userOS, true)}`}
+                className={`py-3 px-6 rounded-xl font-bold transition-all duration-300 ${getButtonStyles(userOS, true)}`}
               >
-                {getDownloadButtonContent('web-installer', userOS)}
-              </button>
-              
-              <button
-                onClick={() => handleSecureDownload('full-app', userOS)}
-                disabled={downloadStarted?.includes(userOS) || downloadStatus[userOS] === 'checking'}
-                className={`py-3 px-4 rounded-xl font-bold transition-all duration-300 ${getButtonStyles('full-app', userOS)}`}
-              >
-                {getDownloadButtonContent('full-app', userOS)}
+                {getDownloadButtonContent(userOS)}
               </button>
             </div>
             
             <div className="mt-4 text-center">
               <p className="text-green-200 text-sm">
-                💡 <strong>Web Installer (Recommended):</strong> Small download that gets the latest version automatically
+                💡 <strong>Web Installer:</strong> Small download that gets the latest version automatically
               </p>
             </div>
           </div>
@@ -307,21 +278,13 @@ export default function EmbeddedInstaller() {
                   <p className="text-sm text-gray-400 mb-2">{info.description}</p>
                 </div>
                 
-                <div className="space-y-3">
+                <div className="flex justify-center">
                   <button
-                    onClick={() => handleSecureDownload('web-installer', platform)}
+                    onClick={() => handleSecureDownload(platform)}
                     disabled={downloadStarted?.includes(platform) || downloadStatus[platform] === 'checking'}
-                    className={`w-full py-2 px-3 rounded-lg font-semibold text-sm transition-all duration-300 ${getButtonStyles('web-installer', platform, isRecommended)}`}
+                    className={`w-full py-2 px-3 rounded-lg font-semibold text-sm transition-all duration-300 ${getButtonStyles(platform, isRecommended)}`}
                   >
-                    {getDownloadButtonContent('web-installer', platform)}
-                  </button>
-                  
-                  <button
-                    onClick={() => handleSecureDownload('full-app', platform)}
-                    disabled={downloadStarted?.includes(platform) || downloadStatus[platform] === 'checking'}
-                    className={`w-full py-2 px-3 rounded-lg font-semibold text-sm transition-all duration-300 ${getButtonStyles('full-app', platform)}`}
-                  >
-                    {getDownloadButtonContent('full-app', platform)}
+                    {getDownloadButtonContent(platform)}
                   </button>
                 </div>
               </div>
@@ -336,28 +299,15 @@ export default function EmbeddedInstaller() {
           📋 Installation Instructions
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-          <div className="bg-blue-600/20 rounded-lg p-4">
-            <h4 className="font-semibold text-blue-300 mb-3">🌐 Web Installer (Recommended)</h4>
-            <ol className="text-gray-300 space-y-1">
-              <li>1. Download the small web installer (~2MB)</li>
-              <li>2. Run the installer - it will download the latest version</li>
-              <li>3. If Windows shows a warning, click "More info" → "Run anyway"</li>
-              <li>4. Follow the installation wizard</li>
-              <li>5. Launch from Desktop - ready to use!</li>
-            </ol>
-          </div>
-          
-          <div className="bg-purple-600/20 rounded-lg p-4">
-            <h4 className="font-semibold text-purple-300 mb-3">💾 Full Download</h4>
-            <ol className="text-gray-300 space-y-1">
-              <li>1. Download the complete application</li>
-              <li>2. Run the downloaded file</li>
-              <li>3. If prompted by security, allow the installation</li>
-              <li>4. No internet required after download</li>
-              <li>5. Works offline once installed</li>
-            </ol>
-          </div>
+        <div className="bg-blue-600/20 rounded-lg p-4">
+          <h4 className="font-semibold text-blue-300 mb-3">🌐 Web Installer</h4>
+          <ol className="text-gray-300 space-y-1">
+            <li>1. Download the small web installer (~2MB)</li>
+            <li>2. Run the installer - it will download the latest version</li>
+            <li>3. If Windows shows a warning, click "More info" → "Run anyway"</li>
+            <li>4. Follow the installation wizard</li>
+            <li>5. Launch from Desktop - ready to use!</li>
+          </ol>
         </div>
         
         <div className="mt-4 p-3 bg-yellow-900/20 rounded-lg border border-yellow-600/30">
@@ -390,7 +340,7 @@ export default function EmbeddedInstaller() {
               <ul className="text-green-200 text-sm space-y-1">
                 <li>• Complete AI-powered marketing suite</li>
                 <li>• All required dependencies automatically installed</li>
-                <li>• Google Gemini AI integration ready to use</li>
+                <li>• Google's Gemini AI integration ready to use</li>
                 <li>• No Python, coding, or technical knowledge needed</li>
                 <li>• Works offline after initial setup</li>
               </ul>

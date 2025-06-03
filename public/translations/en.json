@@ -1,7 +1,7 @@
 {
   "site.title": "Crow's Eye Marketing Suite",
   "site.tagline": "Your AI-Powered Command Center",
-  "site.description": "Leveraging Google's Gemini 1.5 Flash for unmatched content generation and media enhancement for intelligent, multi-platform social media marketing.",
+  "site.description": "Leveraging Google's Gemini for unmatched content generation and media enhancement for intelligent, multi-platform social media marketing.",
   
   "nav.home": "Home",
   "nav.demo": "Demo",
@@ -14,7 +14,7 @@
   
   "hero.title": "Crow's Eye Marketing Suite",
   "hero.subtitle": "Your AI-Powered Command Center",
-  "hero.description": "Leveraging Google's Gemini 1.5 Flash for unmatched content generation and media enhancement for intelligent, multi-platform social media marketing.",
+  "hero.description": "Leveraging Google's Gemini for unmatched content generation and media enhancement for intelligent, multi-platform social media marketing.",
   "hero.try_demo": "Try Free Demo",
   "hero.download_app": "Download Desktop App",
   "hero.view_pricing": "View Pricing & Plans",
@@ -27,8 +27,8 @@
   
   "features.title": "Transform Your Social Media Workflow",
   "features.description": "Discover the powerful tools that make Crow's Eye Marketing Suite the ultimate creative partner.",
-  "features.ai_content.title": "AI-Powered Content (Gemini 1.5 Flash)",
-  "features.ai_content.description": "Leverage advanced AI for deep media analysis and compelling content generation.",
+  "features.ai_content.title": "AI-Powered Content (Google's Gemini)",
+  "features.ai_content.description": "Generate engaging posts, captions, and hashtags with advanced AI technology.",
   "features.multi_platform.title": "Unified Multi-Platform Management",
   "features.multi_platform.description": "Manage Instagram, Facebook, and soon LinkedIn & X from one dashboard.",
   "features.media_editing.title": "AI-Instructed Media Editing",
@@ -78,7 +78,7 @@
   "demo.download_full": "Download Full App",
   
   "download.title": "Download Crow's Eye Marketing Suite",
-  "download.description": "Get the full desktop application: Your AI-Powered Command Center for intelligent, multi-platform social media marketing. Leverage Google's Gemini 1.5 Flash for unmatched content generation and media enhancement.",
+  "download.description": "Get the full desktop application: Your AI-Powered Command Center for intelligent, multi-platform social media marketing. Leverage Google's Gemini for unmatched content generation and media enhancement.",
   "download.installer_title": "Download Crow's Eye Marketing Suite",
   "download.one_click": "One-click installation - no technical knowledge required!",
   "download.everything_included": "Complete marketing suite with AI capabilities - everything included, no additional software needed",

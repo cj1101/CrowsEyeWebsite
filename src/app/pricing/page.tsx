@@ -28,10 +28,10 @@ function convertTierToDisplay(tier: any, hasByok: boolean) {
   const price = hasByok && tier.monthlyByok ? tier.monthlyByok : base;
   
   let displayPrice;
-  if (base === 0) {
-    displayPrice = '$0';
-  } else if (tier.id === 'enterprise') {
+  if (tier.id === 'enterprise') {
     displayPrice = 'Custom';
+  } else if (base === 0) {
+    displayPrice = '$0';
   } else {
     displayPrice = `$${price}${hasByok ? ' (BYOK)' : ''}`;
   }
@@ -181,7 +181,7 @@ export default function PricingPage() {
                     <span className="text-4xl font-extrabold text-white">{tier.price}</span>
                     {tier.frequency && <span className="text-gray-400 text-sm">{tier.frequency}</span>}
                     {tier.monthly !== 0 && tier.name !== 'Enterprise' && (
-                      <p className="mt-1 text-xs text-purple-300">
+                      <p className="mt-1 text-xs text-green-300">
                         Save 30% when you bring your own OpenAI / Gemini key
                       </p>
                     )}

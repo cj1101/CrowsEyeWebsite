@@ -2,6 +2,26 @@
   "name": "crowseyewebsite",
   "version": "0.1.0",
   "private": true,
+  "description": "Official website for Crow's Eye Marketing Suite - AI-powered social media management platform with Google's Gemini integration",
+  "keywords": [
+    "social media",
+    "marketing",
+    "ai",
+    "gemini",
+    "content creation",
+    "instagram",
+    "facebook",
+    "nextjs",
+    "typescript",
+    "tailwindcss"
+  ],
+  "homepage": "https://crowseyeapp.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cj1101/CrowsEyeWebsite.git"
+  },
+  "author": "Crow's Eye Team",
+  "license": "UNLICENSED",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",

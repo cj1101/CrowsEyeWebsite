@@ -15,7 +15,7 @@ export default function Download() {
           </h1>
           <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
             Get the full desktop application: Your AI-Powered Command Center for intelligent, multi-platform social media marketing. 
-            Leverage Google&apos;s Gemini 1.5 Flash for unmatched content generation and media enhancement.
+            Leverage Google&apos;s Gemini for unmatched content generation and media enhancement.
           </p>
         </div>
       </section>
