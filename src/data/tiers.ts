@@ -11,7 +11,6 @@ export interface Tier {
   aiCredits: number | string;
   aiEdits: number | string;
   videoSuite: 'none' | 'basic' | 'full';
-  storageGB: number | string;
   contextFiles: number | string;
   analytics: 'basic' | 'advanced' | 'custom';
   support: 'community' | 'email' | 'priority' | 'dedicated';
@@ -28,7 +27,6 @@ const baseTiers = [
     aiCredits: 50,
     aiEdits: 5,
     videoSuite: 'none' as const,
-    storageGB: 1,
     contextFiles: 1,
     analytics: 'basic' as const,
     support: 'community' as const
@@ -43,7 +41,6 @@ const baseTiers = [
     aiCredits: 300,
     aiEdits: 30,
     videoSuite: 'basic' as const,
-    storageGB: 10,
     contextFiles: 3,
     analytics: 'basic' as const,
     support: 'email' as const
@@ -58,7 +55,6 @@ const baseTiers = [
     aiCredits: 600,
     aiEdits: 60,
     videoSuite: 'basic' as const,
-    storageGB: 50,
     contextFiles: 5,
     analytics: 'advanced' as const,
     support: 'priority' as const
@@ -73,7 +69,6 @@ const baseTiers = [
     aiCredits: 1000,
     aiEdits: 120,
     videoSuite: 'full' as const,
-    storageGB: 200,
     contextFiles: 10,
     analytics: 'advanced' as const,
     support: 'priority' as const
@@ -88,7 +83,6 @@ const baseTiers = [
     aiCredits: 'custom' as const,
     aiEdits: 'custom' as const,
     videoSuite: 'full' as const,
-    storageGB: 'custom' as const,
     contextFiles: 'custom' as const,
     analytics: 'custom' as const,
     support: 'dedicated' as const

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useApiSWR, apiFetch, API_ENDPOINTS, AnalyticsData, ApiResponse } from '@/lib/api';
+import { useApiSWR, API_ENDPOINTS, AnalyticsData, ApiResponse } from '@/lib/api';
 
 export interface UseAnalyticsReturn {
   analytics: AnalyticsData | undefined;

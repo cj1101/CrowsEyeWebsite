@@ -85,13 +85,6 @@ function generateFeatureList(tier: any) {
     features.push('Full Video Processing Suite');
   }
   
-  // Storage
-  if (typeof tier.storageGB === 'number') {
-    features.push(`${tier.storageGB}GB Media Storage`);
-  } else {
-    features.push(`${tier.storageGB} Media Storage`);
-  }
-  
   // Context Files
   if (typeof tier.contextFiles === 'number') {
     features.push(`Up to ${tier.contextFiles} Context File${tier.contextFiles > 1 ? 's' : ''}`);

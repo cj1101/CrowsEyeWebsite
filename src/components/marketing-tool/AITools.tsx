@@ -1,82 +1,130 @@
 'use client';
 
-import React from 'react';
-import { SparklesIcon, PhotoIcon, VideoCameraIcon, PaintBrushIcon } from '@heroicons/react/24/outline';
+import React, { useState } from 'react';
+import { SparklesIcon, PhotoIcon, DocumentTextIcon, MicrophoneIcon } from '@heroicons/react/24/outline';
 
 export default function AITools() {
-  const tools = [
-    {
-      id: 'veo-generator',
-      name: 'Veo Video Generator',
-      description: 'Generate high-quality videos using Google Veo AI',
-      icon: VideoCameraIcon,
-      color: 'from-purple-600 to-purple-500'
-    },
-    {
-      id: 'image-editor',
-      name: 'AI Image Editor',
-      description: 'Edit and enhance images with AI-powered tools',
-      icon: PhotoIcon,
-      color: 'from-blue-600 to-blue-500'
-    },
-    {
-      id: 'gallery-generator',
-      name: 'Smart Gallery Generator',
-      description: 'Create stunning galleries with natural language prompts',
-      icon: PaintBrushIcon,
-      color: 'from-green-600 to-green-500'
-    },
-    {
-      id: 'caption-generator',
-      name: 'Caption Generator',
-      description: 'Generate engaging captions for your posts',
-      icon: SparklesIcon,
-      color: 'from-orange-600 to-orange-500'
-    }
+  const [activeTab, setActiveTab] = useState('content');
+
+  const tabs = [
+    { id: 'content', name: 'Content Generation', icon: DocumentTextIcon },
+    { id: 'image', name: 'Image Enhancement', icon: PhotoIcon },
+    { id: 'voice', name: 'Voice & Audio', icon: MicrophoneIcon },
   ];
 
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-bold text-white">AI Tools</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {tools.map(tool => {
-          const Icon = tool.icon;
+      {/* Tab Navigation */}
+      <div className="flex space-x-2 border-b border-gray-700">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
           return (
-            <div
-              key={tool.id}
-              className="bg-gray-700/50 rounded-lg p-6 hover:bg-gray-700/70 transition-colors cursor-pointer"
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-t-lg transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-primary-600 text-white border-b-2 border-primary-500'
+                  : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+              }`}
             >
-              <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${tool.color} flex items-center justify-center mb-4`}>
-                <Icon className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">{tool.name}</h3>
-              <p className="text-gray-400">{tool.description}</p>
-            </div>
+              <Icon className="h-5 w-5" />
+              <span>{tab.name}</span>
+            </button>
           );
         })}
       </div>
 
-      <div className="bg-gray-700/50 rounded-lg p-6">
-        <h3 className="text-xl font-semibold text-white mb-4">Recent AI Generations</h3>
-        <div className="space-y-3">
-          <div className="flex items-center space-x-3 p-3 bg-gray-600/50 rounded-lg">
-            <SparklesIcon className="h-5 w-5 text-purple-500" />
-            <span className="text-gray-300">Generated caption for "Summer Collection"</span>
-            <span className="text-gray-500 text-sm ml-auto">2 hours ago</span>
+      {/* Content Generation */}
+      {activeTab === 'content' && (
+        <div className="space-y-6">
+          <div className="bg-gray-700/50 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">AI Content Generator</h3>
+            <div className="space-y-4">
+              <textarea
+                placeholder="Describe what kind of content you want to generate..."
+                className="w-full h-32 bg-gray-800 border border-gray-600 rounded-lg p-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+              />
+              <button className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors">
+                <SparklesIcon className="h-5 w-5" />
+                <span>Generate Content</span>
+              </button>
+            </div>
           </div>
-          <div className="flex items-center space-x-3 p-3 bg-gray-600/50 rounded-lg">
-            <VideoCameraIcon className="h-5 w-5 text-blue-500" />
-            <span className="text-gray-300">Created video "Product Demo"</span>
-            <span className="text-gray-500 text-sm ml-auto">4 hours ago</span>
-          </div>
-          <div className="flex items-center space-x-3 p-3 bg-gray-600/50 rounded-lg">
-            <PhotoIcon className="h-5 w-5 text-green-500" />
-            <span className="text-gray-300">Enhanced image "Brand Logo"</span>
-            <span className="text-gray-500 text-sm ml-auto">6 hours ago</span>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-gray-700/50 rounded-lg p-6">
+              <h4 className="text-white font-semibold mb-3">Caption Templates</h4>
+              <div className="space-y-2">
+                {['Product Launch', 'Behind the Scenes', 'Motivational Quote', 'Tutorial'].map((template) => (
+                  <button
+                    key={template}
+                    className="w-full text-left p-3 bg-gray-600/50 hover:bg-gray-600 rounded-lg text-gray-300 transition-colors"
+                  >
+                    {template}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-gray-700/50 rounded-lg p-6">
+              <h4 className="text-white font-semibold mb-3">Hashtag Generator</h4>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Enter your topic..."
+                  className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <button className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg transition-colors">
+                  Generate Hashtags
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Image Enhancement */}
+      {activeTab === 'image' && (
+        <div className="space-y-6">
+          <div className="bg-gray-700/50 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">AI Image Enhancement</h3>
+            <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center">
+              <PhotoIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-400 mb-4">Upload an image to enhance with AI</p>
+              <button className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg transition-colors">
+                Upload Image
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {['Background Removal', 'Color Enhancement', 'Style Transfer'].map((feature) => (
+              <div key={feature} className="bg-gray-700/50 rounded-lg p-6 text-center">
+                <PhotoIcon className="h-12 w-12 text-primary-500 mx-auto mb-3" />
+                <h4 className="text-white font-semibold mb-2">{feature}</h4>
+                <p className="text-gray-400 text-sm">Coming soon</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Voice & Audio */}
+      {activeTab === 'voice' && (
+        <div className="space-y-6">
+          <div className="bg-gray-700/50 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Voice & Audio Tools</h3>
+            <div className="text-center py-8 text-gray-400">
+              <MicrophoneIcon className="h-16 w-16 mx-auto mb-4" />
+              <p>Voice and audio tools coming soon!</p>
+              <p className="text-sm mt-2">Generate voiceovers and audio content for your posts</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

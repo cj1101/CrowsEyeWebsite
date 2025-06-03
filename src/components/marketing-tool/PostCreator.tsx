@@ -1,332 +1,253 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { 
   PhotoIcon, 
-  VideoCameraIcon, 
-  PaintBrushIcon,
   SparklesIcon,
-  CloudArrowUpIcon,
-  AdjustmentsHorizontalIcon,
-  EyeIcon,
-  ShareIcon,
+  CalendarIcon,
+  PaperAirplaneIcon,
   DocumentTextIcon,
-  MicrophoneIcon
+  HashtagIcon
 } from '@heroicons/react/24/outline';
-import FeatureGate from '@/components/FeatureGate';
-import { useUsageTracking } from '@/hooks/useUsageTracking';
 
-interface MediaFile {
-  file: File;
-  url: string;
-  type: 'image' | 'video';
+interface Platform {
+  id: string;
+  name: string;
+  enabled: boolean;
+  maxLength: number;
 }
 
 export default function PostCreator() {
-  const { trackUsage } = useUsageTracking();
-  const [selectedMedia, setSelectedMedia] = useState<MediaFile | null>(null);
-  const [caption, setCaption] = useState('');
-  const [instructions, setInstructions] = useState('');
-  const [photoEditInstructions, setPhotoEditInstructions] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [content, setContent] = useState('');
+  const [platforms, setPlatforms] = useState<Platform[]>([
+    { id: 'instagram', name: 'Instagram', enabled: true, maxLength: 2200 },
+    { id: 'twitter', name: 'Twitter/X', enabled: false, maxLength: 280 },
+    { id: 'linkedin', name: 'LinkedIn', enabled: false, maxLength: 3000 },
+    { id: 'facebook', name: 'Facebook', enabled: false, maxLength: 63206 },
+  ]);
+  const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
+  const [hashtags, setHashtags] = useState('');
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('');
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const mediaFile: MediaFile = {
-        file,
-        url: URL.createObjectURL(file),
-        type: file.type.startsWith('video/') ? 'video' : 'image'
-      };
-      setSelectedMedia(mediaFile);
+  const togglePlatform = (platformId: string) => {
+    setPlatforms(prev => 
+      prev.map(p => 
+        p.id === platformId ? { ...p, enabled: !p.enabled } : p
+      )
+    );
+  };
+
+  const generateAIContent = async () => {
+    // TODO: Implement AI content generation
+    alert('AI content generation coming soon!');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const postData = {
+      content,
+      platforms: platforms.filter(p => p.enabled).map(p => p.id),
+      hashtags: hashtags.split(' ').filter(tag => tag.startsWith('#')),
+      mediaFiles: selectedMedia,
+      scheduledFor: scheduleDate && scheduleTime ? 
+        new Date(`${scheduleDate}T${scheduleTime}`).toISOString() : null
+    };
+
+    try {
+      const response = await fetch('/api/marketing-tool/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(postData),
+      });
+
+      if (response.ok) {
+        alert('Post created successfully!');
+        // Reset form
+        setContent('');
+        setHashtags('');
+        setSelectedMedia([]);
+        setScheduleDate('');
+        setScheduleTime('');
+      } else {
+        alert('Failed to create post');
+      }
+    } catch (error) {
+      console.error('Error creating post:', error);
+      alert('Error creating post');
     }
   };
 
-  const generateCaption = async () => {
-    if (!selectedMedia && !instructions) return;
-    
-    // Track AI credit usage
-    const result = await trackUsage('ai_credits', 1);
-    if (!result.success) {
-      alert(result.message || 'Unable to generate caption - usage limit reached');
-      return;
-    }
-    
-    setIsGenerating(true);
-    
-    // Simulate AI caption generation
-    setTimeout(() => {
-      const sampleCaptions = [
-        "✨ Discover the magic in everyday moments! This stunning visual captures the essence of creativity and inspiration. What story does it tell you? 🎨 #CreativeLife #Inspiration #ArtisticVision",
-        "🌟 Behind every great post is a vision waiting to be shared. This image speaks volumes about the power of visual storytelling. Ready to make your mark? 📸 #VisualStorytelling #ContentCreation #BrandStory",
-        "💫 Sometimes the most powerful messages come through visuals. This piece embodies the perfect blend of artistry and meaning. What's your interpretation? 🎭 #ArtisticExpression #VisualArt #CreativeContent"
-      ];
-      
-      const randomCaption = sampleCaptions[Math.floor(Math.random() * sampleCaptions.length)];
-      setCaption(randomCaption);
-      setIsGenerating(false);
-    }, 2000);
-  };
-
-  const applyPhotoEdits = async () => {
-    if (!selectedMedia || !photoEditInstructions) return;
-    
-    // Track AI edit usage
-    const result = await trackUsage('ai_edits', 1);
-    if (!result.success) {
-      alert(result.message || 'Unable to apply edits - usage limit reached');
-      return;
-    }
-    
-    setIsGenerating(true);
-    
-    // Simulate photo editing
-    setTimeout(() => {
-      // In a real implementation, this would apply AI-powered photo edits
-      console.log('Applying photo edits:', photoEditInstructions);
-      setIsGenerating(false);
-    }, 3000);
-  };
-
-  const formatPost = (type: 'story' | 'carousel' | 'reel') => {
-    console.log(`Formatting post as ${type}`);
-    // Implementation for different post formats
-  };
+  const enabledPlatforms = platforms.filter(p => p.enabled);
+  const minMaxLength = enabledPlatforms.length > 0 ? 
+    Math.min(...enabledPlatforms.map(p => p.maxLength)) : 2200;
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold text-white">Create Post</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold text-white">Create Post</h2>
+        <button
+          onClick={generateAIContent}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+        >
+          <SparklesIcon className="h-5 w-5" />
+          <span>AI Generate</span>
+        </button>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left Column - Media Upload and Preview */}
-        <div className="space-y-6">
-          {/* Media Upload */}
-          <div className="bg-gray-700/50 rounded-lg p-6">
-            <h3 className="text-xl font-semibold text-white mb-4">Media Upload</h3>
-            
-            {!selectedMedia ? (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-gray-500 rounded-lg p-8 text-center cursor-pointer hover:border-primary-500 transition-colors"
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Platform Selection */}
+        <div className="bg-gray-700/50 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Select Platforms</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {platforms.map((platform) => (
+              <button
+                key={platform.id}
+                type="button"
+                onClick={() => togglePlatform(platform.id)}
+                className={`p-4 rounded-lg border-2 transition-colors ${
+                  platform.enabled
+                    ? 'border-primary-500 bg-primary-500/20 text-white'
+                    : 'border-gray-600 bg-gray-700/50 text-gray-300 hover:border-gray-500'
+                }`}
               >
-                <CloudArrowUpIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-300 mb-2">Click to upload media</p>
-                <p className="text-gray-500 text-sm">Supports images and videos</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Media Preview */}
-                <div className="relative bg-gray-600 rounded-lg overflow-hidden">
-                  {selectedMedia.type === 'image' ? (
-                    <img
-                      src={selectedMedia.url}
-                      alt="Selected media"
-                      className="w-full h-64 object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-64 flex items-center justify-center">
-                      <VideoCameraIcon className="h-16 w-16 text-gray-400" />
-                    </div>
-                  )}
-                  
-                  {/* Media Actions */}
-                  <div className="absolute top-4 right-4 flex space-x-2">
-                    <button
-                      onClick={() => setShowPreview(!showPreview)}
-                      className="p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
-                    >
-                      <EyeIcon className="h-4 w-4 text-white" />
-                    </button>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
-                    >
-                      <PhotoIcon className="h-4 w-4 text-white" />
-                    </button>
+                <div className="text-center">
+                  <div className="text-sm font-medium">{platform.name}</div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    {platform.maxLength} chars
                   </div>
                 </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
-                {/* Media Info */}
-                <div className="flex items-center justify-between text-sm text-gray-400">
-                  <span>{selectedMedia.file.name}</span>
-                  <span>{(selectedMedia.file.size / 1024 / 1024).toFixed(2)} MB</span>
-                </div>
+        {/* Content Creation */}
+        <div className="bg-gray-700/50 rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Post Content</h3>
+            <div className="text-sm text-gray-400">
+              {content.length}/{minMaxLength}
+            </div>
+          </div>
+          
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="What's on your mind? Share your story..."
+            className="w-full h-32 bg-gray-800 border border-gray-600 rounded-lg p-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+            maxLength={minMaxLength}
+          />
 
-                {/* Format Options */}
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => formatPost('story')}
-                    className="flex-1 py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors"
-                  >
-                    Story Format
-                  </button>
-                  <button
-                    onClick={() => formatPost('carousel')}
-                    className="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
-                  >
-                    Carousel
-                  </button>
-                  <button
-                    onClick={() => formatPost('reel')}
-                    className="flex-1 py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors"
-                  >
-                    Reel
-                  </button>
-                </div>
+          {/* Hashtags */}
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Hashtags
+            </label>
+            <div className="relative">
+              <HashtagIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                value={hashtags}
+                onChange={(e) => setHashtags(e.target.value)}
+                placeholder="#marketing #socialmedia #content"
+                className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Media Selection */}
+        <div className="bg-gray-700/50 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Add Media</h3>
+          <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center">
+            <PhotoIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-400 mb-4">Select media from your library or upload new files</p>
+            <div className="flex justify-center space-x-4">
+              <button
+                type="button"
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Browse Library
+              </button>
+              <button
+                type="button"
+                className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Upload New
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Scheduling */}
+        <div className="bg-gray-700/50 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Schedule Post</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Date
+              </label>
+              <input
+                type="date"
+                value={scheduleDate}
+                onChange={(e) => setScheduleDate(e.target.value)}
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Time
+              </label>
+              <input
+                type="time"
+                value={scheduleTime}
+                onChange={(e) => setScheduleTime(e.target.value)}
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          </div>
+          <p className="text-sm text-gray-400 mt-2">
+            Leave empty to post immediately
+          </p>
+        </div>
+
+        {/* Submit Buttons */}
+        <div className="flex justify-end space-x-4">
+          <button
+            type="button"
+            className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+          >
+            Save Draft
+          </button>
+          <button
+            type="submit"
+            disabled={!content.trim() || enabledPlatforms.length === 0}
+            className="px-6 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <PaperAirplaneIcon className="h-5 w-5" />
+            <span>{scheduleDate ? 'Schedule Post' : 'Post Now'}</span>
+          </button>
+        </div>
+      </form>
+
+      {/* Preview */}
+      {content && (
+        <div className="bg-gray-700/50 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Preview</h3>
+          <div className="bg-gray-800 rounded-lg p-4">
+            <div className="text-white whitespace-pre-wrap">{content}</div>
+            {hashtags && (
+              <div className="mt-2 text-primary-400">
+                {hashtags}
               </div>
             )}
           </div>
-
-          {/* Photo Editing */}
-          {selectedMedia?.type === 'image' && (
-            <FeatureGate feature="ai_edits" requiredTier="creator">
-              <div className="bg-gray-700/50 rounded-lg p-6">
-                <h3 className="text-xl font-semibold text-white mb-4">AI Photo Editing</h3>
-                <div className="space-y-4">
-                  <textarea
-                    value={photoEditInstructions}
-                    onChange={(e) => setPhotoEditInstructions(e.target.value)}
-                    placeholder="Describe how you want to edit this photo... (e.g., 'Make it brighter and add a vintage filter', 'Remove the background', 'Enhance colors')"
-                    className="w-full h-24 p-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                  <button
-                    onClick={applyPhotoEdits}
-                    disabled={!photoEditInstructions || isGenerating}
-                    className="w-full flex items-center justify-center space-x-2 py-2 px-4 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        <span>Applying Edits...</span>
-                      </>
-                    ) : (
-                      <>
-                        <PaintBrushIcon className="h-4 w-4" />
-                        <span>Apply AI Edits</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </FeatureGate>
-          )}
         </div>
-
-        {/* Right Column - Content Generation */}
-        <div className="space-y-6">
-          {/* Instructions */}
-          <div className="bg-gray-700/50 rounded-lg p-6">
-            <h3 className="text-xl font-semibold text-white mb-4">Content Instructions</h3>
-            <div className="space-y-4">
-              <textarea
-                value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
-                placeholder="Describe what you want to communicate... (e.g., 'Create an engaging post about our new product launch', 'Write something inspirational about creativity')"
-                className="w-full h-32 p-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-              
-              {/* Quick Prompts */}
-              <div className="flex flex-wrap gap-2">
-                {[
-                  'Product showcase',
-                  'Behind the scenes',
-                  'Inspirational quote',
-                  'Tutorial content',
-                  'Brand story'
-                ].map(prompt => (
-                  <button
-                    key={prompt}
-                    onClick={() => setInstructions(prompt)}
-                    className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-gray-300 text-sm rounded-full transition-colors"
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Caption Generation */}
-          <FeatureGate feature="ai_credits" requiredTier="spark">
-            <div className="bg-gray-700/50 rounded-lg p-6">
-              <h3 className="text-xl font-semibold text-white mb-4">AI Caption Generation</h3>
-              <div className="space-y-4">
-                <button
-                  onClick={generateCaption}
-                  disabled={isGenerating}
-                  className="w-full flex items-center justify-center space-x-2 py-3 px-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-all"
-                >
-                  {isGenerating ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span>Generating Caption...</span>
-                    </>
-                  ) : (
-                    <>
-                      <SparklesIcon className="h-5 w-5" />
-                      <span>Generate AI Caption</span>
-                    </>
-                  )}
-                </button>
-
-                <textarea
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  placeholder="Your generated caption will appear here, or write your own..."
-                  className="w-full h-40 p-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-
-                {/* Caption Tools */}
-                <div className="flex space-x-2">
-                  <button className="flex items-center space-x-2 px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg text-sm transition-colors">
-                    <AdjustmentsHorizontalIcon className="h-4 w-4" />
-                    <span>Tone</span>
-                  </button>
-                  <button className="flex items-center space-x-2 px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg text-sm transition-colors">
-                    <DocumentTextIcon className="h-4 w-4" />
-                    <span>Length</span>
-                  </button>
-                  <button className="flex items-center space-x-2 px-3 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg text-sm transition-colors">
-                    <MicrophoneIcon className="h-4 w-4" />
-                    <span>Voice</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </FeatureGate>
-
-          {/* Post Actions */}
-          <div className="bg-gray-700/50 rounded-lg p-6">
-            <h3 className="text-xl font-semibold text-white mb-4">Post Actions</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <button className="flex items-center justify-center space-x-2 py-3 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
-                <ShareIcon className="h-4 w-4" />
-                <span>Publish Now</span>
-              </button>
-              <button className="flex items-center justify-center space-x-2 py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
-                <span>Schedule</span>
-              </button>
-              <button className="flex items-center justify-center space-x-2 py-3 px-4 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors">
-                <span>Save Draft</span>
-              </button>
-              <button className="flex items-center justify-center space-x-2 py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
-                <span>Add to Library</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Hidden File Input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*,video/*"
-        onChange={handleFileUpload}
-        className="hidden"
-      />
+      )}
     </div>
   );
 } 

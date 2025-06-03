@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { hasFeatureAccess, getSubscriptionFeatures, PRICING_TIERS } from '@/lib/subscription';
+import { getSubscriptionFeatures, PRICING_TIERS } from '@/lib/subscription';
 import { Tab } from '@headlessui/react';
 import { 
   PhotoIcon, 
@@ -114,7 +114,7 @@ export default function DashboardPage() {
         {/* Tabs */}
         <Tab.Group selectedIndex={selectedIndex} onChange={setSelectedIndex}>
           <Tab.List className="flex space-x-1 rounded-xl bg-blue-900/20 p-1">
-            {tabs.map((tab, index) => (
+            {tabs.map((tab) => (
               <Tab
                 key={tab.name}
                 className={({ selected }) =>
@@ -148,7 +148,7 @@ export default function DashboardPage() {
           </Tab.List>
           
           <Tab.Panels className="mt-6">
-            {tabs.map((tab, index) => (
+            {tabs.map((tab) => (
               <Tab.Panel
                 key={tab.name}
                 className={classNames(

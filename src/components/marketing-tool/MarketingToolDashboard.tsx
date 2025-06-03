@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   PhotoIcon, 
@@ -12,10 +12,14 @@ import {
   FolderIcon,
   SparklesIcon,
   MegaphoneIcon,
-  UserGroupIcon
+  UserGroupIcon,
+  PlusIcon,
+  CloudArrowUpIcon,
+  DocumentTextIcon,
+  PlayIcon
 } from '@heroicons/react/24/outline';
 
-// Import sub-components (we'll create these next)
+// Import sub-components
 import MediaLibrary from './MediaLibrary';
 import PostCreator from './PostCreator';
 import SchedulingPanel from './SchedulingPanel';
@@ -25,9 +29,63 @@ import Settings from './Settings';
 
 type TabType = 'dashboard' | 'library' | 'create' | 'schedule' | 'analytics' | 'ai-tools' | 'settings';
 
+interface UserStats {
+  totalPosts: number;
+  scheduledPosts: number;
+  aiGenerated: number;
+  engagementRate: number;
+  socialAccounts: number;
+  mediaFiles: number;
+  recentActivity: Array<{
+    id: string;
+    action: string;
+    timestamp: string;
+    type: 'success' | 'info' | 'warning';
+  }>;
+  subscriptionTier: string;
+  aiCreditsRemaining: number;
+  aiEditsRemaining: number;
+}
+
 export default function MarketingToolDashboard() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  // Fetch user stats
+  useEffect(() => {
+    if (user) {
+      fetchStats();
+    }
+  }, [user]);
+
+  const fetchStats = async () => {
+    try {
+      setStatsLoading(true);
+      const response = await fetch('/api/marketing-tool/stats');
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data.stats);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  // Show loading state while authenticating
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500 mx-auto"></div>
+          <p className="text-gray-300 mt-4">Loading Marketing Tool...</p>
+        </div>
+      </div>
+    );
+  }
 
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: ChartBarIcon },
@@ -42,7 +100,7 @@ export default function MarketingToolDashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardOverview />;
+        return <DashboardOverview stats={stats} statsLoading={statsLoading} onRefresh={fetchStats} />;
       case 'library':
         return <MediaLibrary />;
       case 'create':
@@ -56,7 +114,7 @@ export default function MarketingToolDashboard() {
       case 'settings':
         return <Settings />;
       default:
-        return <DashboardOverview />;
+        return <DashboardOverview stats={stats} statsLoading={statsLoading} onRefresh={fetchStats} />;
     }
   };
 
@@ -71,7 +129,14 @@ export default function MarketingToolDashboard() {
               <h1 className="text-2xl font-bold gradient-text">Marketing Tool</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-300">Welcome, {user?.displayName || user?.email}</span>
+              <div className="text-right">
+                <span className="text-gray-300 text-sm">Welcome, {user?.displayName || user?.email}</span>
+                {stats && (
+                  <div className="text-xs text-gray-400">
+                    {stats.subscriptionTier.charAt(0).toUpperCase() + stats.subscriptionTier.slice(1)} Plan
+                  </div>
+                )}
+              </div>
               <div className="h-8 w-8 rounded-full bg-primary-500 flex items-center justify-center">
                 {user?.photoURL ? (
                   <img src={user.photoURL} alt="Profile" className="h-8 w-8 rounded-full" />
@@ -107,6 +172,27 @@ export default function MarketingToolDashboard() {
                 );
               })}
             </nav>
+            
+            {/* Quick Stats Sidebar */}
+            {stats && (
+              <div className="mt-8 bg-gray-800/50 backdrop-blur-md rounded-xl border border-gray-700/50 p-4">
+                <h3 className="text-lg font-semibold text-white mb-4">Quick Stats</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400 text-sm">AI Credits</span>
+                    <span className="text-white font-medium">{stats.aiCreditsRemaining}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400 text-sm">AI Edits</span>
+                    <span className="text-white font-medium">{stats.aiEditsRemaining}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400 text-sm">Social Accounts</span>
+                    <span className="text-white font-medium">{stats.socialAccounts}</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Main Content */}
@@ -121,21 +207,59 @@ export default function MarketingToolDashboard() {
   );
 }
 
-// Dashboard Overview Component
-function DashboardOverview() {
+// Dashboard Overview Component with Real Data
+interface DashboardOverviewProps {
+  stats: UserStats | null;
+  statsLoading: boolean;
+  onRefresh: () => void;
+}
+
+function DashboardOverview({ stats, statsLoading, onRefresh }: DashboardOverviewProps) {
+  if (statsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-400 mb-4">Failed to load dashboard data</p>
+        <button 
+          onClick={onRefresh}
+          className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold text-white mb-6">Dashboard Overview</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold text-white">Dashboard Overview</h2>
+        <button 
+          onClick={onRefresh}
+          className="text-gray-400 hover:text-white transition-colors"
+        >
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+      </div>
       
-      {/* Quick Stats */}
+      {/* Real Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100">Total Posts</p>
-              <p className="text-3xl font-bold">24</p>
+              <p className="text-3xl font-bold">{stats.totalPosts}</p>
             </div>
-            <PhotoIcon className="h-8 w-8 text-blue-200" />
+            <DocumentTextIcon className="h-8 w-8 text-blue-200" />
           </div>
         </div>
         
@@ -143,7 +267,7 @@ function DashboardOverview() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-100">Scheduled</p>
-              <p className="text-3xl font-bold">8</p>
+              <p className="text-3xl font-bold">{stats.scheduledPosts}</p>
             </div>
             <CalendarIcon className="h-8 w-8 text-green-200" />
           </div>
@@ -153,7 +277,7 @@ function DashboardOverview() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-purple-100">AI Generated</p>
-              <p className="text-3xl font-bold">12</p>
+              <p className="text-3xl font-bold">{stats.aiGenerated}</p>
             </div>
             <SparklesIcon className="h-8 w-8 text-purple-200" />
           </div>
@@ -162,10 +286,10 @@ function DashboardOverview() {
         <div className="bg-gradient-to-r from-orange-600 to-orange-500 rounded-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-orange-100">Engagement</p>
-              <p className="text-3xl font-bold">94%</p>
+              <p className="text-orange-100">Media Files</p>
+              <p className="text-3xl font-bold">{stats.mediaFiles}</p>
             </div>
-            <ChartBarIcon className="h-8 w-8 text-orange-200" />
+            <PhotoIcon className="h-8 w-8 text-orange-200" />
           </div>
         </div>
       </div>
@@ -175,39 +299,43 @@ function DashboardOverview() {
         <h3 className="text-xl font-semibold text-white mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button className="flex items-center space-x-3 p-4 bg-primary-600 hover:bg-primary-700 rounded-lg text-white transition-colors">
-            <PaintBrushIcon className="h-6 w-6" />
+            <PlusIcon className="h-6 w-6" />
             <span>Create New Post</span>
           </button>
           <button className="flex items-center space-x-3 p-4 bg-green-600 hover:bg-green-700 rounded-lg text-white transition-colors">
-            <VideoCameraIcon className="h-6 w-6" />
-            <span>Generate Video</span>
+            <CloudArrowUpIcon className="h-6 w-6" />
+            <span>Upload Media</span>
           </button>
           <button className="flex items-center space-x-3 p-4 bg-purple-600 hover:bg-purple-700 rounded-lg text-white transition-colors">
             <SparklesIcon className="h-6 w-6" />
-            <span>AI Gallery</span>
+            <span>AI Tools</span>
           </button>
         </div>
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Activity with Real Data */}
       <div className="bg-gray-700/50 rounded-lg p-6">
         <h3 className="text-xl font-semibold text-white mb-4">Recent Activity</h3>
         <div className="space-y-3">
-          <div className="flex items-center space-x-3 p-3 bg-gray-600/50 rounded-lg">
-            <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-            <span className="text-gray-300">Post "Summer Collection" published to Instagram</span>
-            <span className="text-gray-500 text-sm ml-auto">2 hours ago</span>
-          </div>
-          <div className="flex items-center space-x-3 p-3 bg-gray-600/50 rounded-lg">
-            <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-            <span className="text-gray-300">AI generated 5 new captions</span>
-            <span className="text-gray-500 text-sm ml-auto">4 hours ago</span>
-          </div>
-          <div className="flex items-center space-x-3 p-3 bg-gray-600/50 rounded-lg">
-            <div className="h-2 w-2 bg-purple-500 rounded-full"></div>
-            <span className="text-gray-300">Video "Product Demo" processed</span>
-            <span className="text-gray-500 text-sm ml-auto">6 hours ago</span>
-          </div>
+          {stats.recentActivity.length > 0 ? (
+            stats.recentActivity.map((activity) => (
+              <div key={activity.id} className="flex items-center space-x-3 p-3 bg-gray-600/50 rounded-lg">
+                <div className={`h-2 w-2 rounded-full ${
+                  activity.type === 'success' ? 'bg-green-500' : 
+                  activity.type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+                }`}></div>
+                <span className="text-gray-300 flex-1">{activity.action}</span>
+                <span className="text-gray-500 text-sm">
+                  {new Date(activity.timestamp).toLocaleString()}
+                </span>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-8 text-gray-400">
+              <p>No recent activity</p>
+              <p className="text-sm mt-2">Start creating content to see your activity here!</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

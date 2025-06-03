@@ -170,8 +170,9 @@ export default function SubscriptionPage() {
               <p className="text-white text-xl font-bold">
                 {currentTier === 'spark' ? 'Free' : 
                  currentTier === 'enterprise' ? 'Custom' : 
-                 subscription?.hasByok ? `$${subscription.monthlyByok || 0}` : 
-                 `$${subscription?.monthly || 0}`}
+                 subscription?.hasByok ? 'BYOK Pricing' : 
+                 currentTier === 'creator' ? '$29' :
+                 currentTier === 'pro' ? '$99' : '$0'}
                 {currentTier !== 'spark' && currentTier !== 'enterprise' && '/month'}
                 {subscription?.hasByok && <span className="text-sm text-green-300 ml-2">(BYOK Discount)</span>}
               </p>

@@ -1,13 +1,31 @@
 {
+  "functions": {
+    "source": "functions"
+  },
   "hosting": {
-    "source": ".",
+    "public": "out",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
-    "frameworksBackend": {
-      "region": "us-central1"
-    }
+    "rewrites": [
+      {
+        "source": "/api/marketing-tool/posts",
+        "function": "marketingPosts"
+      },
+      {
+        "source": "/api/marketing-tool/stats", 
+        "function": "marketingStats"
+      },
+      {
+        "source": "/api/marketing-tool/media",
+        "function": "marketingMedia"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
   }
 } 

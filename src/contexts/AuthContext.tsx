@@ -237,7 +237,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         unsubscribe();
       }
     };
-  }, [isConfigured, handleAuthStateChange]);
+  }, [isConfigured, handleAuthStateChange, isAuthenticated]);
 
   // Debug logging for auth state
   useEffect(() => {

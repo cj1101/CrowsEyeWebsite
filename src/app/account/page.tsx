@@ -23,7 +23,7 @@ import Link from 'next/link';
 
 export default function AccountPage() {
   const { user, userProfile, loading } = useAuth();
-  const { usage, featureUsage, loading: usageLoading } = useUsageTracking();
+  const { usage, loading: usageLoading } = useUsageTracking();
   const [signOutLoading, setSignOutLoading] = useState(false);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
@@ -32,7 +32,7 @@ export default function AccountPage() {
   const searchParams = useSearchParams();
 
   // Check for success message from Stripe checkout
-  const success = searchParams.get('success');
+  const success = searchParams?.get('success');
 
   useEffect(() => {
     if (!loading && !user) {

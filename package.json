@@ -20,15 +20,24 @@
     "type": "git",
     "url": "https://github.com/cj1101/CrowsEyeWebsite.git"
   },
-  "author": "Crow's Eye Team",
-  "license": "UNLICENSED",
+  "author": {
+    "name": "Crow's Eye Team",
+    "email": "help@crowseye.tech",
+    "url": "https://crowseye.tech"
+  },
+  "license": "MIT",
+  "copyright": "Copyright © 2024 Crow's Eye Marketing Suite. All rights reserved.",
+  "engines": {
+    "node": "20"
+  },
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:python-bridge": "node -e \"console.log('Testing Python bridge...'); const { PythonBridge } = require('./dist/lib/python-bridge'); console.log('Bridge loaded successfully');\"",
     "gen:api": "openapi-typescript https://api.crowseye.tech/openapi.json -o src/types/api.d.ts",
     "check-stripe": "node scripts/check-stripe-env.js",
     "export": "next build",
@@ -39,6 +48,8 @@
     "clean-build": "node scripts/clean-build.js && npm run build",
     "clean-deploy": "npm run clean-build && firebase deploy --only hosting",
     "deploy": "npm run clean-deploy",
+    "deploy:full": "npm run clean-build && firebase deploy",
+    "deploy:functions": "firebase deploy --only functions",
     "firebase:init": "firebase init hosting",
     "firebase:serve": "npm run clean-build && firebase serve"
   },
@@ -51,6 +62,8 @@
     "@types/stripe": "^8.0.416",
     "bcryptjs": "^3.0.2",
     "firebase": "^11.8.1",
+    "firebase-admin": "^13.4.0",
+    "firebase-functions": "^6.3.2",
     "framer-motion": "^12.12.2",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.511.0",

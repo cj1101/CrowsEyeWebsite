@@ -28,7 +28,7 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
   className = '',
 }) => {
   const { user, userProfile } = useAuth();
-  const { featureUsage, checkFeature, logActivity } = useUsageTracking();
+  const { checkFeature, logActivity } = useUsageTracking();
   const [hasAccess, setHasAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [usageInfo, setUsageInfo] = useState<any>(null);
@@ -43,7 +43,7 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
 
       try {
         // Check tier access
-        const userTier = userProfile.subscription?.plan || 'spark';
+        const userTier = userProfile.subscription?.tier || 'spark';
         const tierAccess = hasFeatureAccess(userTier, requiredTier);
         
         // Check usage limits
@@ -89,9 +89,8 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
     }
 
          // Default blocked UI
-     const currentTier = userProfile?.subscription?.plan || 'spark';
+     const currentTier = userProfile?.subscription?.tier || 'spark';
      const tierAccess = hasFeatureAccess(currentTier, requiredTier);
-    const isUsageLimited = usageInfo && !usageInfo.canUse;
 
     return (
       <div className={`relative ${className}`}>

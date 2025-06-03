@@ -38,7 +38,7 @@ export default function SecurityPage() {
       setTwoFactorEnabled(!twoFactorEnabled);
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (error) {
+    } catch (_error) {
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 3000);
     }
@@ -51,7 +51,7 @@ export default function SecurityPage() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (error) {
+    } catch (_error) {
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 3000);
     }
@@ -64,7 +64,7 @@ export default function SecurityPage() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (error) {
+    } catch (_error) {
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 3000);
     }

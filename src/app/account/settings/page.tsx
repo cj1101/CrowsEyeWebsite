@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   UserIcon, 
-  EnvelopeIcon, 
   KeyIcon,
   BellIcon,
   GlobeAltIcon,
@@ -43,9 +42,9 @@ export default function AccountSettingsPage() {
         ...prev,
         displayName: user.displayName || '',
         email: user.email || '',
-        emailNotifications: userProfile.preferences?.emailNotifications ?? true,
-        marketingEmails: userProfile.preferences?.marketingEmails ?? false,
-        language: userProfile.preferences?.language || 'en'
+        emailNotifications: true,
+        marketingEmails: false,
+        language: 'en'
       }));
     }
   }, [user, userProfile]);
@@ -62,7 +61,7 @@ export default function AccountSettingsPage() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (error) {
+    } catch (_error) {
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 3000);
     }
@@ -86,7 +85,7 @@ export default function AccountSettingsPage() {
         confirmPassword: ''
       }));
       setTimeout(() => setSaveStatus('idle'), 3000);
-    } catch (error) {
+    } catch (_error) {
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 3000);
     }

@@ -1,252 +1,302 @@
-# Crow's Eye Marketing Suite Website
+# 🦅 Crow's Eye Marketing Suite
 
-A modern, responsive website for the Crow's Eye Marketing Suite - an AI-powered social media management platform built with Next.js, TypeScript, and Tailwind CSS.
+**AI-Powered Social Media Management Platform**
 
-## 🚀 About Crow's Eye Marketing Suite
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Next.js](https://img.shields.io/badge/Next.js-15.3.2-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4.1-38B2AC)](https://tailwindcss.com/)
 
-Crow's Eye Marketing Suite is your AI-powered command center for intelligent, multi-platform social media marketing. Leveraging Google's Gemini AI for unmatched content generation and media enhancement, it provides creators and businesses with powerful tools to streamline their social media workflow.
+> **Copyright © 2024 Crow's Eye Marketing Suite. All rights reserved.**
 
-### Key Features
-- **AI-Powered Content Generation** using Google's Gemini
-- **Multi-Platform Management** (Instagram, Facebook, LinkedIn, X)
-- **AI-Instructed Media Editing** with natural language commands
-- **Video Processing Suite** with highlight reels and thumbnails
-- **Comprehensive Analytics** with integrated platform insights
-- **Secure Desktop Application** with local processing capabilities
+## 🚀 Overview
 
-## 🛠️ Technology Stack
+Crow's Eye Marketing Suite is a comprehensive AI-powered marketing automation platform that helps businesses and content creators streamline their social media presence. With integrated AI capabilities powered by Google's Gemini and OpenAI's GPT models, users can create, schedule, and optimize content across multiple platforms.
 
-- **Frontend**: Next.js 15, React 19, TypeScript
-- **Styling**: Tailwind CSS, Framer Motion
-- **Authentication**: Firebase Auth with Google OAuth
-- **Database**: Cloud Firestore
-- **Payments**: Stripe integration with subscription management
-- **Deployment**: Firebase Hosting
-- **AI Integration**: Google's Gemini API
-- **Internationalization**: 10 languages supported
+### ✨ Key Features
 
-## 📁 Project Structure
+- 🤖 **AI Content Generation** - Create engaging posts with advanced AI models
+- 📅 **Smart Scheduling** - Optimize posting times for maximum engagement
+- 📊 **Advanced Analytics** - Track performance across all platforms
+- 🎨 **Media Processing** - Automatic image and video optimization
+- 👥 **Team Collaboration** - Multi-user workspace management
+- 🔗 **Platform Integration** - Support for Instagram, Facebook, Twitter, LinkedIn, TikTok, and YouTube
+- 🔐 **BYOK Support** - Bring Your Own API Keys for cost optimization
 
-```
-├── src/
-│   ├── app/                    # Next.js app router pages
-│   │   ├── (dashboard)/        # Protected dashboard routes
-│   │   ├── account/           # Account management pages
-│   │   ├── api/               # API routes (Stripe, downloads, usage)
-│   │   ├── auth/              # Authentication pages
-│   │   └── ...                # Public pages (home, pricing, features)
-│   ├── components/            # Reusable React components
-│   ├── contexts/              # React context providers (Auth, etc.)
-│   ├── hooks/                 # Custom React hooks
-│   ├── lib/                   # Utility functions and configurations
-│   ├── types/                 # TypeScript type definitions
-│   └── data/                  # Static data (pricing tiers, etc.)
-├── public/
-│   ├── translations/          # i18n translation files
-│   └── ...                    # Static assets
-├── docs/                      # Documentation
-├── scripts/                   # Build and deployment scripts
-└── config/                    # Configuration files
-```
+## 📋 Table of Contents
+
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Features](#features)
+- [API Documentation](#api-documentation)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
+- [Legal Information](#legal-information)
+- [Support](#support)
+
+## 🛠️ Installation
+
+### Prerequisites
+
+- Node.js 20.x or higher
+- npm or yarn package manager
+- Firebase account (for authentication and database)
+- Stripe account (for payment processing)
+
+### Local Development Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/cj1101/CrowsEyeWebsite.git
+   cd CrowsEyeWebsite
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local with your configuration
+   ```
+
+4. **Configure Firebase**
+   ```bash
+   npm run setup-firebase
+   ```
+
+5. **Start development server**
+   ```bash
+   npm run dev
+   ```
+
+6. **Open your browser**
+   Navigate to `http://localhost:3000`
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Node.js 18+ and npm
-- Firebase project with Authentication and Firestore enabled
-- Stripe account for payment processing
+### For End Users
 
-### Installation
+1. **Visit the Website**: Go to [https://crowseye.tech](https://crowseye.tech)
+2. **Create Account**: Sign up with email or Google authentication
+3. **Choose Plan**: Select from Spark (Free), Creator ($29/mo), or Pro ($99/mo)
+4. **Connect Platforms**: Link your social media accounts
+5. **Start Creating**: Use AI to generate and schedule content
+
+### For Developers
 
 ```bash
-# Clone the repository
-git clone https://github.com/cj1101/CrowsEyeWebsite.git
-cd CrowsEyeWebsite
-
 # Install dependencies
 npm install
 
-# Set up environment variables
-cp .env.example .env.local
-# Edit .env.local with your Firebase and Stripe credentials
+# Set up environment
+npm run setup
 
-# Start development server
+# Start development
 npm run dev
+
+# Run tests
+npm test
+
+# Build for production
+npm run build
 ```
 
-### Environment Variables
+## 🎯 Features
 
-Create a `.env.local` file with:
+### 🤖 AI-Powered Content Creation
+- **Multi-Model Support**: OpenAI GPT-4, Google Gemini Pro
+- **Content Types**: Posts, stories, captions, hashtags
+- **Brand Voice**: Maintain consistent messaging
+- **A/B Testing**: Optimize content performance
 
-```env
-# Firebase Configuration
-NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+### 📅 Advanced Scheduling
+- **Smart Timing**: AI-optimized posting schedules
+- **Bulk Upload**: Schedule multiple posts at once
+- **Content Calendar**: Visual planning interface
+- **Auto-Posting**: Seamless platform integration
 
-# Stripe Configuration
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
+### 📊 Analytics & Insights
+- **Performance Tracking**: Engagement, reach, impressions
+- **Competitor Analysis**: Benchmark against industry leaders
+- **ROI Reporting**: Track marketing investment returns
+- **Custom Dashboards**: Personalized analytics views
 
-# Application Configuration
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXTAUTH_SECRET=your_nextauth_secret
+### 🔧 Platform Integrations
+- **Instagram**: Posts, Stories, Reels
+- **Facebook**: Pages, Groups, Events
+- **Twitter/X**: Tweets, Threads
+- **LinkedIn**: Posts, Articles, Company Pages
+- **TikTok**: Videos, Trends
+- **YouTube**: Videos, Shorts, Community Posts
+
+## 📚 API Documentation
+
+### Authentication
+```typescript
+// Login with email/password
+const response = await fetch('/api/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email, password })
+});
 ```
 
-## 🛠️ Available Scripts
+### Content Generation
+```typescript
+// Generate AI content
+const content = await fetch('/api/marketing-tool/posts', {
+  method: 'POST',
+  headers: { 
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  },
+  body: JSON.stringify({
+    prompt: "Create a post about sustainable fashion",
+    platform: "instagram",
+    tone: "professional"
+  })
+});
+```
 
-- `npm run dev` - Start development server with Turbopack
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run test` - Run Jest tests
-- `npm run deploy` - Clean build and deploy to Firebase
-- `npm run clean` - Clean build artifacts
-- `npm run setup` - Run initial project setup
-
-## 🔧 Key Features Implementation
-
-### Authentication System
-- Firebase Authentication with Google OAuth
-- Protected routes with middleware
-- User profile management
-- Session persistence
-
-### Subscription Management
-- Stripe integration for payments
-- Multiple pricing tiers (Spark, Creator, Pro, Enterprise)
-- BYOK (Bring Your Own Key) discounts
-- Usage tracking and limits
-- Customer portal for billing management
-
-### Account Management
-- Comprehensive account settings
-- Security settings with 2FA support
-- Subscription management
-- API key management for BYOK
-
-### Download System
-- Secure installer distribution
-- Platform detection (Windows, macOS, Linux)
-- Web installer with automatic updates
-- Download analytics and tracking
-
-### Internationalization
-- Support for 10 languages
-- Dynamic language switching
-- Localized content and UI
+### Analytics
+```typescript
+// Get analytics data
+const analytics = await fetch('/api/analytics', {
+  headers: { 'Authorization': `Bearer ${token}` }
+});
+```
 
 ## 🚀 Deployment
 
-### Firebase Hosting
+### Vercel (Recommended)
+```bash
+# Install Vercel CLI
+npm i -g vercel
 
+# Deploy
+vercel --prod
+```
+
+### Firebase Hosting
 ```bash
 # Build and deploy
 npm run deploy
-
-# Deploy hosting only
-firebase deploy --only hosting
-
-# Deploy with functions
-firebase deploy
 ```
 
-### Environment Setup
-
-1. **Firebase Project Setup**
-   - Enable Authentication (Google provider)
-   - Enable Cloud Firestore
-   - Configure hosting
-
-2. **Stripe Configuration**
-   - Set up products and pricing
-   - Configure webhooks
-   - Add API keys to environment
-
-3. **Domain Configuration** (Optional)
-   - Configure custom domain in Firebase
-   - Update environment variables
-
-## 🧪 Testing
-
+### Docker
 ```bash
-# Run all tests
-npm run test
+# Build image
+docker build -t crowseye-marketing .
 
-# Run tests in watch mode
-npm run test:watch
-
-# Run linting
-npm run lint
+# Run container
+docker run -p 3000:3000 crowseye-marketing
 ```
-
-## 📊 Analytics & Monitoring
-
-- Firebase Analytics integration
-- Stripe webhook monitoring
-- Usage tracking for subscription limits
-- Download analytics
-- Error tracking and reporting
-
-## 🔒 Security Features
-
-- Firebase Security Rules for Firestore
-- Stripe webhook signature verification
-- Protected API routes
-- Input validation with Zod
-- CSRF protection
-- Secure download system
-
-## 🌍 Internationalization
-
-Supported languages:
-- English (en)
-- Spanish (es)
-- French (fr)
-- German (de)
-- Portuguese (pt)
-- Chinese (zh)
-- Japanese (ja)
-- Russian (ru)
-- Arabic (ar)
-- Hindi (hi)
-
-## 📱 Responsive Design
-
-- Mobile-first approach
-- Tailwind CSS for styling
-- Framer Motion for animations
-- Optimized for all screen sizes
-- Progressive Web App features
 
 ## 🤝 Contributing
 
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+### Development Workflow
+
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Code Standards
+
+- **TypeScript**: Strict mode enabled
+- **ESLint**: Airbnb configuration
+- **Prettier**: Code formatting
+- **Testing**: Jest + React Testing Library
 
 ## 📄 License
 
-This project is proprietary and confidential. All rights reserved.
+This project is licensed under the **MIT License with Commercial Terms**.
 
-## 🆘 Support
+### Open Source License
+The core software is available under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-For support and questions:
-- Email: support@crowseyeapp.com
-- Phone: (512) 987-4449
-- Documentation: [GitHub Wiki](https://github.com/cj1101/CrowsEyeWebsite/wiki)
+### Commercial Terms
+Commercial use requires compliance with additional terms:
+- Attribution requirements
+- Trademark restrictions
+- API usage responsibilities
+- Data privacy compliance
 
-## 🔗 Related Repositories
+### Third-Party Licenses
+This software includes components from various open-source projects. See [COPYRIGHT.md](COPYRIGHT.md) for full attribution.
 
-- [Crow's Eye Desktop Application](https://github.com/cj1101/Crow-s-Eye-Marketing-Agent)
-- [API Documentation](https://api.crowseye.tech/docs)
+## ⚖️ Legal Information
+
+### Copyright Notice
+**Copyright © 2024 Crow's Eye Marketing Suite. All rights reserved.**
+
+### Trademarks
+- "Crow's Eye" and "Crow's Eye Marketing Suite" are trademarks
+- All third-party trademarks are property of their respective owners
+
+### Terms of Service
+By using this software, you agree to our [Terms of Service](https://crowseye.tech/terms).
+
+### Privacy Policy
+Your privacy is important to us. Read our [Privacy Policy](https://crowseye.tech/privacy).
+
+### DMCA Compliance
+We respect intellectual property rights. For DMCA notices, contact: help@crowseye.tech
+
+### Data Protection
+- **GDPR Compliant**: European data protection standards
+- **CCPA Compliant**: California privacy regulations
+- **SOC 2 Type II**: Security and availability standards
+
+## 🛡️ Security
+
+### Reporting Security Issues
+Please report security vulnerabilities to: help@crowseye.tech
+
+### Security Features
+- **End-to-End Encryption**: All data transmission encrypted
+- **API Key Management**: Secure storage and rotation
+- **Access Controls**: Role-based permissions
+- **Audit Logging**: Comprehensive activity tracking
+
+## 📞 Support
+
+### Community Support
+- **GitHub Issues**: Bug reports and feature requests
+- **Discord**: Community chat and support
+- **Documentation**: Comprehensive guides and tutorials
+
+### Commercial Support
+- **Email**: help@crowseye.tech
+- **Priority Support**: Available for Pro and Enterprise plans
+- **Custom Development**: Enterprise consulting services
+
+### Contact Information
+- **Website**: [https://crowseye.tech](https://crowseye.tech)
+- **Email**: help@crowseye.tech
+- **Legal**: help@crowseye.tech
+- **Security**: help@crowseye.tech
 
 ---
 
-Built with ❤️ for creators and marketers worldwide.
+## 🙏 Acknowledgments
+
+Special thanks to:
+- **OpenAI** for GPT models and API
+- **Google** for Gemini AI and Firebase services
+- **Vercel** for Next.js framework and hosting
+- **Stripe** for payment processing
+- **All contributors** who help improve this project
+
+---
+
+**Made with ❤️ by the Crow's Eye Team**
+
+*This project is actively maintained and continuously improved. Star ⭐ the repository to stay updated!*
