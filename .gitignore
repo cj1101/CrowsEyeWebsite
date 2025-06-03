@@ -46,3 +46,14 @@ next-env.d.ts
 # build artifacts
 /dist/
 /installers/
+
+# Installer build directories and files
+/simple_build/work/
+/simple_build/web_work/
+/secure_build/work/
+/secure_build/web_work/
+/simple_installers/
+/public/downloads/*.exe
+*.exe
+*.pkg
+*.spec
