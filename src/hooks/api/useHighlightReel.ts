@@ -1,50 +1,34 @@
-import { useCallback, useState } from 'react';
-import { apiFetch, API_ENDPOINTS, HighlightReel, ApiResponse } from '@/lib/api';
+import { useState, useEffect } from 'react';
 
-export interface UseHighlightReelReturn {
-  generateHighlightReel: (videoId: string, options: Record<string, any>) => Promise<ApiResponse<HighlightReel>>;
-  loading: boolean;
-  error: string | null;
+export interface HighlightReel {
+  id: string;
+  title: string;
+  clips: string[];
+  duration: number;
+  createdAt: string;
 }
 
-export const useHighlightReel = (): UseHighlightReelReturn => {
-  const [loading, setLoading] = useState(false);
+export function useHighlightReel() {
+  const [highlights, setHighlights] = useState<HighlightReel[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const generateHighlightReel = useCallback(async (
-    videoId: string, 
-    options: Record<string, any>
-  ): Promise<ApiResponse<HighlightReel>> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await apiFetch<HighlightReel>(API_ENDPOINTS.HIGHLIGHTS, {
-        method: 'POST',
-        body: JSON.stringify({ videoId, options }),
-      });
-
-      if (!response.success) {
-        setError(response.error || 'Failed to generate highlight reel');
+  useEffect(() => {
+    const mockHighlights: HighlightReel[] = [
+      {
+        id: '1',
+        title: 'Best Moments 2024',
+        clips: ['/videos/clip1.mp4', '/videos/clip2.mp4'],
+        duration: 120,
+        createdAt: '2024-01-15T10:30:00Z'
       }
+    ];
 
-      return response;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to generate highlight reel';
-      setError(errorMessage);
-      return {
-        success: false,
-        error: errorMessage,
-        data: undefined,
-      };
-    } finally {
+    setTimeout(() => {
+      setHighlights(mockHighlights);
       setLoading(false);
-    }
+    }, 300);
   }, []);
 
-  return {
-    generateHighlightReel,
-    loading,
-    error,
-  };
-}; 
+  return { highlights, loading, error };
+} 

@@ -1,59 +1,55 @@
-import { useCallback } from 'react';
-import { useApiSWR, API_ENDPOINTS, AnalyticsData, ApiResponse } from '@/lib/api';
+import { useState, useEffect } from 'react';
 
-export interface UseAnalyticsReturn {
-  analytics: AnalyticsData | undefined;
-  loading: boolean;
-  error: Error | null;
-  exportAnalytics: () => Promise<ApiResponse<Blob>>;
-  refreshAnalytics: () => Promise<void>;
+export interface AnalyticsData {
+  totalPosts: number;
+  totalViews: number;
+  totalLikes: number;
+  totalComments: number;
+  engagementRate: number;
+  topPosts: Array<{
+    id: string;
+    title: string;
+    views: number;
+    likes: number;
+    platform: string;
+  }>;
+  platformStats: Array<{
+    platform: string;
+    posts: number;
+    engagement: number;
+  }>;
 }
 
-export const useAnalytics = (): UseAnalyticsReturn => {
-  const { data: analytics, error, isLoading: loading, mutate: swrMutate } = useApiSWR<AnalyticsData>(
-    API_ENDPOINTS.ANALYTICS
-  );
+export function useAnalytics() {
+  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const refreshAnalytics = useCallback(async (): Promise<void> => {
-    await swrMutate();
-  }, [swrMutate]);
+  useEffect(() => {
+    // Mock data for static site
+    const mockData: AnalyticsData = {
+      totalPosts: 156,
+      totalViews: 45230,
+      totalLikes: 3420,
+      totalComments: 892,
+      engagementRate: 8.7,
+      topPosts: [
+        { id: '1', title: 'Summer Campaign Launch', views: 2340, likes: 156, platform: 'Instagram' },
+        { id: '2', title: 'Product Showcase Video', views: 1890, likes: 134, platform: 'Facebook' },
+        { id: '3', title: 'Behind the Scenes', views: 1560, likes: 98, platform: 'Instagram' }
+      ],
+      platformStats: [
+        { platform: 'Instagram', posts: 89, engagement: 9.2 },
+        { platform: 'Facebook', posts: 45, engagement: 7.8 },
+        { platform: 'Twitter', posts: 22, engagement: 6.5 }
+      ]
+    };
 
-  const exportAnalytics = useCallback(async (): Promise<ApiResponse<Blob>> => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.crowseye.tech'}${API_ENDPOINTS.ANALYTICS_EXPORT}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
-        },
-      });
-
-      if (!response.ok) {
-        return {
-          success: false,
-          error: `HTTP ${response.status}`,
-          data: undefined,
-        };
-      }
-
-      const blob = await response.blob();
-      return {
-        success: true,
-        data: blob,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Export failed',
-        data: undefined,
-      };
-    }
+    setTimeout(() => {
+      setData(mockData);
+      setLoading(false);
+    }, 500);
   }, []);
 
-  return {
-    analytics,
-    loading,
-    error,
-    exportAnalytics,
-    refreshAnalytics,
-  };
-}; 
+  return { data, loading, error };
+} 

@@ -1,29 +1,50 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { User, onAuthStateChanged, Unsubscribe } from 'firebase/auth';
-import { auth, isFirebaseConfigured } from '@/lib/firebase';
-import { getUserProfile, UserProfile } from '@/lib/auth';
-import { apiFetch, setAuthToken, getAuthToken, API_ENDPOINTS } from '@/lib/api';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+
+// Mock user profile interface
+interface UserProfile {
+  id: string;
+  email: string;
+  displayName: string;
+  firstName: string;
+  lastName: string;
+  avatar?: string;
+  plan: 'free' | 'creator' | 'pro';
+  createdAt: string;
+  lastLoginAt: string;
+}
 
 interface AuthContextType {
-  user: User | null;
+  user: any | null;
   userProfile: UserProfile | null;
   loading: boolean;
   isConfigured: boolean;
   refreshUserProfile: () => Promise<void>;
   error: string | null;
-  // New API auth methods
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
+// Mock user data for demo
+const mockUserProfile: UserProfile = {
+  id: 'demo-user-123',
+  email: 'demo@crowseye.com',
+  displayName: 'Demo User',
+  firstName: 'Demo',
+  lastName: 'User',
+  avatar: '/images/avatar-placeholder.png',
+  plan: 'creator',
+  createdAt: '2024-01-01T00:00:00Z',
+  lastLoginAt: new Date().toISOString(),
+};
+
 const AuthContext = createContext<AuthContextType>({
   user: null,
   userProfile: null,
-  loading: true,
-  isConfigured: false,
+  loading: false,
+  isConfigured: true,
   refreshUserProfile: async () => {},
   error: null,
   login: async () => ({ success: false }),
@@ -44,50 +65,25 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(mockUserProfile);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isConfigured] = useState(() => isFirebaseConfigured());
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true); // Always authenticated in demo
 
-  // Check for existing token on mount
-  useEffect(() => {
-    const token = getAuthToken();
-    if (token) {
-      setIsAuthenticated(true);
-    }
-  }, []);
-
-  // API login function
+  // Mock login function
   const login = useCallback(async (email: string, password: string) => {
     try {
       setError(null);
       setLoading(true);
 
-      const response = await apiFetch(API_ENDPOINTS.LOGIN, {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-      });
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      if (response.success && response.data?.token) {
-        // Set token in API client
-        setAuthToken(response.data.token);
-        
-        // Set httpOnly cookie for token storage
-        document.cookie = `ce_token=${response.data.token}; path=/; httpOnly; secure; samesite=strict`;
-        
-        setIsAuthenticated(true);
-        
-        // If user data is returned, update profile
-        if (response.data.user) {
-          setUserProfile(response.data.user);
-        }
+      // Always succeed in demo mode
+      setIsAuthenticated(true);
+      setUserProfile(mockUserProfile);
 
-        return { success: true };
-      } else {
-        return { success: false, error: response.error || 'Login failed' };
-      }
+      return { success: true };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
       setError(errorMessage);
@@ -97,166 +93,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // API logout function
+  // Mock logout function
   const logout = useCallback(async () => {
-    try {
-      // Call API logout endpoint
-      await apiFetch(API_ENDPOINTS.LOGOUT, {
-        method: 'POST',
-      });
-    } catch (error) {
-      console.warn('API logout failed:', error);
-    } finally {
-      // Clear token regardless of API call success
-      setAuthToken(null);
-      
-      // Clear cookie
-      document.cookie = 'ce_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      
-      setIsAuthenticated(false);
-      setUserProfile(null);
-      setUser(null);
-    }
+    setIsAuthenticated(false);
+    setUserProfile(null);
   }, []);
 
-  // Refresh user profile function
+  // Mock refresh user profile function
   const refreshUserProfile = useCallback(async () => {
-    console.log('🔄 Refreshing user profile...');
-    
-    if (!user && !isAuthenticated) {
-      console.log('👤 No user to refresh profile for');
-      setUserProfile(null);
-      return;
-    }
-
-    try {
-      setError(null);
-      
-      // If we have Firebase user, use existing logic
-      if (user) {
-        console.log('📡 Fetching Firebase user profile for:', user.uid);
-        const profile = await getUserProfile(user.uid);
-        
-        if (profile) {
-          console.log('✅ Firebase user profile refreshed successfully');
-          setUserProfile(profile);
-        } else {
-          console.warn('⚠️ Firebase user profile not found during refresh');
-          setUserProfile(null);
-        }
-      }
-      // If we have API authentication, we could fetch profile from API here
-      // For now, we'll rely on the profile data from login
-      
-    } catch (error) {
-      console.error('❌ Error refreshing user profile:', error);
-      setError('Failed to load user profile');
-      setUserProfile(null);
-    }
-  }, [user, isAuthenticated]);
-
-  // Handle auth state changes
-  const handleAuthStateChange = useCallback(async (firebaseUser: User | null) => {
-    console.log('🔄 Auth state changed:', firebaseUser ? `User: ${firebaseUser.uid}` : 'No user');
-    
-    try {
-      setError(null);
-      setUser(firebaseUser);
-      
-      if (firebaseUser) {
-        console.log('👤 User authenticated, fetching profile...');
-        console.log('📧 User email:', firebaseUser.email);
-        console.log('🏷️ User display name:', firebaseUser.displayName);
-        
-        const profile = await getUserProfile(firebaseUser.uid);
-        
-        if (profile) {
-          console.log('✅ User profile loaded successfully');
-          setUserProfile(profile);
-        } else {
-          console.warn('⚠️ User profile not found, user may need to complete setup');
-          setUserProfile(null);
-        }
-      } else {
-        console.log('👤 User signed out, clearing profile');
-        // Only clear profile if we don't have API authentication
-        if (!isAuthenticated) {
-          setUserProfile(null);
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error handling auth state change:', error);
-      setError('Authentication error occurred');
-      if (!isAuthenticated) {
-        setUserProfile(null);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [isAuthenticated]);
-
-  // Set up Firebase auth listener
-  useEffect(() => {
-    console.log('🔧 AuthContext: Initializing authentication listener');
-    console.log('🔧 Firebase configured:', isConfigured);
-    
-    if (!isConfigured || !auth) {
-      console.log('🎭 AuthContext: Firebase not configured, running in demo mode');
-      setLoading(false);
-      setError(null);
-      
-      // In demo mode, simulate a logged-out state
-      setUser(null);
-      if (!isAuthenticated) {
-        setUserProfile(null);
-      }
-      return;
-    }
-
-    let unsubscribe: Unsubscribe;
-
-    try {
-      console.log('🔧 Setting up Firebase auth state listener');
-      unsubscribe = onAuthStateChanged(auth, handleAuthStateChange, (error) => {
-        console.error('❌ Firebase auth state listener error:', error);
-        setError('Authentication service error');
-        setLoading(false);
+    // In demo mode, just update the last login time
+    if (userProfile) {
+      setUserProfile({
+        ...userProfile,
+        lastLoginAt: new Date().toISOString(),
       });
-
-      console.log('✅ Firebase auth state listener established');
-    } catch (error) {
-      console.error('❌ Failed to set up auth state listener:', error);
-      setError('Failed to initialize authentication');
-      setLoading(false);
     }
-
-    // Cleanup function
-    return () => {
-      if (unsubscribe) {
-        console.log('🧹 Cleaning up Firebase auth state listener');
-        unsubscribe();
-      }
-    };
-  }, [isConfigured, handleAuthStateChange, isAuthenticated]);
-
-  // Debug logging for auth state
-  useEffect(() => {
-    console.log('🔧 AuthContext State Update:', {
-      hasUser: !!user,
-      hasProfile: !!userProfile,
-      loading,
-      isConfigured,
-      isAuthenticated,
-      error,
-      timestamp: new Date().toISOString()
-    });
-  }, [user, userProfile, loading, isConfigured, isAuthenticated, error]);
+  }, [userProfile]);
 
   const value: AuthContextType = {
-    user,
+    user: userProfile ? { uid: userProfile.id, email: userProfile.email } : null,
     userProfile,
     loading,
-    isConfigured,
+    isConfigured: true,
     refreshUserProfile,
     error,
     login,

@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUsageTracking } from '@/hooks/useUsageTracking';
-import { hasFeatureAccess } from '@/lib/subscription';
-import { type TrackableFeature } from '@/lib/usage-tracking';
 import { ExclamationTriangleIcon, LockClosedIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+
+// Mock types for demo
+type TrackableFeature = 'post_creation' | 'media_upload' | 'ai_generation' | 'analytics' | 'scheduling';
 
 interface FeatureGateProps {
   feature: TrackableFeature;
@@ -18,6 +18,12 @@ interface FeatureGateProps {
   className?: string;
 }
 
+// Mock function to check feature access based on tier
+const hasFeatureAccess = (userTier: string, requiredTier: string): boolean => {
+  const tierOrder = { 'free': 0, 'creator': 1, 'pro': 2 };
+  return tierOrder[userTier as keyof typeof tierOrder] >= tierOrder[requiredTier as keyof typeof tierOrder];
+};
+
 export const FeatureGate: React.FC<FeatureGateProps> = ({
   feature,
   requiredTier = 'creator',
@@ -28,10 +34,14 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
   className = '',
 }) => {
   const { user, userProfile } = useAuth();
-  const { checkFeature, logActivity } = useUsageTracking();
   const [hasAccess, setHasAccess] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [usageInfo, setUsageInfo] = useState<any>(null);
+  const [usageInfo] = useState({
+    used: 45,
+    limit: 100,
+    canUse: true,
+    resetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+  });
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -41,38 +51,18 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
         return;
       }
 
-      try {
-        // Check tier access
-        const userTier = userProfile.subscription?.tier || 'spark';
-        const tierAccess = hasFeatureAccess(userTier, requiredTier);
-        
-        // Check usage limits
-        const usage = await checkFeature(feature);
-        setUsageInfo(usage);
-
-        // User has access if they have the right tier AND haven't exceeded limits
-        const canAccess = tierAccess && usage.canUse;
-        setHasAccess(canAccess);
-
-                 // Log access attempt if tracking is enabled
-         if (trackOnAccess && canAccess) {
-           await logActivity(feature, 'access_granted', {
-             tier: userTier,
-             requiredTier,
-             usage: usage.used,
-             limit: usage.limit,
-           });
-         }
-      } catch (error) {
-        console.error('Error checking feature access:', error);
-        setHasAccess(false);
-      } finally {
-        setLoading(false);
-      }
+      // Check tier access
+      const userTier = userProfile.plan || 'free';
+      const tierAccess = hasFeatureAccess(userTier, requiredTier);
+      
+      // In demo mode, always grant access if user has the right tier
+      const canAccess = tierAccess && usageInfo.canUse;
+      setHasAccess(canAccess);
+      setLoading(false);
     };
 
     checkAccess();
-  }, [user, userProfile, feature, requiredTier, checkFeature, logActivity, trackOnAccess]);
+  }, [user, userProfile, feature, requiredTier, usageInfo.canUse]);
 
   if (loading) {
     return (
@@ -88,9 +78,9 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
       return <>{fallback}</>;
     }
 
-         // Default blocked UI
-     const currentTier = userProfile?.subscription?.tier || 'spark';
-     const tierAccess = hasFeatureAccess(currentTier, requiredTier);
+    // Default blocked UI
+    const currentTier = userProfile?.plan || 'free';
+    const tierAccess = hasFeatureAccess(currentTier, requiredTier);
 
     return (
       <div className={`relative ${className}`}>
@@ -132,7 +122,7 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
                     <div className="flex justify-between text-sm">
                       <span>Used:</span>
                       <span className="font-medium">
-                        {usageInfo.used} / {usageInfo.limit === 'unlimited' ? '∞' : usageInfo.limit}
+                        {usageInfo.used} / {typeof usageInfo.limit === 'number' ? usageInfo.limit : '∞'}
                       </span>
                     </div>
                     {usageInfo.resetDate && (
@@ -181,12 +171,12 @@ export const UsageIndicator: React.FC<UsageIndicatorProps> = ({
   className = '',
   showLabel = true,
 }) => {
-  const { featureUsage } = useUsageTracking();
-  const usage = featureUsage?.[feature];
-
-  if (!usage) {
-    return null;
-  }
+  // Mock usage data for demo
+  const usage = {
+    used: 45,
+    limit: 100,
+    percentage: 45
+  };
 
   const getColorClass = (percentage: number) => {
     if (percentage >= 90) return 'bg-red-500';
@@ -202,7 +192,7 @@ export const UsageIndicator: React.FC<UsageIndicatorProps> = ({
         <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
           <span className="capitalize">{feature.replace('_', ' ')}</span>
           <span>
-            {usage.used} / {usage.limit === 'unlimited' ? '∞' : usage.limit}
+            {usage.used} / {typeof usage.limit === 'number' ? usage.limit : '∞'}
           </span>
         </div>
       )}

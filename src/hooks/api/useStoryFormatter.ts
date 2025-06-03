@@ -1,47 +1,34 @@
-import { useCallback, useState } from 'react';
-import { apiFetch, API_ENDPOINTS, Story, ApiResponse } from '@/lib/api';
+import { useState, useEffect } from 'react';
 
-export interface UseStoryFormatterReturn {
-  formatStory: (fileId: string, caption: string) => Promise<ApiResponse<Story>>;
-  loading: boolean;
-  error: string | null;
+export interface Story {
+  id: string;
+  title: string;
+  content: string;
+  media: string[];
+  createdAt: string;
 }
 
-export const useStoryFormatter = (): UseStoryFormatterReturn => {
-  const [loading, setLoading] = useState(false);
+export function useStoryFormatter() {
+  const [stories, setStories] = useState<Story[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const formatStory = useCallback(async (fileId: string, caption: string): Promise<ApiResponse<Story>> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await apiFetch<Story>(API_ENDPOINTS.STORIES, {
-        method: 'POST',
-        body: JSON.stringify({ fileId, caption }),
-      });
-
-      if (!response.success) {
-        setError(response.error || 'Failed to format story');
+  useEffect(() => {
+    const mockStories: Story[] = [
+      {
+        id: '1',
+        title: 'Product Launch Story',
+        content: 'Exciting new product launch coming soon!',
+        media: ['/images/story1.jpg'],
+        createdAt: '2024-01-15T10:30:00Z'
       }
+    ];
 
-      return response;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to format story';
-      setError(errorMessage);
-      return {
-        success: false,
-        error: errorMessage,
-        data: undefined,
-      };
-    } finally {
+    setTimeout(() => {
+      setStories(mockStories);
       setLoading(false);
-    }
+    }, 300);
   }, []);
 
-  return {
-    formatStory,
-    loading,
-    error,
-  };
-}; 
+  return { stories, loading, error };
+} 

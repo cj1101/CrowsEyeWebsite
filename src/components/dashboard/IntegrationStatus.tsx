@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { CheckCircleIcon, XCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
-import { apiFetch } from '@/lib/api';
 
 interface IntegrationStatusProps {
   className?: string;
@@ -38,44 +37,21 @@ export default function IntegrationStatus({ className = '' }: IntegrationStatusP
   }, []);
 
   const checkIntegrationHealth = async () => {
-    try {
-      // Check API connectivity
-      const response = await apiFetch('/health');
-      setHealth(prev => ({
-        ...prev,
-        api: response.success ? 'connected' : 'disconnected',
-      }));
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Check authentication
-      try {
-        const authResponse = await apiFetch('/auth/me');
-        setHealth(prev => ({
-          ...prev,
-          auth: authResponse.success ? 'authenticated' : 'unauthenticated',
-        }));
-      } catch {
-        setHealth(prev => ({ ...prev, auth: 'unauthenticated' }));
-      }
-
-      // Check feature availability
-      const responseData = response.data as any;
-      const features = {
-        mediaLibrary: true, // Always available
-        galleries: true, // Always available
-        stories: true, // Always available
-        highlights: responseData?.features?.includes('highlights') || false,
-        analytics: responseData?.features?.includes('analytics') || false,
-      };
-
-      setHealth(prev => ({ ...prev, features }));
-    } catch (error) {
-      console.error('Health check failed:', error);
-      setHealth(prev => ({
-        ...prev,
-        api: 'disconnected',
-        auth: 'unauthenticated',
-      }));
-    }
+    // Mock healthy integration status for demo
+    setHealth({
+      api: 'connected',
+      auth: 'authenticated',
+      features: {
+        mediaLibrary: true,
+        galleries: true,
+        stories: true,
+        highlights: true,
+        analytics: true,
+      },
+    });
   };
 
   const getStatusIcon = (status: string) => {

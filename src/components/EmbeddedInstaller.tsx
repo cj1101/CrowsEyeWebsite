@@ -1,32 +1,56 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { 
   CheckCircleIcon,
   ComputerDesktopIcon,
   ExclamationTriangleIcon,
   ShieldCheckIcon,
-  CloudArrowDownIcon
+  CloudArrowDownIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline'
 
-export default function EmbeddedInstaller() {
-  const [downloadStarted, setDownloadStarted] = useState<string | null>(null)
-  const [userOS, setUserOS] = useState<'windows' | 'mac' | 'linux' | null>(null)
-  const [downloadStatus, setDownloadStatus] = useState<{[key: string]: 'checking' | 'available' | 'unavailable'}>({})
+interface InstallerMetadata {
+  version: string;
+  size: string;
+  lastUpdated: string;
+  features: string[];
+}
 
-  // Detect user's OS automatically
-  useEffect(() => {
-    const platform = navigator.platform.toLowerCase()
-    const userAgent = navigator.userAgent.toLowerCase()
-    
-    if (platform.includes('win') || userAgent.includes('windows')) {
-      setUserOS('windows')
-    } else if (platform.includes('mac') || userAgent.includes('mac')) {
-      setUserOS('mac')
-    } else if (platform.includes('linux') || userAgent.includes('linux')) {
-      setUserOS('linux')
+export default function EmbeddedInstaller() {
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloading' | 'success' | 'error'>('idle')
+  const [metadata] = useState<InstallerMetadata>({
+    version: '1.0.0',
+    size: '45.2 MB',
+    lastUpdated: '2024-01-15',
+    features: ['AI Content Generation', 'Multi-Platform Support', 'Media Library', 'Analytics Dashboard']
+  })
+
+  const handleDownload = async () => {
+    setIsDownloading(true)
+    setDownloadStatus('downloading')
+
+    try {
+      // Mock download process
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // Create a mock download link
+      const link = document.createElement('a')
+      link.href = '#'
+      link.download = 'CrowsEye-Setup.exe'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      setDownloadStatus('success')
+    } catch (error) {
+      console.error('Download failed:', error)
+      setDownloadStatus('error')
+    } finally {
+      setIsDownloading(false)
     }
-  }, [])
+  }
 
   const platformInfo = {
     windows: {
@@ -52,318 +76,85 @@ export default function EmbeddedInstaller() {
     }
   }
 
-  // Check if download URLs are available
-  useEffect(() => {
-    const checkDownloadAvailability = async () => {
-      const platforms = ['windows', 'mac', 'linux']
-      
-      for (const platform of platforms) {
-        setDownloadStatus(prev => ({ ...prev, [platform]: 'checking' }))
-        
-        try {
-          // Check if our secure download API is available
-          const response = await fetch(`/api/download/secure?type=metadata`)
-          
-          if (response.ok) {
-            setDownloadStatus(prev => ({ ...prev, [platform]: 'available' }))
-          } else {
-            setDownloadStatus(prev => ({ ...prev, [platform]: 'unavailable' }))
-          }
-        } catch (error) {
-          console.warn(`Failed to check download availability for ${platform}:`, error)
-          // Assume available if we can't check
-          setDownloadStatus(prev => ({ ...prev, [platform]: 'available' }))
-        }
-      }
-    }
-
-    checkDownloadAvailability()
-  }, [])
-
-  const handleSecureDownload = async (platform: 'windows' | 'mac' | 'linux') => {
-    const downloadKey = `web-installer-${platform}`
-    setDownloadStarted(downloadKey)
-    
-    try {
-      // Log download analytics
-      await fetch('/api/download/secure', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'web-installer',
-          userInfo: {
-            platform,
-            userAgent: navigator.userAgent,
-            timestamp: new Date().toISOString()
-          }
-        })
-      })
-
-      // For Windows, we have actual secure installers
-      if (platform === 'windows') {
-        // Download the web installer
-        window.open('/api/download/secure?type=web-installer', '_blank')
-      } else {
-        // For Mac/Linux, redirect to GitHub releases for now
-        const githubUrl = 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest'
-        window.open(githubUrl, '_blank')
-      }
-    } catch (error) {
-      console.warn('Secure download failed:', error)
-      // Fallback to GitHub releases
-      const githubUrl = 'https://github.com/cj1101/Crow-s-Eye-Marketing-Agent/releases/latest'
-      window.open(githubUrl, '_blank')
-    }
-
-    // Reset download state after 3 seconds
-    setTimeout(() => {
-      setDownloadStarted(null)
-    }, 3000)
-  }
-
-  const getDownloadButtonContent = (platform: 'windows' | 'mac' | 'linux') => {
-    const downloadKey = `web-installer-${platform}`
-    const status = downloadStatus[platform]
-    const isDownloading = downloadStarted === downloadKey
-    
-    if (isDownloading) {
-      return (
-        <div className="flex items-center justify-center gap-3">
-          <CheckCircleIcon className="h-5 w-5" />
-          Download Started!
-        </div>
-      )
-    }
-    
-    if (status === 'checking') {
-      return (
-        <div className="flex items-center justify-center gap-3">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-          Checking...
-        </div>
-      )
-    }
-    
-    if (status === 'unavailable') {
-      return (
-        <div className="flex items-center justify-center gap-3">
-          <ExclamationTriangleIcon className="h-4 w-4" />
-          View Releases
-        </div>
-      )
-    }
-    
-    return (
-      <div className="flex items-center justify-center gap-3">
-        <CloudArrowDownIcon className="h-5 w-5" />
-        Web Installer ({platformInfo[platform].size})
-      </div>
-    )
-  }
-
-  const getButtonStyles = (platform: 'windows' | 'mac' | 'linux', isRecommended: boolean = false) => {
-    const downloadKey = `web-installer-${platform}`
-    const status = downloadStatus[platform]
-    const isDownloading = downloadStarted === downloadKey
-    
-    if (isDownloading) {
-      return 'bg-green-700 text-green-200 cursor-not-allowed'
-    }
-    
-    if (status === 'checking') {
-      return 'bg-gray-600 text-gray-300 cursor-not-allowed'
-    }
-    
-    if (status === 'unavailable') {
-      return 'bg-yellow-600 text-yellow-100 hover:bg-yellow-500'
-    }
-    
-    if (isRecommended) {
-      return 'bg-gradient-to-r from-green-600 to-green-500 text-white hover:from-green-500 hover:to-green-400 hover:scale-105 hover:shadow-lg hover:shadow-green-500/25'
-    }
-    
-    return 'bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400'
-  }
-
   return (
-    <div className="bg-gradient-to-r from-primary-900/30 to-primary-600/30 rounded-2xl p-8">
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-white mb-4">
-          🚀 Download Crow's Eye Marketing Suite
-        </h2>
-        <p className="text-xl text-gray-300 mb-2">
-          Secure, virus-free installation - no technical knowledge required!
-        </p>
-        <p className="text-gray-400">
-          Complete marketing suite with AI capabilities - everything included, no additional software needed
+    <div className="bg-white rounded-lg shadow-lg p-6 max-w-md mx-auto">
+      <div className="text-center mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+          Download Crow's Eye Marketing Suite
+        </h3>
+        <p className="text-sm text-gray-600">
+          Get the full desktop application with all features
         </p>
       </div>
 
-      {/* Security Notice */}
-      <div className="bg-green-900/20 rounded-xl p-4 mb-8 border border-green-600/30">
-        <div className="flex items-center gap-3 mb-2">
-          <ShieldCheckIcon className="h-6 w-6 text-green-500" />
-          <h3 className="text-green-400 font-semibold">🔒 Secure & Safe Download</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-green-200">
-          <div>✅ Digitally verified and safe</div>
-          <div>✅ No malware or viruses</div>
-          <div>✅ Direct from official source</div>
-        </div>
-      </div>
-
-      {/* Recommended Download (Auto-detected OS) */}
-      {userOS && (
-        <div className="mb-8">
-          <div className="bg-gradient-to-r from-green-900/50 to-green-600/50 rounded-xl p-6 border border-green-500/30">
-            <div className="flex items-center justify-center mb-4">
-              <div className="bg-green-600/20 rounded-full p-3 mr-4">
-                <ComputerDesktopIcon className="h-8 w-8 text-green-400" />
-              </div>
-              <div className="text-center">
-                <h3 className="text-xl font-semibold text-white mb-1">
-                  Recommended for You
-                </h3>
-                <p className="text-green-300">
-                  We detected you're using {platformInfo[userOS].name}
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex justify-center">
-              <button
-                onClick={() => handleSecureDownload(userOS)}
-                disabled={downloadStarted?.includes(userOS) || downloadStatus[userOS] === 'checking'}
-                className={`py-3 px-6 rounded-xl font-bold transition-all duration-300 ${getButtonStyles(userOS, true)}`}
-              >
-                {getDownloadButtonContent(userOS)}
-              </button>
-            </div>
-            
-            <div className="mt-4 text-center">
-              <p className="text-green-200 text-sm">
-                💡 <strong>Web Installer:</strong> Small download that gets the latest version automatically
-              </p>
-            </div>
+      {metadata && (
+        <div className="mb-6 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Version:</span>
+            <span className="font-medium">{metadata.version}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Size:</span>
+            <span className="font-medium">{metadata.size}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Updated:</span>
+            <span className="font-medium">{metadata.lastUpdated}</span>
           </div>
         </div>
       )}
 
-      {/* All Platform Options */}
-      <div className="mb-8">
-        <h3 className="text-xl font-semibold text-white text-center mb-6">
-          Or choose your platform manually:
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {(Object.keys(platformInfo) as Array<keyof typeof platformInfo>).map((platform) => {
-            const info = platformInfo[platform]
-            const isRecommended = userOS === platform
-            
-            return (
-              <div
-                key={platform}
-                className={`bg-black/40 rounded-xl p-6 border transition-all duration-300 hover:scale-105 ${
-                  isRecommended 
-                    ? 'border-green-500/50 bg-green-900/20' 
-                    : 'border-gray-600/50 hover:border-primary-500/50'
-                }`}
-              >
-                <div className="text-center mb-4">
-                  <div className="text-4xl mb-2">{info.icon}</div>
-                  <h4 className="text-xl font-semibold text-white mb-1">
-                    {info.name}
-                  </h4>
-                  <p className="text-sm text-gray-400 mb-2">{info.description}</p>
-                </div>
-                
-                <div className="flex justify-center">
-                  <button
-                    onClick={() => handleSecureDownload(platform)}
-                    disabled={downloadStarted?.includes(platform) || downloadStatus[platform] === 'checking'}
-                    className={`w-full py-2 px-3 rounded-lg font-semibold text-sm transition-all duration-300 ${getButtonStyles(platform, isRecommended)}`}
-                  >
-                    {getDownloadButtonContent(platform)}
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+      <div className="mb-6">
+        <h4 className="text-sm font-medium text-gray-900 mb-2">Features included:</h4>
+        <ul className="text-xs text-gray-600 space-y-1">
+          {metadata?.features.map((feature, index) => (
+            <li key={index} className="flex items-center">
+              <CheckCircleIcon className="h-3 w-3 text-green-500 mr-2 flex-shrink-0" />
+              {feature}
+            </li>
+          ))}
+        </ul>
       </div>
 
-      {/* Installation Instructions */}
-      <div className="bg-black/30 rounded-xl p-6 mb-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          📋 Installation Instructions
-        </h3>
+      <button
+        onClick={handleDownload}
+        disabled={isDownloading}
+        className={`w-full flex items-center justify-center px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+          downloadStatus === 'success'
+            ? 'bg-green-600 text-white'
+            : downloadStatus === 'error'
+            ? 'bg-red-600 text-white'
+            : isDownloading
+            ? 'bg-gray-400 text-white cursor-not-allowed'
+            : 'bg-blue-600 text-white hover:bg-blue-700'
+        }`}
+      >
+        {downloadStatus === 'downloading' && (
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+        )}
+        {downloadStatus === 'success' && (
+          <CheckCircleIcon className="h-4 w-4 mr-2" />
+        )}
+        {downloadStatus === 'error' && (
+          <ExclamationTriangleIcon className="h-4 w-4 mr-2" />
+        )}
+        {downloadStatus === 'idle' && <ArrowDownTrayIcon className="h-4 w-4 mr-2" />}
         
-        <div className="bg-blue-600/20 rounded-lg p-4">
-          <h4 className="font-semibold text-blue-300 mb-3">🌐 Web Installer</h4>
-          <ol className="text-gray-300 space-y-1">
-            <li>1. Download the small web installer (~2MB)</li>
-            <li>2. Run the installer - it will download the latest version</li>
-            <li>3. If Windows shows a warning, click "More info" → "Run anyway"</li>
-            <li>4. Follow the installation wizard</li>
-            <li>5. Launch from Desktop - ready to use!</li>
-          </ol>
-        </div>
-        
-        <div className="mt-4 p-3 bg-yellow-900/20 rounded-lg border border-yellow-600/30">
-          <p className="text-yellow-200 text-sm">
-            <strong>⚠️ Security Notice:</strong> If your antivirus flags the installer, this is a false positive. 
-            Our installers are safe and verified. You can safely allow the installation or add an exception.
-          </p>
-        </div>
-      </div>
+        {downloadStatus === 'downloading' && 'Downloading...'}
+        {downloadStatus === 'success' && 'Download Complete!'}
+        {downloadStatus === 'error' && 'Download Failed'}
+        {downloadStatus === 'idle' && 'Download Now'}
+      </button>
 
-      {/* System Requirements */}
-      <div className="bg-green-900/20 rounded-xl p-6 border border-green-600/30">
-        <div className="flex items-start gap-3">
-          <CheckCircleIcon className="h-6 w-6 text-green-500 flex-shrink-0 mt-1" />
-          <div>
-            <h4 className="text-green-400 font-semibold mb-2">✨ Everything Included - No Setup Required!</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-green-200">
-              <div>
-                <strong>Windows:</strong> Windows 10 or 11, 4GB RAM, 500MB storage
-              </div>
-              <div>
-                <strong>macOS:</strong> macOS 10.15+, 4GB RAM, 500MB storage
-              </div>
-              <div>
-                <strong>Linux:</strong> Ubuntu 18.04+/equivalent, 4GB RAM, 500MB storage
-              </div>
-            </div>
-            <div className="mt-4 p-3 bg-green-800/30 rounded-lg">
-              <p className="text-green-300 text-sm font-medium mb-2">🎉 What's Included:</p>
-              <ul className="text-green-200 text-sm space-y-1">
-                <li>• Complete AI-powered marketing suite</li>
-                <li>• All required dependencies automatically installed</li>
-                <li>• Google's Gemini AI integration ready to use</li>
-                <li>• No Python, coding, or technical knowledge needed</li>
-                <li>• Works offline after initial setup</li>
-              </ul>
-            </div>
-            <p className="text-green-300 mt-3 text-sm">
-              💡 <strong>Need help?</strong> Check our{' '}
-              <a 
-                href="https://github.com/cj1101/CrowsEyeWebsite/wiki" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="underline hover:text-green-100"
-              >
-                installation guide
-              </a>{' '}
-              or{' '}
-              <a 
-                href="/contact" 
-                className="underline hover:text-green-100"
-              >
-                contact support
-              </a>.
-            </p>
-          </div>
-        </div>
+      {downloadStatus === 'error' && (
+        <p className="mt-2 text-xs text-red-600 text-center">
+          Download failed. Please try again or contact support.
+        </p>
+      )}
+
+      <div className="mt-4 text-xs text-gray-500 text-center">
+        <p>Compatible with Windows 10/11</p>
+        <p>Free download • No registration required</p>
       </div>
     </div>
   )

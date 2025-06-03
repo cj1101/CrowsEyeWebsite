@@ -1,65 +1,35 @@
-import { useCallback, useState } from 'react';
-import { apiFetch, API_ENDPOINTS, ApiResponse } from '@/lib/api';
+import { useState } from 'react';
 
-export interface AudioImportResult {
+export interface AudioTrack {
   id: string;
-  mediaId: string;
-  filename: string;
-  status: 'processing' | 'completed' | 'failed';
-  createdAt: string;
+  name: string;
+  duration: number;
+  url: string;
+  waveform?: number[];
 }
 
-export interface UseAudioImportReturn {
-  importAudio: (mediaId: string, file: File) => Promise<ApiResponse<AudioImportResult>>;
-  loading: boolean;
-  error: string | null;
-}
-
-export const useAudioImport = (): UseAudioImportReturn => {
+export function useAudioImport() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const importAudio = useCallback(async (
-    mediaId: string, 
-    file: File
-  ): Promise<ApiResponse<AudioImportResult>> => {
+  const importAudio = async (file: File): Promise<AudioTrack> => {
     setLoading(true);
     setError(null);
 
-    try {
-      const formData = new FormData();
-      formData.append('mediaId', mediaId);
-      formData.append('file', file);
-
-      const response = await apiFetch<AudioImportResult>(API_ENDPOINTS.AUDIO_IMPORT, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          // Don't set Content-Type for FormData, let browser set it with boundary
-        },
-      });
-
-      if (!response.success) {
-        setError(response.error || 'Failed to import audio');
-      }
-
-      return response;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to import audio';
-      setError(errorMessage);
-      return {
-        success: false,
-        error: errorMessage,
-        data: undefined,
-      };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  return {
-    importAudio,
-    loading,
-    error,
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const mockTrack: AudioTrack = {
+          id: Date.now().toString(),
+          name: file.name,
+          duration: 180, // 3 minutes
+          url: URL.createObjectURL(file),
+          waveform: Array.from({ length: 100 }, () => Math.random())
+        };
+        setLoading(false);
+        resolve(mockTrack);
+      }, 1000);
+    });
   };
-}; 
+
+  return { importAudio, loading, error };
+} 

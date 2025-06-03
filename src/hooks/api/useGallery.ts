@@ -1,47 +1,32 @@
-import { useCallback, useState } from 'react';
-import { apiFetch, API_ENDPOINTS, Gallery, ApiResponse } from '@/lib/api';
+import { useState, useEffect } from 'react';
 
-export interface UseGalleryReturn {
-  generateGallery: (prompt: string) => Promise<ApiResponse<Gallery>>;
-  loading: boolean;
-  error: string | null;
+export interface GalleryItem {
+  id: string;
+  title: string;
+  images: string[];
+  createdAt: string;
 }
 
-export const useGallery = (): UseGalleryReturn => {
-  const [loading, setLoading] = useState(false);
+export function useGallery() {
+  const [galleries, setGalleries] = useState<GalleryItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const generateGallery = useCallback(async (prompt: string): Promise<ApiResponse<Gallery>> => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await apiFetch<Gallery>(API_ENDPOINTS.GALLERY, {
-        method: 'POST',
-        body: JSON.stringify({ prompt }),
-      });
-
-      if (!response.success) {
-        setError(response.error || 'Failed to generate gallery');
+  useEffect(() => {
+    const mockGalleries: GalleryItem[] = [
+      {
+        id: '1',
+        title: 'Product Showcase',
+        images: ['/images/placeholder-1.jpg', '/images/placeholder-2.jpg'],
+        createdAt: '2024-01-15T10:30:00Z'
       }
+    ];
 
-      return response;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to generate gallery';
-      setError(errorMessage);
-      return {
-        success: false,
-        error: errorMessage,
-        data: undefined,
-      };
-    } finally {
+    setTimeout(() => {
+      setGalleries(mockGalleries);
       setLoading(false);
-    }
+    }, 300);
   }, []);
 
-  return {
-    generateGallery,
-    loading,
-    error,
-  };
-}; 
+  return { galleries, loading, error };
+} 

@@ -1,71 +1,83 @@
-import { useCallback } from 'react';
-import { useApiSWR, apiFetch, API_ENDPOINTS, MediaItem, ApiResponse } from '@/lib/api';
-import { mutate } from 'swr';
+import { useState, useEffect } from 'react';
 
-export interface UseMediaLibraryReturn {
-  media: MediaItem[] | undefined;
-  loading: boolean;
-  error: Error | null;
-  uploadMedia: (file: File, metadata?: Record<string, any>) => Promise<ApiResponse<MediaItem>>;
-  deleteMedia: (mediaId: string) => Promise<ApiResponse<void>>;
-  refreshMedia: () => Promise<void>;
+export interface MediaItem {
+  id: string;
+  name: string;
+  type: 'image' | 'video' | 'audio';
+  url: string;
+  thumbnail?: string;
+  size: number;
+  createdAt: string;
+  tags: string[];
 }
 
-export const useMediaLibrary = (): UseMediaLibraryReturn => {
-  const { data: media, error, isLoading: loading, mutate: swrMutate } = useApiSWR<MediaItem[]>(
-    API_ENDPOINTS.MEDIA
-  );
+export function useMediaLibrary() {
+  const [media, setMedia] = useState<MediaItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const refreshMedia = useCallback(async (): Promise<void> => {
-    await swrMutate();
-  }, [swrMutate]);
-
-  const uploadMedia = useCallback(async (
-    file: File, 
-    metadata?: Record<string, any>
-  ): Promise<ApiResponse<MediaItem>> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    if (metadata) {
-      formData.append('metadata', JSON.stringify(metadata));
-    }
-
-    const response = await apiFetch<MediaItem>(API_ENDPOINTS.MEDIA_UPLOAD, {
-      method: 'POST',
-      body: formData,
-      headers: {
-        // Don't set Content-Type for FormData, let browser set it with boundary
+  useEffect(() => {
+    // Mock media data for static site
+    const mockMedia: MediaItem[] = [
+      {
+        id: '1',
+        name: 'product-hero.jpg',
+        type: 'image',
+        url: '/images/placeholder-image.jpg',
+        size: 245760,
+        createdAt: '2024-01-15T10:30:00Z',
+        tags: ['product', 'hero', 'marketing']
       },
-    });
+      {
+        id: '2',
+        name: 'demo-video.mp4',
+        type: 'video',
+        url: '/videos/placeholder-video.mp4',
+        thumbnail: '/images/video-thumb.jpg',
+        size: 15728640,
+        createdAt: '2024-01-14T14:20:00Z',
+        tags: ['demo', 'tutorial', 'video']
+      },
+      {
+        id: '3',
+        name: 'background-music.mp3',
+        type: 'audio',
+        url: '/audio/placeholder-audio.mp3',
+        size: 3145728,
+        createdAt: '2024-01-13T09:15:00Z',
+        tags: ['music', 'background', 'audio']
+      }
+    ];
 
-    // Refresh the media list if upload was successful
-    if (response.success) {
-      mutate(API_ENDPOINTS.MEDIA);
-    }
-
-    return response;
+    setTimeout(() => {
+      setMedia(mockMedia);
+      setLoading(false);
+    }, 300);
   }, []);
 
-  const deleteMedia = useCallback(async (mediaId: string): Promise<ApiResponse<void>> => {
-    const response = await apiFetch<void>(`${API_ENDPOINTS.MEDIA}/${mediaId}`, {
-      method: 'DELETE',
+  const uploadMedia = async (file: File) => {
+    // Mock upload functionality
+    return new Promise<MediaItem>((resolve) => {
+      setTimeout(() => {
+        const newItem: MediaItem = {
+          id: Date.now().toString(),
+          name: file.name,
+          type: file.type.startsWith('image/') ? 'image' : 
+                file.type.startsWith('video/') ? 'video' : 'audio',
+          url: URL.createObjectURL(file),
+          size: file.size,
+          createdAt: new Date().toISOString(),
+          tags: []
+        };
+        setMedia(prev => [newItem, ...prev]);
+        resolve(newItem);
+      }, 1000);
     });
-
-    // Refresh the media list if deletion was successful
-    if (response.success) {
-      mutate(API_ENDPOINTS.MEDIA);
-    }
-
-    return response;
-  }, []);
-
-  return {
-    media,
-    loading,
-    error,
-    uploadMedia,
-    deleteMedia,
-    refreshMedia,
   };
-}; 
+
+  const deleteMedia = async (id: string) => {
+    setMedia(prev => prev.filter(item => item.id !== id));
+  };
+
+  return { media, loading, error, uploadMedia, deleteMedia };
+} 
