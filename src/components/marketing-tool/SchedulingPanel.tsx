@@ -32,11 +32,9 @@ export default function SchedulingPanel() {
   const loadPosts = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/marketing-tool/posts?userId=demo-user');
-      if (response.ok) {
-        const data = await response.json();
-        setPosts(data.posts);
-      }
+      const { postsStore } = await import('@/lib/marketing-tool-store');
+      const allPosts = postsStore.getPosts();
+      setPosts(allPosts);
     } catch (error) {
       console.error('Error loading posts:', error);
     } finally {
@@ -50,13 +48,10 @@ export default function SchedulingPanel() {
     }
 
     try {
-      const response = await fetch('/api/marketing-tool/posts', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId, userId: 'demo-user' })
-      });
-
-      if (response.ok) {
+      const { postsStore } = await import('@/lib/marketing-tool-store');
+      const success = postsStore.deletePost(postId);
+      
+      if (success) {
         setPosts(prev => prev.filter(post => post.id !== postId));
       } else {
         alert('Failed to delete post');

@@ -71,11 +71,9 @@ export default function PostCreator() {
 
   const loadSettings = async () => {
     try {
-      const response = await fetch('/api/marketing-tool/settings?userId=demo-user');
-      if (response.ok) {
-        const data = await response.json();
-        setSettings(data.settings);
-      }
+      const { settingsStore } = await import('@/lib/marketing-tool-store');
+      const userSettings = settingsStore.getSettings();
+      setSettings(userSettings);
     } catch (error) {
       console.error('Error loading settings:', error);
     }
@@ -104,27 +102,16 @@ export default function PostCreator() {
     setIsGenerating(true);
     
     try {
-      const response = await fetch('/api/marketing-tool/generate-content', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt,
-          platform: enabledPlatformIds[0], // Use first enabled platform
-          tone,
-          apiKeys: settings.apiKeys
-        })
-      });
+      // Simulate API delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      if (response.ok) {
-        const data = await response.json();
-        setContent(data.content);
-        setPrompt(''); // Clear prompt after successful generation
-      } else {
-        alert('Failed to generate content. Please try again.');
-      }
+      const { aiStore } = await import('@/lib/marketing-tool-store');
+      const content = aiStore.generateContent(prompt, enabledPlatformIds[0], tone);
+      setContent(content);
+      setPrompt(''); // Clear prompt after successful generation
     } catch (error) {
       console.error('Error generating content:', error);
-      alert('Error generating content. Please check your connection and try again.');
+      alert('Error generating content. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -143,23 +130,16 @@ export default function PostCreator() {
     }
 
     try {
-      const response = await fetch('/api/marketing-tool/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: content + (hashtags ? `\n\n${hashtags}` : ''),
-          platform: enabledPlatformIds[0],
-          status: 'draft',
-          userId: 'demo-user'
-        })
+      const { postsStore } = await import('@/lib/marketing-tool-store');
+      postsStore.addPost({
+        content: content + (hashtags ? `\n\n${hashtags}` : ''),
+        platform: enabledPlatformIds[0],
+        status: 'draft',
+        userId: 'demo-user'
       });
 
-      if (response.ok) {
-        alert('Draft saved successfully!');
-        clearForm();
-      } else {
-        alert('Failed to save draft.');
-      }
+      alert('Draft saved successfully!');
+      clearForm();
     } catch (error) {
       console.error('Error saving draft:', error);
       alert('Error saving draft.');
@@ -189,24 +169,17 @@ export default function PostCreator() {
     }
 
     try {
-      const response = await fetch('/api/marketing-tool/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: content + (hashtags ? `\n\n${hashtags}` : ''),
-          platform: enabledPlatformIds[0],
-          status: 'scheduled',
-          scheduledTime,
-          userId: 'demo-user'
-        })
+      const { postsStore } = await import('@/lib/marketing-tool-store');
+      postsStore.addPost({
+        content: content + (hashtags ? `\n\n${hashtags}` : ''),
+        platform: enabledPlatformIds[0],
+        status: 'scheduled',
+        scheduledTime,
+        userId: 'demo-user'
       });
 
-      if (response.ok) {
-        alert('Post scheduled successfully!');
-        clearForm();
-      } else {
-        alert('Failed to schedule post.');
-      }
+      alert('Post scheduled successfully!');
+      clearForm();
     } catch (error) {
       console.error('Error scheduling post:', error);
       alert('Error scheduling post.');

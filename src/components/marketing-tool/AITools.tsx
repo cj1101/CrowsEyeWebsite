@@ -79,11 +79,9 @@ export default function AITools() {
 
   const loadSettings = async () => {
     try {
-      const response = await fetch('/api/marketing-tool/settings?userId=demo-user');
-      if (response.ok) {
-        const data = await response.json();
-        setSettings(data.settings);
-      }
+      const { settingsStore } = await import('@/lib/marketing-tool-store');
+      const userSettings = settingsStore.getSettings();
+      setSettings(userSettings);
     } catch (error) {
       console.error('Error loading settings:', error);
     }
@@ -91,21 +89,10 @@ export default function AITools() {
 
   const saveSettings = async (newSettings: Partial<UserSettings>) => {
     try {
-      const response = await fetch('/api/marketing-tool/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: 'demo-user',
-          ...newSettings
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSettings(data.settings);
-        return true;
-      }
-      return false;
+      const { settingsStore } = await import('@/lib/marketing-tool-store');
+      const updatedSettings = settingsStore.updateSettings(newSettings);
+      setSettings(updatedSettings);
+      return true;
     } catch (error) {
       console.error('Error saving settings:', error);
       return false;
@@ -122,26 +109,15 @@ export default function AITools() {
     setGeneratedContent('🤖 Generating content... Please wait...');
 
     try {
-      const response = await fetch('/api/marketing-tool/generate-content', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt,
-          platform,
-          tone,
-          apiKeys: settings.apiKeys
-        })
-      });
+      // Simulate API delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      if (response.ok) {
-        const data = await response.json();
-        setGeneratedContent(data.content);
-      } else {
-        setGeneratedContent('Failed to generate content. Please try again.');
-      }
+      const { aiStore } = await import('@/lib/marketing-tool-store');
+      const content = aiStore.generateContent(prompt, platform, tone);
+      setGeneratedContent(content);
     } catch (error) {
       console.error('Error generating content:', error);
-      setGeneratedContent('Error generating content. Please check your connection and try again.');
+      setGeneratedContent('Error generating content. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -154,24 +130,17 @@ export default function AITools() {
     }
 
     try {
-      const response = await fetch('/api/marketing-tool/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: generatedContent,
-          platform,
-          status: 'draft',
-          userId: 'demo-user'
-        })
+      const { postsStore } = await import('@/lib/marketing-tool-store');
+      postsStore.addPost({
+        content: generatedContent,
+        platform,
+        status: 'draft',
+        userId: 'demo-user'
       });
 
-      if (response.ok) {
-        alert('Draft saved successfully!');
-        setGeneratedContent('');
-        setPrompt('');
-      } else {
-        alert('Failed to save draft.');
-      }
+      alert('Draft saved successfully!');
+      setGeneratedContent('');
+      setPrompt('');
     } catch (error) {
       console.error('Error saving draft:', error);
       alert('Error saving draft.');
@@ -188,25 +157,18 @@ export default function AITools() {
       const scheduledTime = new Date();
       scheduledTime.setHours(scheduledTime.getHours() + 1); // Schedule for 1 hour from now
 
-      const response = await fetch('/api/marketing-tool/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: generatedContent,
-          platform,
-          status: 'scheduled',
-          scheduledTime: scheduledTime.toISOString(),
-          userId: 'demo-user'
-        })
+      const { postsStore } = await import('@/lib/marketing-tool-store');
+      postsStore.addPost({
+        content: generatedContent,
+        platform,
+        status: 'scheduled',
+        scheduledTime: scheduledTime.toISOString(),
+        userId: 'demo-user'
       });
 
-      if (response.ok) {
-        alert('Post scheduled successfully!');
-        setGeneratedContent('');
-        setPrompt('');
-      } else {
-        alert('Failed to schedule post.');
-      }
+      alert('Post scheduled successfully!');
+      setGeneratedContent('');
+      setPrompt('');
     } catch (error) {
       console.error('Error scheduling post:', error);
       alert('Error scheduling post.');

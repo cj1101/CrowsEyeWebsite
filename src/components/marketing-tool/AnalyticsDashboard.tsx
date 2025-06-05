@@ -41,11 +41,9 @@ export default function AnalyticsDashboard() {
   const loadAnalytics = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/marketing-tool/analytics?userId=demo-user');
-      if (response.ok) {
-        const data = await response.json();
-        setAnalytics(data.analytics);
-      }
+      const { analyticsStore } = await import('@/lib/marketing-tool-store');
+      const analyticsData = analyticsStore.getAnalytics();
+      setAnalytics(analyticsData);
     } catch (error) {
       console.error('Error loading analytics:', error);
     } finally {
