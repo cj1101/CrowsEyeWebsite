@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { Bars3Icon, XMarkIcon, UserIcon } from '@heroicons/react/24/outline'
+import { Bars3Icon, XMarkIcon, UserIcon, ChevronDownIcon, ArrowRightOnRectangleIcon, CreditCardIcon } from '@heroicons/react/24/outline'
 import { Eye } from 'lucide-react'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/contexts/AuthContext'
@@ -10,8 +10,10 @@ import LanguageSelector from './LanguageSelector'
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false)
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   const { t } = useI18n()
-  const { user, loading } = useAuth()
+  const { user, logout, loading } = useAuth()
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   const navigation = [
     { name: t('nav.home'), href: '/' },
@@ -27,6 +29,31 @@ const Navigation = () => {
     ...navigation,
     { name: 'Marketing Tool', href: '/marketing-tool' }
   ] : navigation
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsUserDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      setIsUserDropdownOpen(false)
+      // Optionally redirect to home page
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Logout failed:', error)
+    }
+  }
 
   return (
     <nav className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-primary-600/30">
@@ -70,21 +97,56 @@ const Navigation = () => {
             {!loading && (
               <>
                 {user ? (
-                  <Link
-                    href="/account"
-                    className="flex items-center space-x-2 text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-                  >
-                    {user.photoURL ? (
-                      <img
-                        src={user.photoURL}
-                        alt="Profile"
-                        className="h-6 w-6 rounded-full"
-                      />
-                    ) : (
-                      <UserIcon className="h-5 w-5" />
+                  <div className="relative" ref={dropdownRef}>
+                    <button
+                      onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                      className="flex items-center space-x-2 text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                    >
+                      {user.photoURL ? (
+                        <img
+                          src={user.photoURL}
+                          alt="Profile"
+                          className="h-6 w-6 rounded-full"
+                        />
+                      ) : (
+                        <UserIcon className="h-5 w-5" />
+                      )}
+                      <span>Account</span>
+                      <ChevronDownIcon className="h-4 w-4" />
+                    </button>
+
+                    {/* User Dropdown */}
+                    {isUserDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg border border-gray-700">
+                        <div className="py-1">
+                          <Link
+                            href="/account"
+                            className="flex items-center px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700"
+                            onClick={() => setIsUserDropdownOpen(false)}
+                          >
+                            <UserIcon className="h-4 w-4 mr-2" />
+                            Account Settings
+                          </Link>
+                          <Link
+                            href="/account/subscription"
+                            className="flex items-center px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700"
+                            onClick={() => setIsUserDropdownOpen(false)}
+                          >
+                            <CreditCardIcon className="h-4 w-4 mr-2" />
+                            Subscription
+                          </Link>
+                          <hr className="my-1 border-gray-700" />
+                          <button
+                            onClick={handleLogout}
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700"
+                          >
+                            <ArrowRightOnRectangleIcon className="h-4 w-4 mr-2" />
+                            Logout
+                          </button>
+                        </div>
+                      </div>
                     )}
-                    <span>Account</span>
-                  </Link>
+                  </div>
                 ) : (
                   <>
                     <Link
@@ -155,22 +217,41 @@ const Navigation = () => {
               {!loading && (
                 <>
                   {user ? (
-                    <Link
-                      href="/account"
-                      className="flex items-center space-x-2 text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      {user.photoURL ? (
-                        <img
-                          src={user.photoURL}
-                          alt="Profile"
-                          className="h-6 w-6 rounded-full"
-                        />
-                      ) : (
-                        <UserIcon className="h-5 w-5" />
-                      )}
-                      <span>Account</span>
-                    </Link>
+                    <>
+                      <Link
+                        href="/account"
+                        className="flex items-center space-x-2 text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        {user.photoURL ? (
+                          <img
+                            src={user.photoURL}
+                            alt="Profile"
+                            className="h-6 w-6 rounded-full"
+                          />
+                        ) : (
+                          <UserIcon className="h-5 w-5" />
+                        )}
+                        <span>Account Settings</span>
+                      </Link>
+                      <Link
+                        href="/account/subscription"
+                        className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        Subscription
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setIsOpen(false)
+                          handleLogout()
+                        }}
+                        className="flex items-center space-x-2 text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium w-full text-left"
+                      >
+                        <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                        <span>Logout</span>
+                      </button>
+                    </>
                   ) : (
                     <>
                       <Link

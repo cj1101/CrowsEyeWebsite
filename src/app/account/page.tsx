@@ -1,14 +1,17 @@
 'use client';
 
 import React, { useState } from 'react';
-import { UserCircleIcon, CogIcon, CreditCardIcon } from '@heroicons/react/24/outline';
+import { UserCircleIcon, CogIcon, CreditCardIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function AccountPage() {
+  const { userProfile, logout } = useAuth();
+  
   const [user] = useState({
-    name: 'Demo User',
-    email: 'demo@example.com',
-    plan: 'Free',
-    joinDate: '2024-01-01'
+    name: userProfile?.displayName || 'Demo User',
+    email: userProfile?.email || 'demo@example.com',
+    plan: userProfile?.plan || 'Free',
+    joinDate: userProfile?.createdAt || '2024-01-01'
   });
 
   const [usage] = useState({
@@ -23,10 +26,31 @@ export default function AccountPage() {
     alert('Subscription management would open here');
   };
 
+  const handleLogout = async () => {
+    if (confirm('Are you sure you want to logout?')) {
+      try {
+        await logout();
+        window.location.href = '/';
+      } catch (error) {
+        console.error('Logout failed:', error);
+        alert('Logout failed. Please try again.');
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-8">Account Settings</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Account Settings</h1>
+          <button
+            onClick={handleLogout}
+            className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            <ArrowRightOnRectangleIcon className="h-5 w-5" />
+            <span>Logout</span>
+          </button>
+        </div>
 
         {/* User Profile */}
         <div className="bg-gray-800 rounded-lg p-6 mb-6">
