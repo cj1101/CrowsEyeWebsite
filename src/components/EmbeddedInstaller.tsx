@@ -14,28 +14,64 @@ interface InstallerMetadata {
   features: string[];
 }
 
+interface PlatformOption {
+  name: string;
+  icon: string;
+  downloadUrl: string;
+  size: string;
+  description: string;
+}
+
 export default function EmbeddedInstaller() {
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloading' | 'success' | 'error'>('idle')
+  const [selectedPlatform, setSelectedPlatform] = useState<string>('windows')
+  
   const [metadata] = useState<InstallerMetadata>({
-    version: '1.0.0',
+    version: '1.1.0',
     size: '45.2 MB',
     lastUpdated: '2024-01-15',
-    features: ['AI Content Generation', 'Multi-Platform Support', 'Media Library', 'Analytics Dashboard']
+    features: ['AI Content Generation', 'Multi-Platform Support', 'Media Library', 'Analytics Dashboard', 'VEO AI Video Generation', 'Smart Gallery Generator']
   })
+
+  const platforms: PlatformOption[] = [
+    {
+      name: 'Windows',
+      icon: '🪟',
+      downloadUrl: '/downloads/desktop/CrowsEye_Marketing_Suite_1.0.0_Windows.zip',
+      size: '45.2 MB',
+      description: 'Windows 10/11 (64-bit)'
+    },
+    {
+      name: 'macOS',
+      icon: '🍎',
+      downloadUrl: '/downloads/desktop/CrowsEye_Marketing_Suite_1.0.0_macOS.zip',
+      size: '42.8 MB',
+      description: 'macOS 10.15+ (Intel & Apple Silicon)'
+    },
+    {
+      name: 'Linux',
+      icon: '🐧',
+      downloadUrl: '/downloads/desktop/CrowsEye_Marketing_Suite_1.0.0_Linux.zip',
+      size: '41.5 MB',
+      description: 'Ubuntu 18.04+ / Debian 10+'
+    }
+  ]
 
   const handleDownload = async () => {
     setIsDownloading(true)
     setDownloadStatus('downloading')
 
     try {
-      // Mock download process
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Create a mock download link
+      const selectedPlatformData = platforms.find(p => p.name.toLowerCase() === selectedPlatform)
+      if (!selectedPlatformData) {
+        throw new Error('Platform not found')
+      }
+
+      // Create actual download link
       const link = document.createElement('a')
-      link.href = '#'
-      link.download = 'CrowsEye-Setup.exe'
+      link.href = selectedPlatformData.downloadUrl
+      link.download = `CrowsEye_Marketing_Suite_${selectedPlatformData.name}.zip`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -49,8 +85,10 @@ export default function EmbeddedInstaller() {
     }
   }
 
+  const selectedPlatformData = platforms.find(p => p.name.toLowerCase() === selectedPlatform)
+
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 max-w-md mx-auto">
+    <div className="bg-white rounded-lg shadow-lg p-6 max-w-lg mx-auto">
       <div className="text-center mb-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
           Download Crow's Eye Marketing Suite
@@ -60,19 +98,46 @@ export default function EmbeddedInstaller() {
         </p>
       </div>
 
-      {metadata && (
-        <div className="mb-6 space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Version:</span>
-            <span className="font-medium">{metadata.version}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Size:</span>
-            <span className="font-medium">{metadata.size}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Updated:</span>
-            <span className="font-medium">{metadata.lastUpdated}</span>
+      {/* Platform Selection */}
+      <div className="mb-6">
+        <h4 className="text-sm font-medium text-gray-900 mb-3">Choose your platform:</h4>
+        <div className="grid grid-cols-3 gap-2">
+          {platforms.map((platform) => (
+            <button
+              key={platform.name.toLowerCase()}
+              onClick={() => setSelectedPlatform(platform.name.toLowerCase())}
+              className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all ${
+                selectedPlatform === platform.name.toLowerCase()
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <span className="text-2xl mb-1">{platform.icon}</span>
+              <span className="text-xs font-medium text-gray-700">{platform.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {selectedPlatformData && (
+        <div className="mb-6 bg-gray-50 rounded-lg p-4">
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Platform:</span>
+              <span className="font-medium">{selectedPlatformData.description}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Version:</span>
+              <span className="font-medium">{metadata.version}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Size:</span>
+              <span className="font-medium">{selectedPlatformData.size}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Updated:</span>
+              <span className="font-medium">{metadata.lastUpdated}</span>
+            </div>
           </div>
         </div>
       )}
@@ -116,7 +181,7 @@ export default function EmbeddedInstaller() {
         {downloadStatus === 'downloading' && 'Downloading...'}
         {downloadStatus === 'success' && 'Download Complete!'}
         {downloadStatus === 'error' && 'Download Failed'}
-        {downloadStatus === 'idle' && 'Download Now'}
+        {downloadStatus === 'idle' && `Download for ${selectedPlatformData?.name}`}
       </button>
 
       {downloadStatus === 'error' && (
@@ -126,7 +191,7 @@ export default function EmbeddedInstaller() {
       )}
 
       <div className="mt-4 text-xs text-gray-500 text-center">
-        <p>Compatible with Windows 10/11</p>
+        <p>Compatible with Windows, macOS, and Linux</p>
         <p>Free download • No registration required</p>
       </div>
     </div>
