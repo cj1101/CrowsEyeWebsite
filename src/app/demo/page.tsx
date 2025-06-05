@@ -38,35 +38,19 @@ export default function DemoPage() {
     })
   }
 
-  const analyzeMedia = async (mediaFile: MediaFile) => {
+  const analyzeAndGenerate = async (mediaFile: MediaFile, prompt?: string) => {
     setIsAnalyzing(true)
+    setIsGenerating(true)
     try {
-      // Simulate AI analysis
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // First analyze the media
+      await new Promise(resolve => setTimeout(resolve, 1500))
       
       const mockAnalysis = mediaFile.type === 'image' 
         ? "This image shows a vibrant outdoor scene with natural lighting. The composition suggests a lifestyle or travel theme with warm, inviting colors. Perfect for engagement-focused social media content."
         : "This video contains dynamic movement and engaging visual elements. The pacing and content style are well-suited for social media platforms, particularly for storytelling or promotional content."
       
-      setMediaFiles(prev => 
-        prev.map(file => 
-          file.id === mediaFile.id 
-            ? { ...file, analysis: mockAnalysis }
-            : file
-        )
-      )
-    } catch (error) {
-      console.error('Analysis failed:', error)
-    } finally {
-      setIsAnalyzing(false)
-    }
-  }
-
-  const generateCaption = async (mediaFile: MediaFile, prompt?: string) => {
-    setIsGenerating(true)
-    try {
-      // Simulate AI caption generation
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // Then generate caption based on analysis
+      await new Promise(resolve => setTimeout(resolve, 1000))
       
       const mockCaptions = [
         "✨ Embracing the beauty of everyday moments! What's inspiring you today? #lifestyle #inspiration #authentic",
@@ -82,14 +66,15 @@ export default function DemoPage() {
       setMediaFiles(prev => 
         prev.map(file => 
           file.id === mediaFile.id 
-            ? { ...file, generatedCaption: caption }
+            ? { ...file, analysis: mockAnalysis, generatedCaption: caption }
             : file
         )
       )
       setGeneratedContent(caption)
     } catch (error) {
-      console.error('Caption generation failed:', error)
+      console.error('AI processing failed:', error)
     } finally {
+      setIsAnalyzing(false)
       setIsGenerating(false)
     }
   }
@@ -113,7 +98,7 @@ export default function DemoPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold gradient-text">
+              <h1 className="text-2xl md:text-3xl font-bold text-white">
                 Crow's Eye Demo
               </h1>
               <p className="text-gray-400 mt-1">
@@ -217,39 +202,22 @@ export default function DemoPage() {
                     )}
                   </div>
 
-                  <div className="mt-4 flex gap-3">
+                  <div className="mt-4">
                     <button
-                      onClick={() => analyzeMedia(selectedFile)}
-                      disabled={isAnalyzing}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                      onClick={() => analyzeAndGenerate(selectedFile, customPrompt)}
+                      disabled={isAnalyzing || isGenerating}
+                      className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                     >
-                      {isAnalyzing ? (
+                      {isAnalyzing || isGenerating ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                          Analyzing...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-4 w-4" />
-                          AI Analyze
-                        </>
-                      )}
-                    </button>
-                    
-                    <button
-                      onClick={() => generateCaption(selectedFile, customPrompt)}
-                      disabled={isGenerating}
-                      className="flex-1 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                    >
-                      {isGenerating ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                          Generating...
+                          {isAnalyzing && !isGenerating ? 'Analyzing...' : 'Generating Content...'}
                         </>
                       ) : (
                         <>
                           <Wand2 className="h-4 w-4" />
-                          Generate Caption
+                          <Sparkles className="h-4 w-4" />
+                          AI Analyze & Generate
                         </>
                       )}
                     </button>

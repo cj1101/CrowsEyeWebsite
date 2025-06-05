@@ -14,7 +14,8 @@ import {
   UserGroupIcon,
   PlusIcon,
   CloudArrowUpIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  ComputerDesktopIcon
 } from '@heroicons/react/24/outline';
 
 // Import sub-components
@@ -25,7 +26,7 @@ import AnalyticsDashboard from './AnalyticsDashboard';
 import AITools from './AITools';
 import Settings from './Settings';
 
-type TabType = 'dashboard' | 'library' | 'create' | 'schedule' | 'analytics' | 'ai-tools' | 'settings';
+type TabType = 'dashboard' | 'library' | 'create' | 'schedule' | 'analytics' | 'ai-tools' | 'desktop' | 'settings';
 
 interface UserStats {
   totalPosts: number;
@@ -92,6 +93,7 @@ export default function MarketingToolDashboard() {
     { id: 'schedule', name: 'Schedule', icon: CalendarIcon },
     { id: 'analytics', name: 'Analytics', icon: ChartBarIcon },
     { id: 'ai-tools', name: 'AI Tools', icon: SparklesIcon },
+    { id: 'desktop', name: 'Desktop App', icon: ComputerDesktopIcon },
     { id: 'settings', name: 'Settings', icon: CogIcon },
   ];
 
@@ -109,6 +111,8 @@ export default function MarketingToolDashboard() {
         return <AnalyticsDashboard />;
       case 'ai-tools':
         return <AITools />;
+      case 'desktop':
+        return <DesktopApp />;
       case 'settings':
         return <Settings />;
       default:
@@ -200,6 +204,148 @@ export default function MarketingToolDashboard() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Desktop App Component
+function DesktopApp() {
+  const handleDownload = (platform: string) => {
+    // Import and use the download utility
+    import('@/utils/desktopDownloads').then(({ downloadDesktopApp }) => {
+      downloadDesktopApp(platform);
+    }).catch(() => {
+      // Fallback if import fails
+      alert(`Desktop app download for ${platform} will be available soon!`);
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold text-white">Desktop Application</h2>
+      </div>
+      
+      <div className="bg-gradient-to-r from-primary-600 to-primary-500 rounded-lg p-6 text-white">
+        <div className="flex items-center space-x-4 mb-4">
+          <ComputerDesktopIcon className="h-12 w-12" />
+          <div>
+            <h3 className="text-2xl font-bold">Crow's Eye Desktop Suite</h3>
+            <p className="text-primary-100">Full-featured desktop application with advanced AI tools</p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div className="bg-white/10 rounded-lg p-4">
+            <h4 className="font-bold mb-2">🖥️ Windows</h4>
+            <p className="text-sm text-primary-100 mb-3">Native Windows application with installer</p>
+            <button 
+              onClick={() => handleDownload('Windows')}
+              className="w-full bg-white text-primary-600 font-bold py-2 px-4 rounded hover:bg-gray-100 transition-colors"
+            >
+              Download for Windows
+            </button>
+          </div>
+          
+          <div className="bg-white/10 rounded-lg p-4">
+            <h4 className="font-bold mb-2">🍎 macOS</h4>
+            <p className="text-sm text-primary-100 mb-3">Native Mac app with Apple integration</p>
+            <button 
+              onClick={() => handleDownload('macOS')}
+              className="w-full bg-white text-primary-600 font-bold py-2 px-4 rounded hover:bg-gray-100 transition-colors"
+            >
+              Download for Mac
+            </button>
+          </div>
+          
+          <div className="bg-white/10 rounded-lg p-4">
+            <h4 className="font-bold mb-2">🐧 Linux</h4>
+            <p className="text-sm text-primary-100 mb-3">Universal AppImage for all distributions</p>
+            <button 
+              onClick={() => handleDownload('Linux')}
+              className="w-full bg-white text-primary-600 font-bold py-2 px-4 rounded hover:bg-gray-100 transition-colors"
+            >
+              Download for Linux
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-gray-800/50 rounded-lg p-6">
+          <h3 className="text-xl font-bold text-white mb-4">✨ Features</h3>
+          <ul className="space-y-2 text-gray-300">
+            <li className="flex items-center space-x-2">
+              <SparklesIcon className="h-5 w-5 text-primary-500" />
+              <span>AI Content Generation (OpenAI GPT-4 & Google Gemini)</span>
+            </li>
+            <li className="flex items-center space-x-2">
+              <CalendarIcon className="h-5 w-5 text-primary-500" />
+              <span>Advanced Scheduling & Automation</span>
+            </li>
+            <li className="flex items-center space-x-2">
+              <ChartBarIcon className="h-5 w-5 text-primary-500" />
+              <span>Detailed Analytics & Reporting</span>
+            </li>
+            <li className="flex items-center space-x-2">
+              <PhotoIcon className="h-5 w-5 text-primary-500" />
+              <span>Media Library & Processing</span>
+            </li>
+          </ul>
+        </div>
+
+        <div className="bg-gray-800/50 rounded-lg p-6">
+          <h3 className="text-xl font-bold text-white mb-4">🌐 Platform Support</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-300">Instagram</span>
+              <span className="text-green-400">✓ Supported</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-300">Facebook</span>
+              <span className="text-green-400">✓ Supported</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-300">BlueSky</span>
+              <span className="text-green-400">✓ Supported</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-300">Google My Business</span>
+              <span className="text-green-400">✓ Supported</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-300">TikTok</span>
+              <span className="text-green-400">✓ Supported</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-300">YouTube</span>
+              <span className="text-green-400">✓ Supported</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-400 line-through">Twitter/X</span>
+              <span className="text-red-400">✗ Deprecated</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-400 line-through">LinkedIn</span>
+              <span className="text-red-400">✗ Deprecated</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-yellow-900/20 border border-yellow-600/30 rounded-lg p-4">
+        <div className="flex items-center space-x-2 mb-2">
+          <span className="text-yellow-500">⚠️</span>
+          <h4 className="text-yellow-400 font-bold">Installation Requirements</h4>
+        </div>
+        <ul className="text-yellow-300 text-sm space-y-1">
+          <li>• Python 3.11+ (for source installation)</li>
+          <li>• 4GB RAM minimum, 8GB recommended</li>
+          <li>• 1GB free disk space</li>
+          <li>• Internet connection for AI features</li>
+          <li>• API keys for enhanced functionality (OpenAI, Google Gemini)</li>
+        </ul>
       </div>
     </div>
   );

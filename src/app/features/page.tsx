@@ -60,7 +60,7 @@ const features = [
   }
 ];
 
-const categories = Array.from(new Set(features.map(f => f.category)));
+// Features now displayed in a simple 3x3 grid
 
 export default function FeaturesPage() {
   return (
@@ -68,32 +68,29 @@ export default function FeaturesPage() {
       <section className="py-20 pt-32 md:py-28 md:pt-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            The <span className="gradient-text">Crow&apos;s Eye</span> Marketing Suite
+            The <span className="text-white">Crow&apos;s Eye</span> Marketing Suite
           </h1>
           <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto">
             Unlock unparalleled content creation and social media management with the power of Google&apos;s Gemini AI.
           </p>
         </div>
 
-        {categories.map(category => (
-          <div key={category} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
-            <h2 className="text-3xl font-semibold gradient-text mb-10 text-center">{category}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {features.filter(f => f.category === category).map((feature) => (
-                <div 
-                  key={feature.title} 
-                  className="feature-card-alt bg-black/30 backdrop-blur-sm p-8 rounded-xl shadow-2xl hover:shadow-primary-500/30 transition-all duration-300 transform hover:-translate-y-1"
-                >
-                  <div className="flex items-center justify-center mb-6 w-16 h-16 bg-primary-500/10 rounded-full mx-auto">
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-3 text-center">{feature.title}</h3>
-                  <p className="text-gray-400 text-sm text-center">{feature.description}</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature) => (
+              <div 
+                key={feature.title} 
+                className="feature-card-alt bg-black/30 backdrop-blur-sm p-8 rounded-xl shadow-2xl hover:shadow-primary-500/30 transition-all duration-300 transform hover:-translate-y-1"
+              >
+                <div className="flex items-center justify-center mb-6 w-16 h-16 bg-primary-500/10 rounded-full mx-auto">
+                  {feature.icon}
                 </div>
-              ))}
-            </div>
+                <h3 className="text-xl font-bold text-white mb-3 text-center">{feature.title}</h3>
+                <p className="text-gray-400 text-sm text-center">{feature.description}</p>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </section>
 
       <style jsx global>{`

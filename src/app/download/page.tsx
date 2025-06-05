@@ -11,7 +11,7 @@ export default function Download() {
       <section className="pt-24 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-            Download <span className="gradient-text">Crow&apos;s Eye Marketing Suite</span>
+            Download <span className="text-white">Crow&apos;s Eye Marketing Suite</span>
           </h1>
           <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
             Get the full desktop application: Your AI-Powered Command Center for intelligent, multi-platform social media marketing. 

@@ -1,0 +1,31 @@
+# Crow's Eye Marketing Suite - Python Dependencies
+# Core GUI and system dependencies
+pillow>=10.0.0
+requests>=2.31.0
+
+# AI and Machine Learning
+openai>=1.3.0
+google-generativeai>=0.3.0
+
+# Optional dependencies for enhanced functionality
+# These will be installed if available, but the app will work without them
+
+# Image processing
+# pillow is already included above
+
+# HTTP requests (already included above)
+# requests is already included above
+
+# Crypto for secure key storage (optional)
+cryptography>=41.0.0
+
+# Additional utilities
+python-dateutil>=2.8.0
+pytz>=2023.3
+
+# Development dependencies (optional)
+# pytest>=7.4.0
+# pytest-cov>=4.1.0
+
+# Build dependencies for packaging
+# pyinstaller>=5.13.0  # Added to GitHub Actions, not needed for runtime 
