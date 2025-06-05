@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 
 export interface SubscriptionData {
@@ -40,7 +40,7 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
   const [error, setError] = useState<string | null>(null)
 
   // Fetch subscription data
-  const fetchSubscription = async () => {
+  const fetchSubscription = useCallback(async () => {
     if (!user) {
       setSubscription(null)
       setIsLoading(false)
@@ -70,7 +70,7 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user])
 
   // Open Stripe Customer Portal
   const openCustomerPortal = async () => {
@@ -157,7 +157,7 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
   // Fetch subscription on mount and when user changes
   useEffect(() => {
     fetchSubscription()
-  }, [user])
+  }, [user, fetchSubscription])
 
   return {
     subscription,

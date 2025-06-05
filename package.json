@@ -50,6 +50,7 @@
   },
   "dependencies": {
     "@google-cloud/translate": "^9.1.0",
+    "@google/generative-ai": "^0.24.1",
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.0.1",
@@ -60,6 +61,7 @@
     "framer-motion": "^12.12.2",
     "lucide-react": "^0.511.0",
     "next": "^15.3.2",
+    "openai": "^5.1.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.56.4",

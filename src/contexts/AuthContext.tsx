@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Start logged out
 
   // Mock login function
-  const login = useCallback(async (email?: string, password?: string) => {
+  const login = useCallback(async (email?: string, _password?: string) => {
     try {
       setError(null);
       setLoading(true);

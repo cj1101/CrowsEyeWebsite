@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface UsageLimits {
   apiCalls: number
@@ -62,7 +62,7 @@ export function useUsageTracking(userId?: string) {
   }
 
   // Get current usage status
-  const refreshUsage = async () => {
+  const refreshUsage = useCallback(async () => {
     if (!userId) return
 
     setIsLoading(true)
@@ -83,7 +83,7 @@ export function useUsageTracking(userId?: string) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [userId])
 
   // Check if user can perform an action based on limits
   const canPerformAction = (actionType: 'api_call' | 'report_generation' | 'data_export', quantity = 1): boolean => {
@@ -112,7 +112,7 @@ export function useUsageTracking(userId?: string) {
     if (userId) {
       refreshUsage()
     }
-  }, [userId])
+  }, [userId, refreshUsage])
 
   return {
     usage,

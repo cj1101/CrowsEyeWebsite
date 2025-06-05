@@ -13,11 +13,26 @@ export function useStripeCheckout() {
       setIsLoading(true)
       setError(null)
 
+      console.log(`🔍 Debug: Attempting checkout for plan: ${plan}, interval: ${interval}`)
+      console.log(`🔍 Debug: Full PRICING_CONFIG:`, PRICING_CONFIG)
+
       // Get the payment link based on the pricing configuration
-      const planConfig = PRICING_CONFIG[plan][interval]
+      const planConfig = PRICING_CONFIG[plan]?.[interval]
       
-      if (!planConfig.paymentLink || !planConfig.paymentLink.includes('buy.stripe.com')) {
-        throw new Error(`Payment link not configured for ${plan} ${interval} plan. Please set up your Stripe payment links.`)
+      console.log(`🔍 Debug: Plan config:`, planConfig)
+      console.log(`🔍 Debug: Payment link:`, planConfig?.paymentLink)
+      console.log(`🔍 Debug: Payment link includes buy.stripe.com:`, planConfig?.paymentLink?.includes('buy.stripe.com'))
+      
+      if (!planConfig) {
+        throw new Error(`Plan configuration not found for ${plan} ${interval}`)
+      }
+      
+      if (!planConfig.paymentLink) {
+        throw new Error(`Payment link not found for ${plan} ${interval} plan`)
+      }
+      
+      if (!planConfig.paymentLink.includes('buy.stripe.com')) {
+        throw new Error(`Invalid payment link for ${plan} ${interval} plan: ${planConfig.paymentLink}`)
       }
 
       // Redirect to Stripe payment link

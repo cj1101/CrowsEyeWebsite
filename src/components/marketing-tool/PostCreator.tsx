@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   PhotoIcon, 
   SparklesIcon,
-  PaperAirplaneIcon,
-  HashtagIcon
+  HashtagIcon,
+  ClockIcon,
+  DocumentTextIcon,
+  CogIcon
 } from '@heroicons/react/24/outline';
 
 interface Platform {
@@ -15,18 +17,69 @@ interface Platform {
   maxLength: number;
 }
 
+interface UserSettings {
+  apiKeys: {
+    openai?: string;
+    gemini?: string;
+  };
+  preferences: {
+    defaultPlatform?: string;
+    defaultTone?: string;
+  };
+}
+
 export default function PostCreator() {
   const [content, setContent] = useState('');
+  const [prompt, setPrompt] = useState('');
+  const [tone, setTone] = useState('professional');
+  const [isGenerating, setIsGenerating] = useState(false);
   const [platforms, setPlatforms] = useState<Platform[]>([
     { id: 'instagram', name: 'Instagram', enabled: true, maxLength: 2200 },
+    { id: 'facebook', name: 'Facebook', enabled: false, maxLength: 63206 },
     { id: 'twitter', name: 'Twitter/X', enabled: false, maxLength: 280 },
     { id: 'linkedin', name: 'LinkedIn', enabled: false, maxLength: 3000 },
-    { id: 'facebook', name: 'Facebook', enabled: false, maxLength: 63206 },
+    { id: 'tiktok', name: 'TikTok', enabled: false, maxLength: 2200 },
+    { id: 'youtube', name: 'YouTube', enabled: false, maxLength: 5000 },
   ]);
-  const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
+  const [selectedMedia, setSelectedMedia] = useState<string[]>([]); // Reserved for media upload feature
   const [hashtags, setHashtags] = useState('');
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('');
+  const [settings, setSettings] = useState<UserSettings>({
+    apiKeys: {},
+    preferences: { defaultPlatform: 'instagram', defaultTone: 'professional' }
+  });
+
+  const tones = [
+    'professional',
+    'casual',
+    'friendly',
+    'formal',
+    'humorous',
+    'inspiring'
+  ];
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  useEffect(() => {
+    if (settings.preferences.defaultTone) {
+      setTone(settings.preferences.defaultTone);
+    }
+  }, [settings]);
+
+  const loadSettings = async () => {
+    try {
+      const response = await fetch('/api/marketing-tool/settings?userId=demo-user');
+      if (response.ok) {
+        const data = await response.json();
+        setSettings(data.settings);
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  };
 
   const togglePlatform = (platformId: string) => {
     setPlatforms(prev => 
@@ -37,46 +90,136 @@ export default function PostCreator() {
   };
 
   const generateAIContent = async () => {
-    // TODO: Implement AI content generation
-    alert('AI content generation coming soon!');
+    if (!prompt.trim()) {
+      alert('Please enter a prompt for AI content generation.');
+      return;
+    }
+
+    const enabledPlatformIds = platforms.filter(p => p.enabled).map(p => p.id);
+    if (enabledPlatformIds.length === 0) {
+      alert('Please select at least one platform.');
+      return;
+    }
+
+    setIsGenerating(true);
+    
+    try {
+      const response = await fetch('/api/marketing-tool/generate-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt,
+          platform: enabledPlatformIds[0], // Use first enabled platform
+          tone,
+          apiKeys: settings.apiKeys
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setContent(data.content);
+        setPrompt(''); // Clear prompt after successful generation
+      } else {
+        alert('Failed to generate content. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating content:', error);
+      alert('Error generating content. Please check your connection and try again.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const postData = {
-      content,
-      platforms: platforms.filter(p => p.enabled).map(p => p.id),
-      hashtags: hashtags.split(' ').filter(tag => tag.startsWith('#')),
-      mediaFiles: selectedMedia,
-      scheduledFor: scheduleDate && scheduleTime ? 
-        new Date(`${scheduleDate}T${scheduleTime}`).toISOString() : null
-    };
+  const saveDraft = async () => {
+    if (!content.trim()) {
+      alert('Please enter some content before saving.');
+      return;
+    }
+
+    const enabledPlatformIds = platforms.filter(p => p.enabled).map(p => p.id);
+    if (enabledPlatformIds.length === 0) {
+      alert('Please select at least one platform.');
+      return;
+    }
 
     try {
       const response = await fetch('/api/marketing-tool/posts', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(postData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: content + (hashtags ? `\n\n${hashtags}` : ''),
+          platform: enabledPlatformIds[0],
+          status: 'draft',
+          userId: 'demo-user'
+        })
       });
 
       if (response.ok) {
-        alert('Post created successfully!');
-        // Reset form
-        setContent('');
-        setHashtags('');
-        setSelectedMedia([]);
-        setScheduleDate('');
-        setScheduleTime('');
+        alert('Draft saved successfully!');
+        clearForm();
       } else {
-        alert('Failed to create post');
+        alert('Failed to save draft.');
       }
     } catch (error) {
-      console.error('Error creating post:', error);
-      alert('Error creating post');
+      console.error('Error saving draft:', error);
+      alert('Error saving draft.');
     }
+  };
+
+  const schedulePost = async () => {
+    if (!content.trim()) {
+      alert('Please enter some content before scheduling.');
+      return;
+    }
+
+    const enabledPlatformIds = platforms.filter(p => p.enabled).map(p => p.id);
+    if (enabledPlatformIds.length === 0) {
+      alert('Please select at least one platform.');
+      return;
+    }
+
+    let scheduledTime = null;
+    if (scheduleDate && scheduleTime) {
+      scheduledTime = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+    } else {
+      // Default to 1 hour from now
+      const defaultTime = new Date();
+      defaultTime.setHours(defaultTime.getHours() + 1);
+      scheduledTime = defaultTime.toISOString();
+    }
+
+    try {
+      const response = await fetch('/api/marketing-tool/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: content + (hashtags ? `\n\n${hashtags}` : ''),
+          platform: enabledPlatformIds[0],
+          status: 'scheduled',
+          scheduledTime,
+          userId: 'demo-user'
+        })
+      });
+
+      if (response.ok) {
+        alert('Post scheduled successfully!');
+        clearForm();
+      } else {
+        alert('Failed to schedule post.');
+      }
+    } catch (error) {
+      console.error('Error scheduling post:', error);
+      alert('Error scheduling post.');
+    }
+  };
+
+  const clearForm = () => {
+    setContent('');
+    setPrompt('');
+    setHashtags('');
+    setSelectedMedia([]);
+    setScheduleDate('');
+    setScheduleTime('');
   };
 
   const enabledPlatforms = platforms.filter(p => p.enabled);
@@ -87,20 +230,70 @@ export default function PostCreator() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold text-white">Create Post</h2>
-        <button
-          onClick={generateAIContent}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-        >
-          <SparklesIcon className="h-5 w-5" />
-          <span>AI Generate</span>
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={() => window.location.href = '#ai-tools'}
+            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <CogIcon className="h-5 w-5" />
+            <span>AI Settings</span>
+          </button>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-6">
+        {/* AI Content Generation */}
+        <div className="bg-gray-700/50 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+            <SparklesIcon className="h-6 w-6 mr-2" />
+            AI Content Generator
+          </h3>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Describe what you want to post about:
+              </label>
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="E.g., 'New product launch for eco-friendly water bottles'"
+                className="w-full h-20 bg-gray-800 border border-gray-600 rounded-lg p-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Tone:</label>
+                <select
+                  value={tone}
+                  onChange={(e) => setTone(e.target.value)}
+                  className="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  {tones.map(t => (
+                    <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  onClick={generateAIContent}
+                  disabled={isGenerating || !prompt.trim()}
+                  className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors"
+                >
+                  <SparklesIcon className="h-5 w-5" />
+                  <span>{isGenerating ? 'Generating...' : 'Generate Content'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Platform Selection */}
         <div className="bg-gray-700/50 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-white mb-4">Select Platforms</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {platforms.map((platform) => (
               <button
                 key={platform.id}
@@ -121,12 +314,18 @@ export default function PostCreator() {
               </button>
             ))}
           </div>
+          {enabledPlatforms.length === 0 && (
+            <p className="text-yellow-400 text-sm mt-2">⚠️ Please select at least one platform</p>
+          )}
         </div>
 
         {/* Content Creation */}
         <div className="bg-gray-700/50 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">Post Content</h3>
+            <h3 className="text-lg font-semibold text-white flex items-center">
+              <DocumentTextIcon className="h-6 w-6 mr-2" />
+              Post Content
+            </h3>
             <div className="text-sm text-gray-400">
               {content.length}/{minMaxLength}
             </div>
@@ -136,7 +335,7 @@ export default function PostCreator() {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="What's on your mind? Share your story..."
-            className="w-full h-32 bg-gray-800 border border-gray-600 rounded-lg p-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+            className="w-full h-40 bg-gray-800 border border-gray-600 rounded-lg p-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
             maxLength={minMaxLength}
           />
 
@@ -160,30 +359,20 @@ export default function PostCreator() {
 
         {/* Media Selection */}
         <div className="bg-gray-700/50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Add Media</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">Add Media (Coming Soon)</h3>
           <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center">
             <PhotoIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-400 mb-4">Select media from your library or upload new files</p>
-            <div className="flex justify-center space-x-4">
-              <button
-                type="button"
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                Browse Library
-              </button>
-              <button
-                type="button"
-                className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                Upload New
-              </button>
-            </div>
+            <p className="text-gray-400 mb-4">Media upload functionality coming soon</p>
+            <p className="text-gray-500 text-sm">Upload images, videos, and other media files</p>
           </div>
         </div>
 
         {/* Scheduling */}
         <div className="bg-gray-700/50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Schedule Post</h3>
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+            <ClockIcon className="h-6 w-6 mr-2" />
+            Schedule Post (Optional)
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -193,6 +382,7 @@ export default function PostCreator() {
                 type="date"
                 value={scheduleDate}
                 onChange={(e) => setScheduleDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
                 className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
@@ -208,44 +398,50 @@ export default function PostCreator() {
               />
             </div>
           </div>
-          <p className="text-sm text-gray-400 mt-2">
-            Leave empty to post immediately
+          <p className="text-gray-400 text-sm mt-2">
+            Leave empty to schedule for 1 hour from now
           </p>
         </div>
 
-        {/* Submit Buttons */}
-        <div className="flex justify-end space-x-4">
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4">
           <button
-            type="button"
-            className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-          >
-            Save Draft
-          </button>
-          <button
-            type="submit"
+            onClick={saveDraft}
             disabled={!content.trim() || enabledPlatforms.length === 0}
-            className="px-6 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg flex items-center space-x-2 transition-colors"
+            className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors"
           >
-            <PaperAirplaneIcon className="h-5 w-5" />
-            <span>{scheduleDate ? 'Schedule Post' : 'Post Now'}</span>
+            <DocumentTextIcon className="h-5 w-5" />
+            <span>Save as Draft</span>
+          </button>
+
+          <button
+            onClick={schedulePost}
+            disabled={!content.trim() || enabledPlatforms.length === 0}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors"
+          >
+            <ClockIcon className="h-5 w-5" />
+            <span>Schedule Post</span>
+          </button>
+
+          <button
+            onClick={clearForm}
+            className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors"
+          >
+            <span>Clear All</span>
           </button>
         </div>
-      </form>
 
-      {/* Preview */}
-      {content && (
-        <div className="bg-gray-700/50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Preview</h3>
-          <div className="bg-gray-800 rounded-lg p-4">
-            <div className="text-white whitespace-pre-wrap">{content}</div>
-            {hashtags && (
-              <div className="mt-2 text-primary-400">
-                {hashtags}
-              </div>
-            )}
-          </div>
+        {/* Tips */}
+        <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4">
+          <h4 className="text-blue-400 font-medium mb-2">💡 Pro Tips:</h4>
+          <ul className="text-blue-300 text-sm space-y-1">
+            <li>• Use AI generation for inspiration, then customize the content</li>
+            <li>• Different platforms have different character limits</li>
+            <li>• Add relevant hashtags to increase discoverability</li>
+            <li>• Schedule posts for optimal engagement times</li>
+          </ul>
         </div>
-      )}
+      </div>
     </div>
   );
 } 

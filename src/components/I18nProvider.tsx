@@ -43,14 +43,23 @@ export default function I18nProvider({ children }: I18nProviderProps) {
     }
 
     try {
+      // Ensure we're in a browser environment
+      if (typeof window === 'undefined') {
+        console.warn('Translation loading attempted on server side')
+        return {}
+      }
+
       const response = await fetch(`/translations/${lang}.json`)
       if (response.ok) {
         const translations = await response.json()
         translationCache.set(lang, translations)
         return translations
+      } else {
+        console.warn(`Failed to fetch translations for ${lang}: ${response.status}`)
       }
     } catch (error) {
       console.warn(`Failed to load translations for ${lang}:`, error)
+      // Don't try to import as module - this prevents the './en' module error
     }
 
     // Fallback to empty object

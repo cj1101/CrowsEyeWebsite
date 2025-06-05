@@ -21,7 +21,7 @@ export const STRIPE_PRICE_IDS = {
   pro_yearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID || 'price_pro_yearly_placeholder',
 } as const
 
-export type PricingPlan = 'creator' | 'pro'
+export type PricingPlan = 'creator' | 'growth' | 'pro'
 export type BillingInterval = 'monthly' | 'yearly'
 
 export interface CheckoutSessionParams {
