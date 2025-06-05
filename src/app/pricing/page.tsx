@@ -2,9 +2,11 @@
 
 import React, { useState } from 'react'
 import { CheckIcon } from '@heroicons/react/24/outline'
+import { useStripeCheckout } from '@/hooks/useStripeCheckout'
 
 export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
+  const { createCheckoutSession, isLoading, error, clearError } = useStripeCheckout()
 
   const plans = [
     {
@@ -46,7 +48,7 @@ export default function PricingPage() {
     },
     {
       name: 'Pro Plan',
-      price: { monthly: 50, yearly: 500 },
+      price: { monthly: 49, yearly: 490 },
       description: 'Perfect For: Professionals, marketers, and small businesses needing advanced features and higher capacity.',
       features: [
         'Linked Social Accounts: 10',
@@ -91,12 +93,34 @@ export default function PricingPage() {
     }
   ]
 
-  const handleSelectPlan = (planName: string) => {
+  const handleSelectPlan = async (planName: string) => {
+    clearError()
+    
     if (planName === 'Business Plan') {
       // Redirect to contact page for custom pricing
       window.location.href = '/contact'
-    } else {
-      alert(`Selected ${planName}. Checkout would open here.`)
+      return
+    }
+
+    if (planName === 'Free Plan') {
+      // Handle free plan signup (no payment required)
+      alert('Free plan selected! You can start using Crow\'s Eye immediately.')
+      return
+    }
+
+    // Map plan names to Stripe plan identifiers
+    const planMap: { [key: string]: 'creator' | 'pro' } = {
+      'Creator Plan': 'creator',
+      'Pro Plan': 'pro'
+    }
+
+    const stripePlan = planMap[planName]
+    if (stripePlan) {
+      try {
+        await createCheckoutSession(stripePlan, billingCycle)
+      } catch (err) {
+        console.error('Failed to create checkout session:', err)
+      }
     }
   }
 
@@ -134,6 +158,21 @@ export default function PricingPage() {
             )}
           </div>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-8 max-w-md mx-auto">
+            <div className="bg-red-600/20 border border-red-600/30 rounded-lg p-4">
+              <p className="text-red-200 text-sm text-center">{error}</p>
+              <button
+                onClick={clearError}
+                className="mt-2 text-xs text-red-300 hover:text-red-100 underline block mx-auto"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -181,15 +220,25 @@ export default function PricingPage() {
 
               <button
                 onClick={() => handleSelectPlan(plan.name)}
-                className={`w-full py-3 px-4 rounded-lg font-medium transition-colors mt-auto ${
-                  plan.popular
+                disabled={isLoading}
+                className={`w-full py-3 px-4 rounded-lg font-medium transition-colors mt-auto flex items-center justify-center ${
+                  isLoading
+                    ? 'bg-gray-500 text-white cursor-not-allowed'
+                    : plan.popular
                     ? 'bg-primary-600 text-white hover:bg-primary-700'
                     : plan.name === 'Business Plan'
                     ? 'bg-gray-700 text-white hover:bg-gray-600'
                     : 'bg-gray-700 text-white hover:bg-gray-600'
                 }`}
               >
-                {plan.buttonText}
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </>
+                ) : (
+                  plan.buttonText
+                )}
               </button>
             </div>
           ))}
@@ -213,6 +262,22 @@ export default function PricingPage() {
                 <p className="text-2xl font-bold text-white mb-2">$17.99</p>
                 <p className="text-gray-400 text-sm">Great value for heavy users</p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stripe Status Section (for debugging) */}
+        <div className="mt-16">
+          <div className="bg-black/50 backdrop-blur-sm rounded-lg p-6 text-center max-w-md mx-auto">
+            <h3 className="text-lg font-semibold text-white mb-2">Payment System Status</h3>
+            <p className="text-gray-300 text-sm mb-4">
+              Stripe integration is ready for configuration. See STRIPE_SETUP.md for setup instructions.
+            </p>
+            <div className="text-xs text-gray-400">
+              <p>✅ Stripe library installed</p>
+              <p>✅ API routes created</p>
+              <p>✅ Checkout flow implemented</p>
+              <p>⚠️ Environment variables needed</p>
             </div>
           </div>
         </div>
