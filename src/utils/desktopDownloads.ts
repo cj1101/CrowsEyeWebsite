@@ -3,6 +3,13 @@
  * Handles downloading and installation of the Crow's Eye Marketing Tool desktop application
  */
 
+// Extend Window interface to include gtag
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+  }
+}
+
 export interface DesktopAppInfo {
   platform: string;
   version: string;
