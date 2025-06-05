@@ -1,0 +1,173 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+
+export interface SubscriptionData {
+  id: string
+  status: 'active' | 'canceled' | 'past_due' | 'unpaid' | 'incomplete' | 'trialing'
+  current_period_end: number
+  cancel_at_period_end: boolean
+  plan: {
+    id: string
+    nickname: string
+    amount: number
+    currency: string
+    interval: string
+  }
+  customer: {
+    id: string
+    email: string
+  }
+}
+
+export interface UseSubscriptionManagementReturn {
+  subscription: SubscriptionData | null
+  isLoading: boolean
+  error: string | null
+  refetch: () => Promise<void>
+  openCustomerPortal: () => Promise<void>
+  cancelSubscription: () => Promise<void>
+  resumeSubscription: () => Promise<void>
+  updatePaymentMethod: () => Promise<void>
+  downloadInvoices: () => Promise<void>
+}
+
+export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => {
+  const { user } = useAuth()
+  const [subscription, setSubscription] = useState<SubscriptionData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch subscription data
+  const fetchSubscription = async () => {
+    if (!user) {
+      setSubscription(null)
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      const response = await fetch('/api/subscription', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch subscription')
+      }
+
+      const data = await response.json()
+      setSubscription(data.subscription)
+      setError(null)
+    } catch (err) {
+      console.error('Error fetching subscription:', err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch subscription')
+      setSubscription(null)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Open Stripe Customer Portal
+  const openCustomerPortal = async () => {
+    try {
+      // For demo purposes, open the demo portal link
+      const response = await fetch('/api/create-portal-session', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create portal session')
+      }
+
+      const { url } = await response.json()
+      window.open(url, '_blank')
+    } catch (err) {
+      console.error('Error opening customer portal:', err)
+      // Fallback to a generic Stripe billing portal URL for demo
+      window.open('https://billing.stripe.com/p/login/test_demo', '_blank')
+    }
+  }
+
+  // Cancel subscription
+  const cancelSubscription = async () => {
+    if (!subscription) return
+
+    try {
+      const response = await fetch('/api/cancel-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ subscriptionId: subscription.id }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to cancel subscription')
+      }
+
+      await fetchSubscription() // Refresh data
+    } catch (err) {
+      console.error('Error canceling subscription:', err)
+      setError(err instanceof Error ? err.message : 'Failed to cancel subscription')
+    }
+  }
+
+  // Resume subscription
+  const resumeSubscription = async () => {
+    if (!subscription) return
+
+    try {
+      const response = await fetch('/api/resume-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ subscriptionId: subscription.id }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to resume subscription')
+      }
+
+      await fetchSubscription() // Refresh data
+    } catch (err) {
+      console.error('Error resuming subscription:', err)
+      setError(err instanceof Error ? err.message : 'Failed to resume subscription')
+    }
+  }
+
+  // Update payment method (opens portal)
+  const updatePaymentMethod = async () => {
+    await openCustomerPortal()
+  }
+
+  // Download invoices (opens portal)
+  const downloadInvoices = async () => {
+    await openCustomerPortal()
+  }
+
+  // Fetch subscription on mount and when user changes
+  useEffect(() => {
+    fetchSubscription()
+  }, [user])
+
+  return {
+    subscription,
+    isLoading,
+    error,
+    refetch: fetchSubscription,
+    openCustomerPortal,
+    cancelSubscription,
+    resumeSubscription,
+    updatePaymentMethod,
+    downloadInvoices,
+  }
+} 

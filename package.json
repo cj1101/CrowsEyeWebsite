@@ -40,12 +40,20 @@
     "deploy": "firebase deploy --only hosting",
     "deploy:full": "firebase deploy",
     "deploy:functions": "firebase deploy --only functions",
-    "firebase:serve": "npm run build && firebase serve"
+    "firebase:serve": "npm run build && firebase serve",
+    "translate": "node scripts/translate.js",
+    "translate:force": "node scripts/translate.js --force",
+    "translate:check": "node scripts/translate.js --check",
+    "translate:stats": "node scripts/translate.js --stats",
+    "translate:validate": "node scripts/translate.js --validate",
+    "prebuild": "npm run translate:check"
   },
   "dependencies": {
+    "@google-cloud/translate": "^9.1.0",
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.0.1",
+    "@stripe/stripe-js": "^7.3.1",
     "firebase": "^11.8.1",
     "firebase-admin": "^13.4.0",
     "firebase-functions": "^6.3.2",

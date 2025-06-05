@@ -1,56 +1,32 @@
 import { useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { PRICING_CONFIG } from '@/lib/stripe'
 
-export type PricingPlan = 'creator' | 'pro'
+export type PricingPlan = 'creator' | 'growth' | 'pro'
 export type BillingInterval = 'monthly' | 'yearly'
 
-interface UseStripeCheckoutReturn {
-  isLoading: boolean
-  error: string | null
-  createCheckoutSession: (plan: PricingPlan, interval: BillingInterval) => Promise<void>
-  clearError: () => void
-}
-
-export const useStripeCheckout = (): UseStripeCheckoutReturn => {
+export function useStripeCheckout() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { user } = useAuth()
 
   const createCheckoutSession = async (plan: PricingPlan, interval: BillingInterval) => {
-    setIsLoading(true)
-    setError(null)
-
     try {
-      // Call your API to create the checkout session
-      const response = await fetch('/api/stripe/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          plan,
-          interval,
-          userId: user?.uid || undefined,
-          userEmail: user?.email || undefined,
-        }),
-      })
+      setIsLoading(true)
+      setError(null)
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create checkout session')
+      // Get the payment link based on the pricing configuration
+      const planConfig = PRICING_CONFIG[plan][interval]
+      
+      if (!planConfig.paymentLink || !planConfig.paymentLink.includes('buy.stripe.com')) {
+        throw new Error(`Payment link not configured for ${plan} ${interval} plan. Please set up your Stripe payment links.`)
       }
 
-      const { url } = await response.json()
-
-      if (url) {
-        // Redirect to Stripe Checkout
-        window.location.href = url
-      } else {
-        throw new Error('No checkout URL received')
-      }
+      // Redirect to Stripe payment link
+      window.location.href = planConfig.paymentLink
+      
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to start checkout'
+      setError(errorMessage)
       console.error('Checkout error:', err)
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {
       setIsLoading(false)
     }
@@ -61,9 +37,9 @@ export const useStripeCheckout = (): UseStripeCheckoutReturn => {
   }
 
   return {
+    createCheckoutSession,
     isLoading,
     error,
-    createCheckoutSession,
     clearError,
   }
 } 

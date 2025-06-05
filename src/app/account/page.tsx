@@ -22,8 +22,8 @@ export default function AccountPage() {
   });
 
   const handleManageSubscription = () => {
-    // Mock subscription management
-    alert('Subscription management would open here');
+    // Redirect to subscription management page
+    window.location.href = '/account/subscription';
   };
 
   const handleLogout = async () => {
@@ -90,21 +90,29 @@ export default function AccountPage() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold flex items-center">
               <CreditCardIcon className="h-5 w-5 mr-2" />
-              Subscription
+              Subscription & Billing
             </h3>
             <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm">
               {user.plan}
             </span>
           </div>
           <p className="text-gray-400 mb-4">
-            You are currently on the {user.plan} plan.
+            You are currently on the <strong>{user.plan}</strong> plan. Manage your subscription, update payment methods, or view billing history.
           </p>
-          <button
-            onClick={handleManageSubscription}
-            className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700"
-          >
-            Manage Subscription
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handleManageSubscription}
+              className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Manage Subscription
+            </button>
+            <a
+              href="/pricing"
+              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors"
+            >
+              View Plans
+            </a>
+          </div>
         </div>
 
         {/* Usage Stats */}

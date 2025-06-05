@@ -6,6 +6,7 @@ export const AVAILABLE_LANGUAGES = {
   es: { name: 'Español', flag: '🇪🇸' },
   fr: { name: 'Français', flag: '🇫🇷' },
   de: { name: 'Deutsch', flag: '🇩🇪' },
+  it: { name: 'Italiano', flag: '🇮🇹' },
   pt: { name: 'Português', flag: '🇵🇹' },
   ru: { name: 'Русский', flag: '🇷🇺' },
   ja: { name: '日本語', flag: '🇯🇵' },
@@ -19,8 +20,10 @@ export type LanguageCode = keyof typeof AVAILABLE_LANGUAGES
 // Translation context
 export interface I18nContextType {
   language: LanguageCode
-  setLanguage: (lang: LanguageCode) => void
+  setLanguage: (lang: LanguageCode) => Promise<void>
   t: (key: string, params?: Record<string, string | number>) => string
+  isLoading?: boolean
+  autoTranslate?: (sourceText: string, targetLang: LanguageCode) => Promise<string>
 }
 
 export const I18nContext = createContext<I18nContextType | null>(null)

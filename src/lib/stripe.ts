@@ -1,4 +1,5 @@
 import Stripe from 'stripe'
+import { loadStripe } from '@stripe/stripe-js'
 
 // Check for required environment variables
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder'
@@ -101,4 +102,59 @@ export const cancelSubscription = async (subscriptionId: string) => {
     console.error('Error canceling subscription:', error)
     throw new Error('Failed to cancel subscription')
   }
+}
+
+// Client-side Stripe configuration for static sites
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+
+// Stripe payment links
+export const STRIPE_PAYMENT_LINKS = {
+  creator_monthly: 'https://buy.stripe.com/9B65kD655g0j6iqg9BeIw00',
+  creator_yearly: 'https://buy.stripe.com/3cI5kDbpp15p5emcXpeIw03',
+  growth_monthly: 'https://buy.stripe.com/6oU4gz511bK36iqf5xeIw01', 
+  growth_yearly: 'https://buy.stripe.com/5kQ3cvfFF3dx22a8H9eIw04',
+  pro_monthly: 'https://buy.stripe.com/bJe9ATeBB7tN6iqf5xeIw02',
+  pro_yearly: 'https://buy.stripe.com/dRm00j2ST9BVeOW6z1eIw05',
+}
+
+export { stripePromise }
+
+// Pricing configuration
+export const PRICING_CONFIG = {
+  creator: {
+    monthly: {
+      price: 19,
+      priceId: 'STRIPE_CREATOR_PRICE_ID',
+      paymentLink: STRIPE_PAYMENT_LINKS.creator_monthly,
+    },
+    yearly: {
+      price: 190,
+      priceId: 'STRIPE_CREATOR_BYOK_PRICE_ID', 
+      paymentLink: STRIPE_PAYMENT_LINKS.creator_yearly,
+    },
+  },
+  growth: {
+    monthly: {
+      price: 35, // Assuming Growth tier pricing
+      priceId: 'STRIPE_GROWTH_PRICE_ID',
+      paymentLink: STRIPE_PAYMENT_LINKS.growth_monthly,
+    },
+    yearly: {
+      price: 350,
+      priceId: 'STRIPE_GROWTH_BYOK_PRICE_ID',
+      paymentLink: STRIPE_PAYMENT_LINKS.growth_yearly,
+    },
+  },
+  pro: {
+    monthly: {
+      price: 49,
+      priceId: 'STRIPE_PRO_PRICE_ID',
+      paymentLink: STRIPE_PAYMENT_LINKS.pro_monthly,
+    },
+    yearly: {
+      price: 490,
+      priceId: 'STRIPE_PRO_BYOK_PRICE_ID',
+      paymentLink: STRIPE_PAYMENT_LINKS.pro_yearly,
+    },
+  },
 } 

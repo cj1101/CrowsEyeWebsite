@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react'
 import { CheckIcon } from '@heroicons/react/24/outline'
-import { useStripeCheckout } from '@/hooks/useStripeCheckout'
+import { useStripeCheckout, PricingPlan, BillingInterval } from '@/hooks/useStripeCheckout'
 
 export default function PricingPage() {
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
+  const [billingCycle, setBillingCycle] = useState<BillingInterval>('monthly')
   const { createCheckoutSession, isLoading, error, clearError } = useStripeCheckout()
 
   const plans = [
@@ -24,7 +24,8 @@ export default function PricingPage() {
         'Community Support'
       ],
       popular: false,
-      buttonText: 'Get Started'
+      buttonText: 'Get Started',
+      stripePlan: null
     },
     {
       name: 'Creator Plan',
@@ -44,7 +45,30 @@ export default function PricingPage() {
         'Purchase Additional AI Credit Packs'
       ],
       popular: true,
-      buttonText: 'Choose Plan'
+      buttonText: 'Choose Plan',
+      stripePlan: 'creator' as PricingPlan
+    },
+    {
+      name: 'Growth Plan',
+      price: { monthly: 35, yearly: 350 },
+      description: 'Perfect For: Growing businesses and marketers needing more capacity and advanced features.',
+      features: [
+        'Linked Social Accounts: 7',
+        'Users: Up to 2',
+        'AI Credits: 400 per month',
+        'Scheduled Posts: 500 per month',
+        'Media Storage: 25 GB',
+        'All features from the Creator Plan',
+        'Advanced Video Processing Tools',
+        'AI Content Suggestions',
+        'Team Collaboration (Basic)',
+        'Advanced Analytics & Reporting',
+        'Priority Email Support',
+        'Purchase Additional AI Credit Packs'
+      ],
+      popular: false,
+      buttonText: 'Choose Plan',
+      stripePlan: 'growth' as PricingPlan
     },
     {
       name: 'Pro Plan',
@@ -56,7 +80,7 @@ export default function PricingPage() {
         'AI Credits: 750 per month',
         'Scheduled Posts: Unlimited',
         'Media Storage: 50 GB',
-        'All features from the Creator Plan',
+        'All features from the Growth Plan',
         'Full Video Editing Suite',
         'VEO AI Video Generation',
         'AI Highlight Reels',
@@ -69,7 +93,8 @@ export default function PricingPage() {
         'Purchase Additional AI Credit Packs'
       ],
       popular: false,
-      buttonText: 'Choose Plan'
+      buttonText: 'Choose Plan',
+      stripePlan: 'pro' as PricingPlan
     },
     {
       name: 'Business Plan',
@@ -89,11 +114,12 @@ export default function PricingPage() {
         'Dedicated Account Manager & Premium Support'
       ],
       popular: false,
-      buttonText: 'Contact Sales'
+      buttonText: 'Contact Sales',
+      stripePlan: null
     }
   ]
 
-  const handleSelectPlan = async (planName: string) => {
+  const handleSelectPlan = async (planName: string, stripePlan: PricingPlan | null) => {
     clearError()
     
     if (planName === 'Business Plan') {
@@ -108,13 +134,6 @@ export default function PricingPage() {
       return
     }
 
-    // Map plan names to Stripe plan identifiers
-    const planMap: { [key: string]: 'creator' | 'pro' } = {
-      'Creator Plan': 'creator',
-      'Pro Plan': 'pro'
-    }
-
-    const stripePlan = planMap[planName]
     if (stripePlan) {
       try {
         await createCheckoutSession(stripePlan, billingCycle)
@@ -132,7 +151,7 @@ export default function PricingPage() {
           <p className="text-xl text-gray-300 mb-8">
             Scale your social media presence with our AI-powered tools
           </p>
-
+          
           {/* Billing Toggle */}
           <div className="flex items-center justify-center mb-8">
             <span className={`mr-3 ${billingCycle === 'monthly' ? 'text-white' : 'text-gray-400'}`}>
@@ -175,7 +194,7 @@ export default function PricingPage() {
         )}
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {plans.map((plan) => (
             <div
               key={plan.name}
@@ -190,7 +209,7 @@ export default function PricingPage() {
                   </span>
                 </div>
               )}
-
+              
               <div className="text-center mb-6">
                 <h3 className="text-xl font-semibold mb-2 text-white">{plan.name}</h3>
                 <p className="text-gray-300 text-sm mb-4 min-h-[3rem]">{plan.description}</p>
@@ -208,7 +227,7 @@ export default function PricingPage() {
                   )}
                 </div>
               </div>
-
+              
               <ul className="space-y-2 mb-8 flex-grow">
                 {plan.features.map((feature, index) => (
                   <li key={index} className="flex items-start">
@@ -217,9 +236,9 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-
-              <button
-                onClick={() => handleSelectPlan(plan.name)}
+              
+              <button 
+                onClick={() => handleSelectPlan(plan.name, plan.stripePlan)}
                 disabled={isLoading}
                 className={`w-full py-3 px-4 rounded-lg font-medium transition-colors mt-auto flex items-center justify-center ${
                   isLoading
@@ -271,13 +290,13 @@ export default function PricingPage() {
           <div className="bg-black/50 backdrop-blur-sm rounded-lg p-6 text-center max-w-md mx-auto">
             <h3 className="text-lg font-semibold text-white mb-2">Payment System Status</h3>
             <p className="text-gray-300 text-sm mb-4">
-              Stripe integration is ready for configuration. See STRIPE_SETUP.md for setup instructions.
+              Stripe integration now uses payment links for static hosting compatibility.
             </p>
             <div className="text-xs text-gray-400">
               <p>✅ Stripe library installed</p>
-              <p>✅ API routes created</p>
+              <p>✅ Payment links implemented</p>
               <p>✅ Checkout flow implemented</p>
-              <p>⚠️ Environment variables needed</p>
+              <p>⚠️ Payment link URLs needed</p>
             </div>
           </div>
         </div>

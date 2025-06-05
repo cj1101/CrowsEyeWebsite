@@ -22,7 +22,7 @@ interface AuthContextType {
   isConfigured: boolean;
   refreshUserProfile: () => Promise<void>;
   error: string | null;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email?: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -65,13 +65,13 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(mockUserProfile);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // Always authenticated in demo
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Start logged out
 
   // Mock login function
-  const login = useCallback(async () => {
+  const login = useCallback(async (email?: string, password?: string) => {
     try {
       setError(null);
       setLoading(true);
@@ -79,9 +79,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Always succeed in demo mode
+      // Set user as authenticated with mock profile
       setIsAuthenticated(true);
-      setUserProfile(mockUserProfile);
+      setUserProfile({
+        ...mockUserProfile,
+        email: email || mockUserProfile.email,
+        lastLoginAt: new Date().toISOString(),
+      });
 
       return { success: true };
     } catch (error) {
@@ -93,22 +97,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Mock logout function
+  // Logout function - properly clears all user data
   const logout = useCallback(async () => {
-    setIsAuthenticated(false);
-    setUserProfile(null);
+    console.log('Logging out user...');
+    setLoading(true);
+    
+    try {
+      // Clear all user data
+      setIsAuthenticated(false);
+      setUserProfile(null);
+      setError(null);
+      
+      console.log('User logged out successfully');
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   // Mock refresh user profile function
   const refreshUserProfile = useCallback(async () => {
-    // In demo mode, just update the last login time
-    if (userProfile) {
+    // Only refresh if user is authenticated
+    if (isAuthenticated && userProfile) {
       setUserProfile({
         ...userProfile,
         lastLoginAt: new Date().toISOString(),
       });
     }
-  }, [userProfile]);
+  }, [userProfile, isAuthenticated]);
 
   const value: AuthContextType = {
     user: userProfile ? { uid: userProfile.id, email: userProfile.email } : null,
