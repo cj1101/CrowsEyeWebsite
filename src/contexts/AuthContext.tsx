@@ -1,6 +1,14 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { 
+  signInWithEmailAndPassword, 
+  signInWithPopup, 
+  signOut, 
+  onAuthStateChanged,
+  User
+} from 'firebase/auth';
+import { auth, googleProvider } from '@/lib/firebase';
 
 // Mock user profile interface
 interface UserProfile {
@@ -23,6 +31,7 @@ interface AuthContextType {
   refreshUserProfile: () => Promise<void>;
   error: string | null;
   login: (email?: string, password?: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -37,6 +46,7 @@ const AuthContext = createContext<AuthContextType>({
   refreshUserProfile: async () => {},
   error: null,
   login: async () => ({ success: false }),
+  loginWithGoogle: async () => ({ success: false }),
   logout: async () => {},
   isAuthenticated: false,
 });
@@ -55,28 +65,159 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with loading true
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Start logged out
 
-  // Mock login function - disabled for production
-  const login = useCallback(async (email?: string, _password?: string) => {
+  // Firebase auth state listener
+  useEffect(() => {
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
+      setLoading(true);
+      
+      if (user) {
+        // User is signed in
+        const profile: UserProfile = {
+          id: user.uid,
+          email: user.email || '',
+          displayName: user.displayName || user.email?.split('@')[0] || 'User',
+          firstName: user.displayName?.split(' ')[0] || 'User',
+          lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+          avatar: user.photoURL || undefined,
+          plan: 'free', // Default plan, could be loaded from Firestore
+          createdAt: user.metadata.creationTime || new Date().toISOString(),
+          lastLoginAt: new Date().toISOString(),
+        };
+
+        setUserProfile(profile);
+        setIsAuthenticated(true);
+        setError(null);
+      } else {
+        // User is signed out
+        setUserProfile(null);
+        setIsAuthenticated(false);
+        setError(null);
+      }
+      
+      setLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
+
+  // Firebase login function
+  const login = useCallback(async (email?: string, password?: string) => {
+    if (!auth) {
+      setError('Authentication service is not available');
+      return { success: false, error: 'Authentication service is not available' };
+    }
+
+    if (!email || !password) {
+      setError('Email and password are required');
+      return { success: false, error: 'Email and password are required' };
+    }
+
     try {
-      setError('Authentication is currently disabled. Please contact support for access.');
-      return { success: false, error: 'Authentication is currently disabled' };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      setError(null);
+      setLoading(true);
+
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Create user profile from Firebase user
+      const profile: UserProfile = {
+        id: user.uid,
+        email: user.email || '',
+        displayName: user.displayName || user.email?.split('@')[0] || 'User',
+        firstName: user.displayName?.split(' ')[0] || 'User',
+        lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+        avatar: user.photoURL || undefined,
+        plan: 'free', // Default plan
+        createdAt: user.metadata.creationTime || new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+      };
+
+      setUserProfile(profile);
+      setIsAuthenticated(true);
+
+      return { success: true };
+    } catch (error: any) {
+      let errorMessage = 'Login failed';
+      
+      // Handle Firebase Auth errors
+      switch (error.code) {
+        case 'auth/user-not-found':
+          errorMessage = 'No account found with this email address';
+          break;
+        case 'auth/wrong-password':
+          errorMessage = 'Incorrect password';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email address';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many failed attempts. Please try again later';
+          break;
+        default:
+          errorMessage = error.message || 'Login failed';
+      }
+
       setError(errorMessage);
       return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+      }, []);
+
+  // Google login function
+  const loginWithGoogle = useCallback(async () => {
+    if (!auth || !googleProvider) {
+      setError('Google authentication is not available');
+      return { success: false, error: 'Google authentication is not available' };
+    }
+
+    try {
+      setError(null);
+      setLoading(true);
+
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      // User profile will be set by the auth state listener
+      return { success: true };
+    } catch (error: any) {
+      let errorMessage = 'Google sign-in failed';
+      
+      if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'Sign-in was cancelled';
+      } else if (error.code === 'auth/popup-blocked') {
+        errorMessage = 'Pop-up was blocked by the browser';
+      } else {
+        errorMessage = error.message || 'Google sign-in failed';
+      }
+
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  // Logout function - properly clears all user data
+  // Firebase logout function
   const logout = useCallback(async () => {
     console.log('Logging out user...');
     setLoading(true);
     
     try {
+      if (auth) {
+        await signOut(auth);
+      }
+      
       // Clear all user data
       setIsAuthenticated(false);
       setUserProfile(null);
@@ -109,6 +250,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     refreshUserProfile,
     error,
     login,
+    loginWithGoogle,
     logout,
     isAuthenticated,
   };
