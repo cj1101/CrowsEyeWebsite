@@ -28,7 +28,13 @@ export async function GET(request: NextRequest) {
     // Return mock data for now
     return NextResponse.json({ subscription: mockSubscription })
 
+    // TODO: Implement real subscription fetching when user authentication is set up
+    // This code is commented out until we have proper user session handling
+    /*
     try {
+      // Get user email from session/auth
+      const userEmail = 'user@example.com' // This should come from authenticated session
+      
       // Search for customer by email
       const customers = await stripe.customers.list({
         email: userEmail,
@@ -78,6 +84,7 @@ export async function GET(request: NextRequest) {
       console.error('Stripe error:', stripeError)
       return NextResponse.json({ error: 'Failed to fetch subscription' }, { status: 500 })
     }
+    */
   } catch (error) {
     console.error('Error fetching subscription:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

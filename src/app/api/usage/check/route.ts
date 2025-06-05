@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 interface UsageLimits {
   apiCalls: number
   reportGeneration: number
@@ -75,7 +77,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export function getUsageLimitsForTier(tier: string): UsageLimits {
+function getUsageLimitsForTier(tier: string): UsageLimits {
   const limits = {
     spark: { apiCalls: 1000, reportGeneration: 5, dataExport: 1 },
     creator: { apiCalls: 10000, reportGeneration: 50, dataExport: 10 },
