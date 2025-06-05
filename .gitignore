@@ -1,14 +1,11 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+node_modules/
+*/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # functions dependencies
 /functions/node_modules
@@ -17,8 +14,8 @@
 /coverage
 
 # next.js
-/.next/
-/out/
+.next/
+out/
 
 # production
 /build
@@ -28,13 +25,19 @@
 *.pem
 
 # debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
 # env files (can opt-in for committing if needed)
-.env*
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # vercel
 .vercel
@@ -45,6 +48,7 @@ next-env.d.ts
 
 # firebase
 .firebase/
+.firebaserc
 
 # build artifacts
 /dist/
@@ -60,3 +64,78 @@ next-env.d.ts
 *.exe
 *.pkg
 *.spec
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Deployment artifacts
+deployment_summary_*.json
+test_results_*.json
+
+# Desktop app builds
+desktop_installers/
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+
+# API artifacts
+crow_eye_api/__pycache__/
+crow_eye_api/*.db
+crow_eye_api/uploads/
+
+# Desktop app artifacts
+desktop_app/__pycache__/
+desktop_app/*.log
+desktop_app/user_data_exports/
+desktop_app/compliance_log.json
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Coverage reports
+.nyc_output/
+.coverage
+
+# Package files
+*.tgz
+*.tar.gz
+
+# Lock files (keep package-lock.json but ignore others)
+yarn.lock
+pnpm-lock.yaml
+
+# Sentry
+.sentryclirc

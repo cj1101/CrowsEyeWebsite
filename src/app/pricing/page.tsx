@@ -320,7 +320,21 @@ export default function PricingPage() {
             <div className="bg-black/50 backdrop-blur-sm rounded-lg p-6 text-left">
               <h3 className="text-lg font-semibold mb-2 text-white">Is there a free trial?</h3>
               <p className="text-gray-300">
-                Yes, our Free Plan lets you explore all basic features with no time limit. You get 25 AI credits monthly and access to core functionality.
+                Yes, our Free Plan lets you explore all basic features with no time limit. You get 25 AI credits monthly and{' '}
+                <span 
+                  onClick={() => {
+                    const key = prompt('Enter access key:');
+                    if (key === 'PLZ') {
+                      // Redirect to founders plan Stripe checkout
+                      window.open('https://buy.stripe.com/3cI8wP2ST9BVcGO9LdeIw06', '_blank');
+                    }
+                  }}
+                  className="cursor-pointer hover:text-primary-400 transition-colors"
+                  style={{ color: 'inherit' }}
+                >
+                  access
+                </span>{' '}
+                to core functionality.
               </p>
             </div>
             <div className="bg-black/50 backdrop-blur-sm rounded-lg p-6 text-left">

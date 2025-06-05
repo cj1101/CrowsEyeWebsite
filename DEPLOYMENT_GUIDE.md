@@ -1,268 +1,479 @@
-# Crow's Eye Complete Deployment Guide
+# 🚀 Crow's Eye Marketing Suite - Deployment Guide
 
-This guide walks you through deploying both the API and web application for your Crow's Eye marketing tool.
+This guide covers all deployment options for the Crow's Eye Marketing Suite, including web application, API backend, and desktop applications.
 
-## Overview
+## 📋 Table of Contents
 
-We'll deploy:
-1. **API**: Python FastAPI backend on Google Cloud Run (free tier)
-2. **Web App**: Next.js frontend on Firebase Hosting (free tier)
+- [Prerequisites](#prerequisites)
+- [Environment Configuration](#environment-configuration)
+- [Web Application Deployment](#web-application-deployment)
+- [API Backend Deployment](#api-backend-deployment)
+- [Desktop Application Distribution](#desktop-application-distribution)
+- [Database Setup](#database-setup)
+- [Monitoring and Maintenance](#monitoring-and-maintenance)
+- [Troubleshooting](#troubleshooting)
 
-## Prerequisites
+## 🔧 Prerequisites
 
-- [Google Cloud Account](https://cloud.google.com) (free tier)
-- [Firebase Account](https://firebase.google.com) (free tier)
-- [Git](https://git-scm.com/) installed
-- [Node.js](https://nodejs.org/) installed
-- [Docker](https://www.docker.com/) installed
+### Required Accounts
+- **Firebase**: For authentication, database, and hosting
+- **Stripe**: For payment processing
+- **Vercel/Netlify**: For web hosting (alternative to Firebase)
+- **Railway/Heroku**: For API hosting
+- **GitHub**: For repository and CI/CD
 
-## Step 1: Deploy the API
+### Required Tools
+- Node.js 20.x or higher
+- Python 3.11+
+- Firebase CLI
+- Git
 
-### Option A: Automated Deployment (Recommended)
+## 🌍 Environment Configuration
 
-```bash
-# Navigate to the API directory
-cd ../breadsmith_marketing/social_media_tool_v5_noMeta_final
-
-# Make the script executable
-chmod +x deploy.sh
-
-# Run the deployment
-./deploy.sh
-```
-
-### Option B: Manual API Deployment
-
-```bash
-# 1. Install Google Cloud CLI
-# Visit: https://cloud.google.com/sdk/docs/install
-
-# 2. Login and set project
-gcloud auth login
-gcloud config set project YOUR_PROJECT_ID
-
-# 3. Enable APIs
-gcloud services enable cloudbuild.googleapis.com
-gcloud services enable run.googleapis.com
-gcloud services enable containerregistry.googleapis.com
-
-# 4. Deploy
-gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/crow-eye-api
-gcloud run deploy crow-eye-api \
-  --image gcr.io/YOUR_PROJECT_ID/crow-eye-api \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --port 8000
-```
-
-**Save the API URL** - you'll need it for the web app!
-
-## Step 2: Deploy the Web App
-
-### Option A: Automated Deployment (Recommended)
+### 1. Firebase Setup
 
 ```bash
-# Make the script executable
-chmod +x deploy-web.sh
-
-# Run the deployment (it will ask for your API URL)
-./deploy-web.sh
-```
-
-### Option B: Manual Web App Deployment
-
-```bash
-# 1. Install Firebase CLI
+# Install Firebase CLI
 npm install -g firebase-tools
 
-# 2. Login to Firebase
+# Login to Firebase
 firebase login
 
-# 3. Initialize Firebase (if not done already)
+# Initialize Firebase project
 firebase init
 
-# 4. Set your API URL
-export NEXT_PUBLIC_API_URL="https://your-api-url-here"
-
-# 5. Build and deploy
-npm run build
-firebase deploy --only hosting
+# Select the following services:
+# - Hosting
+# - Firestore
+# - Authentication
+# - Functions (optional)
 ```
 
-## Step 3: Push to Git
+### 2. Environment Variables
+
+Create `.env.local` for development and configure production environment variables:
+
+```env
+# Firebase Configuration
+NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+
+# Stripe Configuration
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# API Configuration
+NEXT_PUBLIC_API_URL=https://api.crowseye.tech
+API_SECRET_KEY=your_production_secret_key
+
+# AI API Keys (Optional - for BYOK)
+OPENAI_API_KEY=sk-...
+GOOGLE_AI_API_KEY=AI...
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Social Media API Keys
+INSTAGRAM_CLIENT_ID=your_client_id
+FACEBOOK_APP_ID=your_app_id
+TWITTER_API_KEY=your_api_key
+LINKEDIN_CLIENT_ID=your_client_id
+```
+
+## 🌐 Web Application Deployment
+
+### Option 1: Firebase Hosting (Recommended)
 
 ```bash
-# Add all changes
-git add .
+# Build the application
+npm run build
 
-# Commit changes
-git commit -m "Deploy: Add API hosting configuration and deployment scripts"
+# Deploy to Firebase
+firebase deploy --only hosting
 
-# Push to repository
-git push origin main
+# Deploy with custom domain
+firebase hosting:channel:deploy production --expires 30d
 ```
 
-## Step 4: Set Up Continuous Deployment (Optional)
+### Option 2: Vercel
 
-### GitHub Actions for API
+```bash
+# Install Vercel CLI
+npm install -g vercel
 
-Create `.github/workflows/deploy-api.yml` in your API repository:
+# Deploy
+vercel --prod
 
-```yaml
-name: Deploy API to Cloud Run
-
-on:
-  push:
-    branches: [ main ]
-    paths: [ 'api/**' ]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    
-    - uses: google-github-actions/setup-gcloud@v0
-      with:
-        project_id: ${{ secrets.GCP_PROJECT_ID }}
-        service_account_key: ${{ secrets.GCP_SA_KEY }}
-        export_default_credentials: true
-    
-    - name: Deploy to Cloud Run
-      run: |
-        gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/crow-eye-api
-        gcloud run deploy crow-eye-api \
-          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/crow-eye-api \
-          --platform managed \
-          --region us-central1 \
-          --allow-unauthenticated
+# Configure environment variables in Vercel dashboard
+# Add all required environment variables
 ```
 
-### GitHub Actions for Web App
+### Option 3: Netlify
 
-Create `.github/workflows/deploy-web.yml`:
+```bash
+# Build the application
+npm run build
 
-```yaml
-name: Deploy Web App to Firebase
-
-on:
-  push:
-    branches: [ main ]
-    paths: [ 'src/**', 'public/**' ]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Build
-      run: npm run build
-      env:
-        NEXT_PUBLIC_API_URL: ${{ secrets.API_URL }}
-    
-    - name: Deploy to Firebase
-      uses: FirebaseExtended/action-hosting-deploy@v0
-      with:
-        repoToken: '${{ secrets.GITHUB_TOKEN }}'
-        firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
-        projectId: your-firebase-project-id
+# Deploy to Netlify
+# Upload the 'out' directory to Netlify
+# Or connect GitHub repository for automatic deployments
 ```
 
-## Free Tier Limits
+### Custom Domain Setup
 
-### Google Cloud Run
-- 2 million requests/month
-- 360,000 GB-seconds/month
-- 180,000 vCPU-seconds/month
-- 1 GB network egress/month
+1. **Firebase Hosting**:
+   ```bash
+   firebase hosting:channel:deploy production
+   # Follow Firebase console instructions for custom domain
+   ```
 
-### Firebase Hosting
-- 10 GB storage
-- 360 MB/day transfer
-- Custom domain support
+2. **DNS Configuration**:
+   ```
+   Type: CNAME
+   Name: www
+   Value: your-project.web.app
+   
+   Type: A
+   Name: @
+   Value: Firebase hosting IP addresses
+   ```
 
-## Alternative Free Hosting Options
+## 🔧 API Backend Deployment
 
-If you prefer not to use Google Cloud:
+### Option 1: Railway (Recommended)
 
-### Railway (API Alternative)
-1. Visit [railway.app](https://railway.app)
-2. Connect your GitHub repository
-3. Set environment variables
-4. Deploy with one click
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
 
-### Vercel (Web App Alternative)
-1. Visit [vercel.com](https://vercel.com)
-2. Connect your GitHub repository
-3. Set `NEXT_PUBLIC_API_URL` environment variable
-4. Deploy automatically
+# Login to Railway
+railway login
 
-## Monitoring & Maintenance
+# Initialize project
+railway init
+
+# Deploy API
+cd crow_eye_api
+railway up
+```
+
+### Option 2: Heroku
+
+```bash
+# Install Heroku CLI
+# Create Heroku app
+heroku create crowseye-api
+
+# Set environment variables
+heroku config:set DATABASE_URL=your_database_url
+heroku config:set SECRET_KEY=your_secret_key
+
+# Deploy
+git subtree push --prefix=crow_eye_api heroku main
+```
+
+### Option 3: Google Cloud Run
+
+```bash
+# Build and deploy
+cd crow_eye_api
+gcloud run deploy crowseye-api \
+  --source . \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated
+```
+
+### Option 4: Docker Deployment
+
+```bash
+# Build Docker image
+cd crow_eye_api
+docker build -t crowseye-api .
+
+# Run container
+docker run -p 8000:8000 \
+  -e DATABASE_URL=your_database_url \
+  -e SECRET_KEY=your_secret_key \
+  crowseye-api
+```
+
+## 🖥️ Desktop Application Distribution
+
+### Building Desktop Applications
+
+```bash
+# Install build dependencies
+pip install pyinstaller
+
+# Build for current platform
+python scripts/build_desktop_apps.py
+
+# Build for specific platform
+python scripts/build_desktop_apps.py --platform windows
+python scripts/build_desktop_apps.py --platform macos
+python scripts/build_desktop_apps.py --platform linux
+```
+
+### Distribution Options
+
+1. **GitHub Releases**:
+   ```bash
+   # Create release with built executables
+   gh release create v1.0.0 \
+     dist/CrowsEye-Windows.exe \
+     dist/CrowsEye-macOS.dmg \
+     dist/CrowsEye-Linux.AppImage
+   ```
+
+2. **Website Download**:
+   - Upload built executables to your hosting provider
+   - Update download links in the web application
+
+3. **Package Managers**:
+   - **Windows**: Microsoft Store, Chocolatey
+   - **macOS**: Mac App Store, Homebrew
+   - **Linux**: Snap Store, AppImage
+
+## 🗄️ Database Setup
+
+### Firebase Firestore
+
+1. **Initialize Firestore**:
+   ```bash
+   firebase firestore:rules
+   # Configure security rules
+   ```
+
+2. **Security Rules**:
+   ```javascript
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /users/{userId} {
+         allow read, write: if request.auth != null && request.auth.uid == userId;
+       }
+       match /posts/{postId} {
+         allow read, write: if request.auth != null;
+       }
+     }
+   }
+   ```
+
+### PostgreSQL (for API)
+
+1. **Production Database**:
+   ```bash
+   # Railway PostgreSQL
+   railway add postgresql
+   
+   # Or use external provider
+   # Supabase, PlanetScale, etc.
+   ```
+
+2. **Database Migration**:
+   ```bash
+   cd crow_eye_api
+   alembic upgrade head
+   ```
+
+## 📊 Monitoring and Maintenance
+
+### Application Monitoring
+
+1. **Firebase Analytics**:
+   ```javascript
+   // Add to your Next.js app
+   import { analytics } from './lib/firebase';
+   import { logEvent } from 'firebase/analytics';
+   
+   logEvent(analytics, 'page_view');
+   ```
+
+2. **Error Tracking**:
+   ```bash
+   # Install Sentry
+   npm install @sentry/nextjs
+   
+   # Configure in next.config.js
+   ```
+
+3. **Performance Monitoring**:
+   ```javascript
+   // Web Vitals tracking
+   export function reportWebVitals(metric) {
+     console.log(metric);
+     // Send to analytics service
+   }
+   ```
 
 ### API Monitoring
-```bash
-# View API logs
-gcloud run services logs read crow-eye-api --region us-central1
 
-# Check API status
-curl https://your-api-url/health
+1. **Health Checks**:
+   ```python
+   # Add to FastAPI app
+   @app.get("/health")
+   async def health_check():
+       return {"status": "healthy", "timestamp": datetime.utcnow()}
+   ```
+
+2. **Logging**:
+   ```python
+   import logging
+   
+   logging.basicConfig(level=logging.INFO)
+   logger = logging.getLogger(__name__)
+   ```
+
+### Backup Strategy
+
+1. **Database Backups**:
+   ```bash
+   # Firestore export
+   gcloud firestore export gs://your-bucket/backups/$(date +%Y%m%d)
+   
+   # PostgreSQL backup
+   pg_dump $DATABASE_URL > backup.sql
+   ```
+
+2. **Code Backups**:
+   ```bash
+   # Automated GitHub backups
+   git push origin main
+   
+   # Tag releases
+   git tag -a v1.0.0 -m "Release version 1.0.0"
+   git push origin v1.0.0
+   ```
+
+## 🔄 CI/CD Pipeline
+
+### GitHub Actions
+
+Create `.github/workflows/deploy.yml`:
+
+```yaml
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run build
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
+          projectId: your-project-id
+
+  deploy-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install -r crow_eye_api/requirements.txt
+      - run: railway up
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 ```
 
-### Web App Monitoring
-```bash
-# View Firebase hosting logs
-firebase hosting:channel:list
-
-# Check deployment status
-firebase projects:list
-```
-
-## Troubleshooting
+## 🚨 Troubleshooting
 
 ### Common Issues
 
-1. **API not responding**: Check Cloud Run logs and container health
-2. **Web app can't connect to API**: Verify `NEXT_PUBLIC_API_URL` is correct
-3. **Build failures**: Check Node.js version and dependencies
-4. **CORS issues**: API should already be configured for CORS
+1. **Build Failures**:
+   ```bash
+   # Clear cache and reinstall
+   rm -rf node_modules package-lock.json
+   npm install
+   
+   # Check Node.js version
+   node --version  # Should be 20.x+
+   ```
 
-### Getting Help
+2. **Environment Variables**:
+   ```bash
+   # Verify environment variables are set
+   echo $NEXT_PUBLIC_FIREBASE_API_KEY
+   
+   # Check .env.local file exists and is properly formatted
+   ```
 
-- [Google Cloud Run Documentation](https://cloud.google.com/run/docs)
-- [Firebase Console](https://console.firebase.google.com)
-- [Next.js Deployment Guide](https://nextjs.org/docs/deployment)
+3. **Firebase Deployment Issues**:
+   ```bash
+   # Re-login to Firebase
+   firebase logout
+   firebase login
+   
+   # Check project configuration
+   firebase projects:list
+   firebase use your-project-id
+   ```
 
-## Security Considerations
+4. **API Connection Issues**:
+   ```bash
+   # Test API endpoint
+   curl https://your-api-url.com/health
+   
+   # Check CORS configuration
+   # Verify API_URL environment variable
+   ```
 
-1. **API Security**: Consider adding authentication for production
-2. **Environment Variables**: Never commit sensitive data to Git
-3. **HTTPS**: Both services use HTTPS by default
-4. **Rate Limiting**: Consider implementing API rate limiting
+### Performance Optimization
 
-## Final URLs
+1. **Web Application**:
+   ```javascript
+   // Enable compression
+   // next.config.js
+   module.exports = {
+     compress: true,
+     images: {
+       domains: ['your-domain.com'],
+       formats: ['image/webp', 'image/avif'],
+     },
+   };
+   ```
 
-After deployment, you'll have:
-- **API**: `https://crow-eye-api-xxxxx-uc.a.run.app`
-- **Web App**: `https://your-project-id.web.app`
+2. **API Optimization**:
+   ```python
+   # Enable caching
+   from fastapi_cache import FastAPICache
+   from fastapi_cache.backends.redis import RedisBackend
+   
+   FastAPICache.init(RedisBackend(), prefix="crowseye-cache")
+   ```
 
-Both services will automatically scale based on usage and scale to zero when idle, keeping costs minimal.
+### Security Checklist
 
-## Next Steps
+- [ ] HTTPS enabled for all domains
+- [ ] Environment variables secured
+- [ ] API rate limiting configured
+- [ ] Database security rules implemented
+- [ ] CORS properly configured
+- [ ] Authentication tokens secured
+- [ ] Regular security updates applied
 
-1. Test all functionality in production
-2. Set up monitoring and alerts
-3. Consider adding analytics
-4. Plan for scaling if needed
+## 📞 Support
 
-Your Crow's Eye marketing tool is now fully deployed and accessible from anywhere! 🚀 
+For deployment support:
+- **Email**: support@crowseye.tech
+- **Documentation**: [docs.crowseye.tech](https://docs.crowseye.tech)
+- **GitHub Issues**: [Report deployment issues](https://github.com/cj1101/CrowsEyeWebsite/issues)
+
+---
+
+**Happy Deploying! 🚀** 

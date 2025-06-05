@@ -3,7 +3,7 @@
  * Comprehensive client library for connecting to the crow_eye_api backend
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001';
 
 export interface ApiResponse<T = any> {
   data?: T;
@@ -130,29 +130,29 @@ class CrowsEyeAPI {
 
   // Authentication endpoints
   async login(email: string, password: string): Promise<ApiResponse<{ access_token: string; user: any }>> {
-    return this.request('/auth/login', {
+    return this.request('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
   }
 
   async register(email: string, password: string, name: string): Promise<ApiResponse<{ access_token: string; user: any }>> {
-    return this.request('/auth/register', {
+    return this.request('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, password, name }),
     });
   }
 
   async getCurrentUser(): Promise<ApiResponse<any>> {
-    return this.request('/auth/me');
+    return this.request('/api/auth/me');
   }
 
   // Media endpoints
   async uploadMedia(file: File): Promise<ApiResponse<MediaItem>> {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('files', file);
 
-    return this.request('/media/', {
+    return this.request('/api/media/upload', {
       method: 'POST',
       headers: {}, // Let browser set Content-Type for FormData
       body: formData,
@@ -160,15 +160,15 @@ class CrowsEyeAPI {
   }
 
   async getMedia(mediaId: string): Promise<ApiResponse<MediaItem>> {
-    return this.request(`/media/${mediaId}`);
+    return this.request(`/api/media/${mediaId}`);
   }
 
   async listMedia(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ media: MediaItem[]; total: number }>> {
-    return this.request(`/media/?limit=${limit}&offset=${offset}`);
+    return this.request(`/api/media/?limit=${limit}&skip=${offset}`);
   }
 
   async deleteMedia(mediaId: string): Promise<ApiResponse<{ message: string }>> {
-    return this.request(`/media/${mediaId}`, {
+    return this.request(`/api/media/${mediaId}`, {
       method: 'DELETE',
     });
   }
@@ -185,10 +185,10 @@ class CrowsEyeAPI {
     } = {}
   ): Promise<ApiResponse<AudioItem>> {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('files', file);
     formData.append('request', JSON.stringify(options));
 
-    return this.request('/audio/import', {
+    return this.request('/api/audio/upload', {
       method: 'POST',
       headers: {},
       body: formData,
@@ -196,7 +196,7 @@ class CrowsEyeAPI {
   }
 
   async getAudio(audioId: string): Promise<ApiResponse<AudioItem>> {
-    return this.request(`/audio/${audioId}`);
+    return this.request(`/api/audio/${audioId}`);
   }
 
   async listAudio(
@@ -206,11 +206,11 @@ class CrowsEyeAPI {
   ): Promise<ApiResponse<{ audio_files: AudioItem[]; total: number }>> {
     const params = new URLSearchParams({
       limit: limit.toString(),
-      offset: offset.toString(),
+      skip: offset.toString(),
     });
     if (tags) params.append('tags', tags);
 
-    return this.request(`/audio/?${params}`);
+    return this.request(`/api/audio/?${params}`);
   }
 
   async editAudio(
@@ -250,7 +250,7 @@ class CrowsEyeAPI {
     const params = new URLSearchParams({ period });
     if (platform) params.append('platform', platform);
 
-    return this.request(`/analytics/?${params}`);
+    return this.request(`/api/analytics/overview?${params}`);
   }
 
   async exportAnalytics(request: {
@@ -286,21 +286,21 @@ class CrowsEyeAPI {
     tone?: string;
     include_media?: boolean;
   }): Promise<ApiResponse<StoryData>> {
-    return this.request('/stories/', {
+    return this.request('/api/stories/create', {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
   async getStory(storyId: string): Promise<ApiResponse<StoryData>> {
-    return this.request(`/stories/${storyId}`);
+    return this.request(`/api/stories/${storyId}`);
   }
 
   async listStories(
     limit: number = 50,
     offset: number = 0
   ): Promise<ApiResponse<{ stories: StoryData[]; total: number }>> {
-    return this.request(`/stories/?limit=${limit}&offset=${offset}`);
+    return this.request(`/api/stories/?limit=${limit}&skip=${offset}`);
   }
 
   async updateStory(
@@ -327,21 +327,21 @@ class CrowsEyeAPI {
     duration_preference?: string;
     style_preferences?: any;
   }): Promise<ApiResponse<HighlightReel>> {
-    return this.request('/highlights/', {
+    return this.request('/api/highlights/generate', {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
   async getHighlightReel(highlightId: string): Promise<ApiResponse<HighlightReel>> {
-    return this.request(`/highlights/${highlightId}`);
+    return this.request(`/api/highlights/${highlightId}`);
   }
 
   async listHighlightReels(
     limit: number = 50,
     offset: number = 0
   ): Promise<ApiResponse<{ highlight_reels: HighlightReel[]; total: number }>> {
-    return this.request(`/highlights/?limit=${limit}&offset=${offset}`);
+    return this.request(`/api/highlights/?limit=${limit}&skip=${offset}`);
   }
 
   async updateHighlightReel(
@@ -381,21 +381,21 @@ class CrowsEyeAPI {
     media_selection_criteria: any;
     organization_style?: string;
   }): Promise<ApiResponse<GalleryItem>> {
-    return this.request('/gallery/', {
+    return this.request('/api/gallery/', {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
   async getGallery(galleryId: string): Promise<ApiResponse<GalleryItem>> {
-    return this.request(`/gallery/${galleryId}`);
+    return this.request(`/api/gallery/${galleryId}`);
   }
 
   async listGalleries(
     limit: number = 50,
     offset: number = 0
   ): Promise<ApiResponse<{ galleries: GalleryItem[]; total: number }>> {
-    return this.request(`/gallery/?limit=${limit}&offset=${offset}`);
+    return this.request(`/api/gallery/?limit=${limit}&skip=${offset}`);
   }
 
   async updateGallery(
@@ -416,18 +416,18 @@ class CrowsEyeAPI {
 
   // Admin endpoints (for admin users)
   async getSystemStats(): Promise<ApiResponse<any>> {
-    return this.request('/admin/stats');
+    return this.request('/api/admin/stats');
   }
 
   async listAllUsers(
     limit: number = 50,
     offset: number = 0
   ): Promise<ApiResponse<{ users: any[]; total: number }>> {
-    return this.request(`/admin/users?limit=${limit}&offset=${offset}`);
+    return this.request(`/api/admin/users?limit=${limit}&skip=${offset}`);
   }
 
   async getUserDetails(userId: string): Promise<ApiResponse<any>> {
-    return this.request(`/admin/users/${userId}`);
+    return this.request(`/api/admin/users/${userId}`);
   }
 
   async updateUserSubscription(
