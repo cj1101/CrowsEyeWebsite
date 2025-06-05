@@ -135,7 +135,7 @@ export default function AITools() {
         content: generatedContent,
         platform,
         status: 'draft',
-        userId: 'demo-user'
+        userId: user?.uid || 'anonymous'
       });
 
       alert('Draft saved successfully!');
@@ -163,7 +163,7 @@ export default function AITools() {
         platform,
         status: 'scheduled',
         scheduledTime: scheduledTime.toISOString(),
-        userId: 'demo-user'
+        userId: user?.uid || 'anonymous'
       });
 
       alert('Post scheduled successfully!');

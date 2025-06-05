@@ -135,6 +135,50 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Supported Platforms Section */}
+      <section className="py-16 md:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold gradient-text mb-4">
+              Connect to Every Platform
+            </h2>
+            <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+              Manage all your social media accounts from one powerful dashboard. Crow&apos;s Eye supports all major platforms.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-8">
+            {[
+              { name: 'Instagram', icon: '📱', description: 'Posts, Stories, Reels' },
+              { name: 'Facebook', icon: '📘', description: 'Posts, Events, Pages' },
+              { name: 'Twitter/X', icon: '🐦', description: 'Tweets, Threads, Spaces' },
+              { name: 'LinkedIn', icon: '💼', description: 'Posts, Articles, Updates' },
+              { name: 'TikTok', icon: '🎵', description: 'Videos, Effects, Trending' },
+              { name: 'YouTube', icon: '📺', description: 'Videos, Shorts, Community' },
+              { name: 'Pinterest', icon: '📌', description: 'Pins, Boards, Ideas' }
+            ].map((platform) => (
+              <div key={platform.name} className="platform-card bg-black/30 backdrop-blur-sm p-6 rounded-xl shadow-xl hover:shadow-primary-500/20 transition-all duration-300 transform hover:-translate-y-1 text-center">
+                <div className="text-4xl mb-3">{platform.icon}</div>
+                <h3 className="text-lg font-semibold text-white mb-2">{platform.name}</h3>
+                <p className="text-gray-400 text-xs">{platform.description}</p>
+              </div>
+            ))}
+          </div>
+          
+          <div className="text-center mt-12">
+            <p className="text-gray-300 mb-4">
+              More platforms being added regularly. Request your favorite platform!
+            </p>
+            <Link
+              href="/contact"
+              className="border border-primary-500 text-primary-400 px-6 py-2 rounded-lg text-sm font-semibold hover:bg-primary-500/10 transition-all duration-300 inline-block"
+            >
+              Request Platform
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Placeholder for Teaser Video/Screenshots Section */}
       <section className="py-16 md:py-24 bg-black/20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -189,6 +233,13 @@ export default function Home() {
         }
         .feature-card:hover {
           border: 1px solid rgba(var(--color-primary-500-rgb), 0.2);
+        }
+        .platform-card {
+          border: 1px solid rgba(var(--color-primary-500-rgb), 0.1);
+        }
+        .platform-card:hover {
+          border: 1px solid rgba(var(--color-primary-500-rgb), 0.3);
+          background: rgba(var(--color-primary-500-rgb), 0.05);
         }
         .animation-delay-2000 {
           animation-delay: 2s;

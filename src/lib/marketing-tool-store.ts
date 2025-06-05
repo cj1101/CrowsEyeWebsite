@@ -94,7 +94,7 @@ export const settingsStore = {
   getSettings(): UserSettings {
     if (!sessionSettings) {
       sessionSettings = getFromStorage(STORAGE_KEYS.SETTINGS, {
-        userId: 'demo-user',
+        userId: 'anonymous',
         apiKeys: {},
         preferences: {
           defaultPlatform: 'instagram',

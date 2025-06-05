@@ -31,19 +31,7 @@ export default function SignInPage() {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setIsSubmitting(true);
-    try {
-      const result = await login('demo@crowseye.com', 'demo123');
-      if (result.success) {
-        router.push('/dashboard');
-      }
-    } catch (err) {
-      console.error('Demo login error:', err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
@@ -57,27 +45,7 @@ export default function SignInPage() {
           </p>
         </div>
 
-        {/* Demo Login Section */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Demo Access</h3>
-          <p className="text-gray-300 text-sm mb-4">
-            Try out all features with demo account access
-          </p>
-          <button
-            onClick={handleDemoLogin}
-            disabled={loading || isSubmitting}
-            className="w-full bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-          >
-            {loading || isSubmitting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Signing in...
-              </>
-            ) : (
-              'Continue with Demo Account'
-            )}
-          </button>
-        </div>
+
 
         {/* Regular Login Form */}
         <form onSubmit={handleSubmit} className="space-y-6">

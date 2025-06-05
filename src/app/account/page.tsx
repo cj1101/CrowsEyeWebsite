@@ -8,8 +8,8 @@ export default function AccountPage() {
   const { userProfile, logout } = useAuth();
   
   const [user] = useState({
-    name: userProfile?.displayName || 'Demo User',
-    email: userProfile?.email || 'demo@example.com',
+    name: userProfile?.displayName || 'Guest User',
+    email: userProfile?.email || 'guest@example.com',
     plan: userProfile?.plan || 'Free',
     joinDate: userProfile?.createdAt || '2024-01-01'
   });

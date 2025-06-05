@@ -92,7 +92,8 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
     } catch (err) {
       console.error('Error opening customer portal:', err)
       // Fallback to a generic Stripe billing portal URL for demo
-      window.open('https://billing.stripe.com/p/login/test_demo', '_blank')
+      // Billing portal disabled - contact support
+      alert('Billing portal is currently disabled. Please contact support for assistance.')
     }
   }
 

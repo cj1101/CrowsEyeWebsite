@@ -9,6 +9,7 @@ import {
   DocumentTextIcon,
   CogIcon
 } from '@heroicons/react/24/outline';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Platform {
   id: string;
@@ -29,6 +30,7 @@ interface UserSettings {
 }
 
 export default function PostCreator() {
+  const { user } = useAuth();
   const [content, setContent] = useState('');
   const [prompt, setPrompt] = useState('');
   const [tone, setTone] = useState('professional');
@@ -135,7 +137,7 @@ export default function PostCreator() {
         content: content + (hashtags ? `\n\n${hashtags}` : ''),
         platform: enabledPlatformIds[0],
         status: 'draft',
-        userId: 'demo-user'
+        userId: user?.uid || 'anonymous'
       });
 
       alert('Draft saved successfully!');
@@ -175,7 +177,7 @@ export default function PostCreator() {
         platform: enabledPlatformIds[0],
         status: 'scheduled',
         scheduledTime,
-        userId: 'demo-user'
+        userId: user?.uid || 'anonymous'
       });
 
       alert('Post scheduled successfully!');

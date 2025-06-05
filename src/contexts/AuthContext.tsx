@@ -27,18 +27,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
 }
 
-// Mock user data for demo
-const mockUserProfile: UserProfile = {
-  id: 'demo-user-123',
-  email: 'demo@crowseye.com',
-  displayName: 'Demo User',
-  firstName: 'Demo',
-  lastName: 'User',
-  avatar: '/images/avatar-placeholder.png',
-  plan: 'creator',
-  createdAt: '2024-01-01T00:00:00Z',
-  lastLoginAt: new Date().toISOString(),
-};
+
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -70,30 +59,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Start logged out
 
-  // Mock login function
+  // Mock login function - disabled for production
   const login = useCallback(async (email?: string, _password?: string) => {
     try {
-      setError(null);
-      setLoading(true);
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Set user as authenticated with mock profile
-      setIsAuthenticated(true);
-      setUserProfile({
-        ...mockUserProfile,
-        email: email || mockUserProfile.email,
-        lastLoginAt: new Date().toISOString(),
-      });
-
-      return { success: true };
+      setError('Authentication is currently disabled. Please contact support for access.');
+      return { success: false, error: 'Authentication is currently disabled' };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
       setError(errorMessage);
       return { success: false, error: errorMessage };
-    } finally {
-      setLoading(false);
     }
   }, []);
 

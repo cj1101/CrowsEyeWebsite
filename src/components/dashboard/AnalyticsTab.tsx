@@ -1,34 +1,26 @@
 'use client';
 
 import React from 'react';
-import { useAnalytics } from '@/hooks/api/useAnalytics';
 
 export default function AnalyticsTab() {
-  const { data: analytics, loading, error } = useAnalytics();
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-red-400">Error loading analytics: {error}</p>
-      </div>
-    );
-  }
-
-  if (!analytics) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-400">No analytics data available</p>
-      </div>
-    );
-  }
+  // Static analytics data for demo
+  const analytics = {
+    totalPosts: 156,
+    totalViews: 45230,
+    totalLikes: 3420,
+    totalComments: 892,
+    engagementRate: 8.7,
+    topPosts: [
+      { id: '1', title: 'Summer Campaign Launch', views: 2340, likes: 156, platform: 'Instagram' },
+      { id: '2', title: 'Product Showcase Video', views: 1890, likes: 134, platform: 'Facebook' },
+      { id: '3', title: 'Behind the Scenes', views: 1560, likes: 98, platform: 'Instagram' }
+    ],
+    platformStats: [
+      { platform: 'Instagram', posts: 89, engagement: 9.2 },
+      { platform: 'Facebook', posts: 45, engagement: 7.8 },
+      { platform: 'Twitter', posts: 22, engagement: 6.5 }
+    ]
+  };
 
   return (
     <div className="space-y-6">

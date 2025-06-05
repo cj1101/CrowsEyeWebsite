@@ -13,19 +13,19 @@ export default function ForgotPasswordPage() {
             Reset Password
           </h2>
           <p className="text-gray-400 mb-8">
-            Password reset is currently disabled for the demo version.
+            Password reset is currently disabled. Please contact support for assistance.
           </p>
           
           <div className="bg-gray-800 rounded-lg p-6 mb-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Demo Access</h3>
+            <h3 className="text-lg font-semibold text-white mb-4">Need Help?</h3>
             <p className="text-gray-300 text-sm mb-4">
-              You can explore all features of Crow's Eye Marketing Suite without authentication.
+              Authentication features are currently disabled. Please contact our support team for assistance.
             </p>
             <Link
-              href="/dashboard"
+              href="/contact"
               className="w-full bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 inline-block text-center"
             >
-              Continue to Dashboard
+              Contact Support
             </Link>
           </div>
 
