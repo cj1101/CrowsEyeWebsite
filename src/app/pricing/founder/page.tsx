@@ -6,7 +6,7 @@ import { Check, Eye, Crown, Zap, Star, Shield, Headphones } from 'lucide-react'
 const founderPlan = {
   name: "Founder's Legacy",
   price: { monthly: 10 },
-  originalPrice: { monthly: 89 },
+  originalPrice: { monthly: 49 },
   description: "Exclusive lifetime pricing for visionary founders",
   features: [
     "1000 AI credits per month",
@@ -28,8 +28,7 @@ const founderPlan = {
     "Custom domain support",
     "Enterprise-grade security & compliance"
   ],
-  buttonText: "Claim Founder's Price",
-  badge: "LIMITED TIME"
+  buttonText: "Claim Founder's Price"
 };
 
 const founderBenefits = [
@@ -108,7 +107,7 @@ export default function FounderPricingPage() {
 
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-6 py-3 rounded-full font-bold text-lg mb-12">
             <Star className="h-5 w-5" />
-            {founderPlan.badge} - Save {savings.percent}% Forever!
+            Save {savings.percent}% Forever!
           </div>
         </div>
       </section>
@@ -117,13 +116,7 @@ export default function FounderPricingPage() {
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative vision-card rounded-3xl p-12 ring-4 ring-yellow-500/50 bg-gradient-to-br from-purple-900/20 to-yellow-900/20">
-            {/* Badge - Fixed positioning */}
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-              <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-6 py-3 rounded-full text-lg font-bold tech-subheading">
-                <Crown className="h-5 w-5" />
-                {founderPlan.badge}
-              </div>
-            </div>
+
             
             <div className="text-center mb-12 pt-4">
               <h3 className="text-4xl font-bold text-white mb-4 tech-heading">{founderPlan.name}</h3>

@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation'
 const pricingPlans = [
   {
     name: "Free Plan",
-    price: "$0/month",
+    monthlyPrice: 0,
+    yearlyPrice: 0,
     description: "Try us out!",
     targetUser: "Individuals",
     limits: {
@@ -36,7 +37,8 @@ const pricingPlans = [
   },
   {
     name: "Creator Plan",
-    price: "$19/month", 
+    monthlyPrice: 19,
+    yearlyPrice: 190,
     description: "Individuals & Creators",
     targetUser: "Content Creators",
     limits: {
@@ -67,7 +69,8 @@ const pricingPlans = [
   },
   {
     name: "Growth Plan",
-    price: "$35/month",
+    monthlyPrice: 35,
+    yearlyPrice: 350,
     description: "Growing businesses & marketers",
     targetUser: "Growing Businesses",
     limits: {
@@ -98,7 +101,8 @@ const pricingPlans = [
   },
   {
     name: "Pro Plan",
-    price: "$49/month",
+    monthlyPrice: 49,
+    yearlyPrice: 490,
     description: "Professionals & Small Teams", 
     targetUser: "Professionals",
     limits: {
@@ -129,7 +133,8 @@ const pricingPlans = [
   },
   {
     name: "Business Plan",
-    price: "Contact Us",
+    monthlyPrice: 0,
+    yearlyPrice: 0,
     description: "Agencies & Larger Teams",
     targetUser: "Enterprise",
     limits: {
@@ -166,6 +171,17 @@ export default function PricingPage() {
     const passcode = prompt("What's the passcode?");
     if (passcode && passcode.toLowerCase() === 'plz') {
       router.push('/pricing/founder');
+    }
+  };
+
+  const getDisplayPrice = (plan: typeof pricingPlans[0]) => {
+    if (plan.paymentType === 'free') return '$0/month';
+    if (plan.paymentType === 'contact') return 'Contact Us';
+    
+    if (billingPeriod === 'monthly') {
+      return `$${plan.monthlyPrice}/month`;
+    } else {
+      return `$${plan.yearlyPrice}/year`;
     }
   };
 
@@ -270,7 +286,7 @@ export default function PricingPage() {
                   {pricingPlans.map((plan, index) => (
                     <th key={index} className="text-center p-6 relative pt-8 pb-12">
                       <div className="text-white font-bold text-lg mb-2 mt-2">{plan.name}</div>
-                      <div className="text-2xl font-bold text-white mb-2">{plan.price}</div>
+                      <div className="text-2xl font-bold text-white mb-2">{getDisplayPrice(plan)}</div>
                       <div className="text-gray-300 text-sm">{plan.targetUser}</div>
                     </th>
                   ))}
@@ -282,7 +298,7 @@ export default function PricingPage() {
                   <td className="p-4 text-white font-medium">Price</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center text-white font-semibold">
-                      <div>{plan.price}</div>
+                      <div>{getDisplayPrice(plan)}</div>
                     </td>
                   ))}
                 </tr>
