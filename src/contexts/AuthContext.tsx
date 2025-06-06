@@ -3,9 +3,12 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { 
   signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
   signInWithPopup, 
   signOut, 
   onAuthStateChanged,
+  sendEmailVerification,
+  updateProfile,
   User
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
@@ -32,6 +35,8 @@ interface AuthContextType {
   error: string | null;
   login: (email?: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<{ success: boolean; error?: string }>;
+  signupWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -47,6 +52,8 @@ const AuthContext = createContext<AuthContextType>({
   error: null,
   login: async () => ({ success: false }),
   loginWithGoogle: async () => ({ success: false }),
+  signup: async () => ({ success: false }),
+  signupWithGoogle: async () => ({ success: false }),
   logout: async () => {},
   isAuthenticated: false,
 });
@@ -208,6 +215,65 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  // Firebase signup function
+  const signup = useCallback(async (email: string, password: string, firstName: string, lastName: string) => {
+    if (!auth) {
+      setError('Authentication service is not available');
+      return { success: false, error: 'Authentication service is not available' };
+    }
+
+    try {
+      setError(null);
+      setLoading(true);
+
+      // Create user with email and password
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Update user profile with name
+      await updateProfile(user, {
+        displayName: `${firstName} ${lastName}`,
+      });
+
+      // Send email verification
+      await sendEmailVerification(user);
+
+      // User profile will be set by the auth state listener
+      return { success: true };
+    } catch (error: any) {
+      let errorMessage = 'Account creation failed';
+      
+      // Handle Firebase Auth errors
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage = 'An account with this email address already exists';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email address';
+          break;
+        case 'auth/weak-password':
+          errorMessage = 'Password is too weak. Please use at least 6 characters';
+          break;
+        case 'auth/operation-not-allowed':
+          errorMessage = 'Email/password accounts are not enabled. Please contact support';
+          break;
+        default:
+          errorMessage = error.message || 'Account creation failed';
+      }
+
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Google signup function
+  const signupWithGoogle = useCallback(async () => {
+    // Use the same logic as Google login since Google handles signup automatically
+    return await loginWithGoogle();
+  }, [loginWithGoogle]);
+
   // Firebase logout function
   const logout = useCallback(async () => {
     console.log('Logging out user...');
@@ -251,6 +317,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     error,
     login,
     loginWithGoogle,
+    signup,
+    signupWithGoogle,
     logout,
     isAuthenticated,
   };
