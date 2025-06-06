@@ -5,26 +5,26 @@ import { Check, Eye, Crown, Zap, Star, Shield, Headphones } from 'lucide-react'
 
 const founderPlan = {
   name: "Founder's Legacy",
-  price: { monthly: 99, yearly: 999 },
-  originalPrice: { monthly: 299, yearly: 2999 },
+  price: { monthly: 10, yearly: 100 },
+  originalPrice: { monthly: 89, yearly: 890 },
   description: "Exclusive lifetime pricing for visionary founders",
   features: [
-    "Unlimited AI content generations",
+    "1000 AI credits per month",
+    "Advanced team management",
     "Unlimited connected accounts",
+    "Full white-label solution",
+    "Dedicated account manager",
+    "Custom analytics & reporting",
+    "Priority API access",
+    "Custom integrations",
+    "Up to 10 team members",
+    "Revenue sharing program",
+    "200 GB storage",
     "Priority AI model access (GPT-4, Claude, etc.)",
     "Custom AI training on your brand voice",
-    "White-label solution with your branding",
-    "Dedicated account manager",
-    "24/7 priority support",
-    "Advanced analytics & reporting",
-    "API access with higher rate limits",
-    "Custom integrations",
-    "Team collaboration (up to 25 users)",
-    "Video processing & editing suite",
     "Advanced scheduling automation",
     "Exclusive founder community access",
     "Beta feature early access",
-    "Revenue sharing program eligibility",
     "Custom domain support",
     "Enterprise-grade security & compliance"
   ],
@@ -35,18 +35,18 @@ const founderPlan = {
 const founderBenefits = [
   {
     icon: <Crown className="h-8 w-8 text-yellow-400" />,
-    title: "Founder's Legacy",
-    description: "Lock in this price forever as one of our founding members"
+    title: "Pro-Level Access",
+    description: "Get all Pro features for $10/month - locked in forever as a founding member"
   },
   {
     icon: <Zap className="h-8 w-8 text-purple-400" />,
     title: "Cutting-Edge Features",
-    description: "Get access to the latest AI models and features before anyone else"
+    description: "Same powerful features as Pro plan: 1000 AI credits, unlimited accounts, team management"
   },
   {
     icon: <Shield className="h-8 w-8 text-green-400" />,
     title: "Lifetime Price Lock",
-    description: "Your pricing will never increase, even as we add more value"
+    description: "Your $10/month pricing will never increase, even as Pro plan prices go up"
   }
 ];
 
@@ -89,23 +89,23 @@ export default function FounderPricingPage() {
             <Crown className="h-12 w-12 text-yellow-400" />
             <h2 className="text-5xl md:text-7xl font-bold tech-heading">
               <span className="bg-gradient-to-r from-yellow-400 to-purple-400 bg-clip-text text-transparent">
-                Founder's
+                $10/Month
               </span>
               <br />
               <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Exclusive
+                Pro Access
               </span>
             </h2>
           </div>
           
           <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed tech-body">
             You found the secret! As one of our early believers, you deserve something special. 
-            This founder's pricing is our way of saying thank you for believing in our vision.
+            Get Pro-level features for just $10/month - our way of saying thank you for believing in our vision.
           </p>
 
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-6 py-3 rounded-full font-bold text-lg mb-12">
             <Star className="h-5 w-5" />
-            {founderPlan.badge} - Save {savings.percent}%
+            {founderPlan.badge} - Save {savings.percent}% Forever!
           </div>
         </div>
       </section>
@@ -151,7 +151,7 @@ export default function FounderPricingPage() {
                 
                 <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 vision-card rounded-xl p-4 mb-6">
                   <div className="text-2xl font-bold text-green-400 mb-2">Save ${savings.yearly} per year!</div>
-                  <div className="text-green-300">That's {savings.percent}% off regular pricing forever</div>
+                  <div className="text-green-300">That's {savings.percent}% off Pro pricing forever - same features, founder price!</div>
                 </div>
               </div>
             </div>
