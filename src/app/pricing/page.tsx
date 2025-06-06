@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { Check, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -31,7 +31,8 @@ const pricingPlans = [
       apiAccess: false
     },
     buttonText: "Get Started Free",
-    buttonClass: "border-2 border-purple-500 text-purple-400 hover:bg-purple-500/10"
+    buttonClass: "border-2 border-purple-500 text-purple-400 hover:bg-purple-500/10",
+    paymentType: "free"
   },
   {
     name: "Creator Plan",
@@ -59,12 +60,14 @@ const pricingPlans = [
       apiAccess: false
     },
     buttonText: "Start Creating",
-    buttonClass: "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
+    buttonClass: "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600",
+    paymentType: "creator",
+    monthlyUrl: "https://buy.stripe.com/9B65kD655g0j6iqg9BeIw00",
+    yearlyUrl: "https://buy.stripe.com/6oU4gz511bK36iqf5xeIw01"
   },
   {
     name: "Growth Plan",
     price: "$35/month",
-    yearlyPrice: "$350/year",
     description: "Growing businesses & marketers",
     targetUser: "Growing Businesses",
     limits: {
@@ -88,7 +91,10 @@ const pricingPlans = [
       apiAccess: false
     },
     buttonText: "Scale Your Growth",
-    buttonClass: "bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
+    buttonClass: "bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600",
+    paymentType: "growth",
+    monthlyUrl: "https://buy.stripe.com/bJe9ATeBB7tN6iqf5xeIw02",
+    yearlyUrl: "https://buy.stripe.com/3cI5kDbpp15p5emcXpeIw03"
   },
   {
     name: "Pro Plan",
@@ -116,7 +122,10 @@ const pricingPlans = [
       apiAccess: true
     },
     buttonText: "Go Pro",
-    buttonClass: "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
+    buttonClass: "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600",
+    paymentType: "pro",
+    monthlyUrl: "https://buy.stripe.com/5kQ3cvfFF3dx22a8H9eIw04",
+    yearlyUrl: "https://buy.stripe.com/dRm00j2ST9BVeOW6z1eIw05"
   },
   {
     name: "Business Plan",
@@ -144,17 +153,35 @@ const pricingPlans = [
       apiAccess: true
     },
     buttonText: "Contact Sales",
-    buttonClass: "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600"
+    buttonClass: "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600",
+    paymentType: "contact"
   }
 ];
 
 export default function PricingPage() {
   const router = useRouter();
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
   const handlePerfectClick = () => {
     const passcode = prompt("What's the passcode?");
     if (passcode && passcode.toLowerCase() === 'plz') {
       router.push('/pricing/founder');
+    }
+  };
+
+  const handlePlanSelect = (plan: typeof pricingPlans[0]) => {
+    if (plan.paymentType === 'free') {
+      // Handle free plan signup
+      window.open('/auth/register', '_blank');
+    } else if (plan.paymentType === 'contact') {
+      // Handle contact sales
+      window.open('/contact', '_blank');
+    } else {
+      // Handle paid plans
+      const url = billingPeriod === 'monthly' ? plan.monthlyUrl : plan.yearlyUrl;
+      if (url) {
+        window.open(url, '_blank');
+      }
     }
   };
 
@@ -187,7 +214,7 @@ export default function PricingPage() {
             </span>
           </h2>
           
-          <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed tech-body">
+          <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed tech-body">
             Choose the{' '}
             <span 
               onClick={handlePerfectClick}
@@ -204,6 +231,31 @@ export default function PricingPage() {
             plan for your content creation needs. All plans include our core AI features 
             and direct social media posting capabilities.
           </p>
+
+          {/* Billing Toggle */}
+          <div className="flex items-center justify-center gap-4 mb-12">
+            <span className={`text-lg ${billingPeriod === 'monthly' ? 'text-white font-semibold' : 'text-gray-400'}`}>
+              Monthly
+            </span>
+            <button
+              onClick={() => setBillingPeriod(billingPeriod === 'monthly' ? 'yearly' : 'monthly')}
+              className="relative inline-flex h-8 w-16 items-center rounded-full bg-purple-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+            >
+              <span
+                className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                  billingPeriod === 'yearly' ? 'translate-x-8' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className={`text-lg ${billingPeriod === 'yearly' ? 'text-white font-semibold' : 'text-gray-400'}`}>
+              Annual
+            </span>
+            {billingPeriod === 'yearly' && (
+              <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                Save 17%
+              </span>
+            )}
+          </div>
         </div>
       </section>
 
@@ -219,9 +271,6 @@ export default function PricingPage() {
                     <th key={index} className="text-center p-6 relative pt-8 pb-12">
                       <div className="text-white font-bold text-lg mb-2 mt-2">{plan.name}</div>
                       <div className="text-2xl font-bold text-white mb-2">{plan.price}</div>
-                      {plan.yearlyPrice && (
-                        <div className="text-sm text-green-400 mb-2">{plan.yearlyPrice}</div>
-                      )}
                       <div className="text-gray-300 text-sm">{plan.targetUser}</div>
                     </th>
                   ))}
@@ -234,9 +283,6 @@ export default function PricingPage() {
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center text-white font-semibold">
                       <div>{plan.price}</div>
-                      {plan.yearlyPrice && (
-                        <div className="text-sm text-green-400 mt-1">{plan.yearlyPrice}</div>
-                      )}
                     </td>
                   ))}
                 </tr>
@@ -412,7 +458,10 @@ export default function PricingPage() {
                   <td className="p-4"></td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-6 text-center">
-                      <button className={`w-full py-3 px-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105 ${plan.buttonClass}`}>
+                      <button 
+                        onClick={() => handlePlanSelect(plan)}
+                        className={`w-full py-3 px-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105 ${plan.buttonClass}`}
+                      >
                         {plan.buttonText}
                       </button>
                     </td>
