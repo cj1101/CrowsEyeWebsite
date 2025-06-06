@@ -95,17 +95,37 @@ const categories = [
 
 export default function FeaturesPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen darker-gradient-bg logo-bg-overlay">
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5"></div>
+        
+        {/* Logo Header */}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-16">
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <img 
+              src="/icon.png" 
+              alt="Crow's Eye Logo" 
+              className="h-16 w-16 md:h-20 md:w-20 opacity-90"
+            />
+            <div className="text-left">
+              <h1 className="text-2xl md:text-4xl font-bold tech-heading gradient-text-animated">
+                CROW'S EYE
+              </h1>
+              <p className="text-purple-300 text-sm md:text-base tech-subheading">
+                AI Marketing Suite
+              </p>
+            </div>
+          </div>
+        </div>
+        
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-6 py-3 mb-8">
+          <div className="inline-flex items-center gap-2 vision-card rounded-full px-6 py-3 mb-8">
             <Eye className="h-5 w-5 text-purple-400" />
-            <span className="text-sm font-medium text-gray-300">The Crow's Eye Advantage</span>
+            <span className="text-sm font-medium text-gray-300 tech-body">The Crow's Eye Advantage</span>
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-bold mb-6">
+          <h2 className="text-5xl md:text-7xl font-bold mb-6 tech-heading">
             <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
               Powerful Features
             </span>
@@ -113,9 +133,9 @@ export default function FeaturesPage() {
             <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
               Built for Creators
             </span>
-          </h1>
+          </h2>
           
-          <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed tech-body">
             Unlock the full potential of AI-powered marketing with Google's Gemini integration. 
             Every feature is designed to amplify your creative vision and streamline your workflow.
           </p>
@@ -129,34 +149,34 @@ export default function FeaturesPage() {
             {features.map((feature, index) => (
               <div 
                 key={feature.title}
-                className={`group relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-500 hover:scale-105 ${
+                className={`group relative vision-card rounded-2xl p-8 hover:bg-white/5 transition-all duration-500 hover:scale-105 ${
                   feature.highlight ? 'ring-2 ring-purple-500/50' : ''
                 }`}
               >
                 {feature.highlight && (
                   <div className="absolute -top-3 left-6">
-                    <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+                    <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-1 rounded-full text-sm font-medium tech-subheading">
                       Featured
                     </span>
                   </div>
                 )}
                 
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="p-3 bg-white/10 rounded-xl group-hover:bg-white/20 transition-colors">
+                  <div className="p-3 vision-card rounded-xl group-hover:bg-white/10 transition-colors">
                     {feature.icon}
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-white mb-1">{feature.title}</h3>
-                    <p className="text-sm text-purple-300 font-medium">{feature.subtitle}</p>
+                    <h3 className="text-xl font-bold text-white mb-1 tech-subheading">{feature.title}</h3>
+                    <p className="text-sm text-purple-300 font-medium tech-body">{feature.subtitle}</p>
                   </div>
                 </div>
                 
-                <p className="text-gray-300 leading-relaxed mb-6">
+                <p className="text-gray-300 leading-relaxed mb-6 tech-body">
                   {feature.description}
                 </p>
                 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm px-3 py-1 bg-white/10 rounded-full text-gray-300">
+                  <span className="text-sm px-3 py-1 vision-card rounded-full text-gray-300 tech-body">
                     {feature.category}
                   </span>
                   <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
@@ -171,8 +191,8 @@ export default function FeaturesPage() {
       <section className="py-20 bg-black/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">Feature Categories</h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+            <h2 className="text-4xl font-bold text-white mb-4 tech-heading">Feature Categories</h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto tech-body">
               Organized by purpose, designed for impact
             </p>
           </div>
@@ -181,15 +201,15 @@ export default function FeaturesPage() {
             {categories.map((category, index) => (
               <div 
                 key={category.name}
-                className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all duration-300"
+                className="vision-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300"
               >
                 <div className={`w-12 h-12 bg-gradient-to-r ${category.color} rounded-lg mb-4 flex items-center justify-center`}>
-                  <span className="text-white font-bold text-xl">
+                  <span className="text-white font-bold text-xl tech-heading">
                     {features.filter(f => f.category === category.name).length}
                   </span>
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">{category.name}</h3>
-                <p className="text-gray-400 text-sm">{category.description}</p>
+                <h3 className="text-lg font-bold text-white mb-2 tech-subheading">{category.name}</h3>
+                <p className="text-gray-400 text-sm tech-body">{category.description}</p>
               </div>
             ))}
           </div>
@@ -199,24 +219,24 @@ export default function FeaturesPage() {
       {/* CTA Section */}
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-white/20 rounded-3xl p-12">
-            <h2 className="text-4xl font-bold text-white mb-6">
+          <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 vision-card rounded-3xl p-12">
+            <h2 className="text-4xl font-bold text-white mb-6 tech-heading">
               Ready to Experience the Power?
             </h2>
-            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto tech-body">
               Join thousands of creators who have already transformed their social media strategy with Crow's Eye.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a 
                 href="/demo" 
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-4 rounded-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 hover:scale-105"
+                className="inline-flex items-center gap-2 vision-button text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105 tech-subheading"
               >
                 <Eye className="h-5 w-5" />
                 Try Live Demo
               </a>
               <a 
                 href="/download" 
-                className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/20 transition-all duration-300"
+                className="inline-flex items-center gap-2 vision-card text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/10 transition-all duration-300 tech-subheading"
               >
                 <ArrowRight className="h-5 w-5" />
                 Download Now
