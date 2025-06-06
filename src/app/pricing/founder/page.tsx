@@ -5,8 +5,8 @@ import { Check, Eye, Crown, Zap, Star, Shield, Headphones } from 'lucide-react'
 
 const founderPlan = {
   name: "Founder's Legacy",
-  price: { monthly: 10, yearly: 100 },
-  originalPrice: { monthly: 89, yearly: 890 },
+  price: { monthly: 10 },
+  originalPrice: { monthly: 89 },
   description: "Exclusive lifetime pricing for visionary founders",
   features: [
     "1000 AI credits per month",
@@ -53,11 +53,14 @@ const founderBenefits = [
 export default function FounderPricingPage() {
   const calculateSavings = () => {
     const monthlySavings = founderPlan.originalPrice.monthly - founderPlan.price.monthly;
-    const yearlySavings = founderPlan.originalPrice.yearly - founderPlan.price.yearly;
-    return { monthly: monthlySavings, yearly: yearlySavings, percent: Math.round((monthlySavings / founderPlan.originalPrice.monthly) * 100) };
+    return { monthly: monthlySavings, percent: Math.round((monthlySavings / founderPlan.originalPrice.monthly) * 100) };
   };
 
   const savings = calculateSavings();
+
+  const handleClaimFounderPrice = () => {
+    window.open('https://buy.stripe.com/3cI8wP2ST9BVcGO9LdeIw06', '_blank');
+  };
 
   return (
     <div className="min-h-screen darker-gradient-bg logo-bg-overlay">
@@ -114,20 +117,20 @@ export default function FounderPricingPage() {
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative vision-card rounded-3xl p-12 ring-4 ring-yellow-500/50 bg-gradient-to-br from-purple-900/20 to-yellow-900/20">
-            {/* Badge */}
-            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2">
-              <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-6 py-2 rounded-full text-lg font-bold tech-subheading">
+            {/* Badge - Fixed positioning */}
+            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+              <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-6 py-3 rounded-full text-lg font-bold tech-subheading">
                 <Crown className="h-5 w-5" />
                 {founderPlan.badge}
               </div>
             </div>
             
-            <div className="text-center mb-12">
+            <div className="text-center mb-12 pt-4">
               <h3 className="text-4xl font-bold text-white mb-4 tech-heading">{founderPlan.name}</h3>
               <p className="text-gray-300 text-lg mb-8 tech-body">{founderPlan.description}</p>
               
               <div className="mb-8">
-                <div className="flex items-center justify-center gap-4 mb-4">
+                <div className="flex items-center justify-center mb-4">
                   <div className="text-center">
                     <div className="text-gray-400 line-through text-2xl">
                       ${founderPlan.originalPrice.monthly}/mo
@@ -137,20 +140,10 @@ export default function FounderPricingPage() {
                       <span className="text-xl text-gray-400">/month</span>
                     </div>
                   </div>
-                  <div className="text-6xl text-gray-600">|</div>
-                  <div className="text-center">
-                    <div className="text-gray-400 line-through text-2xl">
-                      ${founderPlan.originalPrice.yearly}/yr
-                    </div>
-                    <div className="text-5xl font-bold text-white tech-heading">
-                      ${founderPlan.price.yearly}
-                      <span className="text-xl text-gray-400">/year</span>
-                    </div>
-                  </div>
                 </div>
                 
                 <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 vision-card rounded-xl p-4 mb-6">
-                  <div className="text-2xl font-bold text-green-400 mb-2">Save ${savings.yearly} per year!</div>
+                  <div className="text-2xl font-bold text-green-400 mb-2">Save ${savings.monthly} per month!</div>
                   <div className="text-green-300">That's {savings.percent}% off Pro pricing forever - same features, founder price!</div>
                 </div>
               </div>
@@ -168,7 +161,10 @@ export default function FounderPricingPage() {
             
             {/* CTA Button */}
             <div className="text-center">
-              <button className="inline-flex items-center gap-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-12 py-6 rounded-xl font-bold text-xl transition-all duration-300 hover:scale-105 tech-subheading shadow-2xl shadow-yellow-500/25">
+              <button 
+                onClick={handleClaimFounderPrice}
+                className="inline-flex items-center gap-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-black px-12 py-6 rounded-xl font-bold text-xl transition-all duration-300 hover:scale-105 tech-subheading shadow-2xl shadow-yellow-500/25"
+              >
                 <Crown className="h-6 w-6" />
                 {founderPlan.buttonText}
               </button>

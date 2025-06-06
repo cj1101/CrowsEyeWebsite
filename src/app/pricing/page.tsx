@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Check, X, Eye } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 const pricingPlans = [
@@ -64,7 +64,7 @@ const pricingPlans = [
   },
   {
     name: "Pro Plan",
-    price: "$59/month",
+    price: "$49/month",
     description: "Professionals & Small Teams", 
     targetUser: "Professionals",
     limits: {
@@ -82,7 +82,7 @@ const pricingPlans = [
       basicVideoTools: true,
       advancedContent: "Full Video Suite",
       analytics: "Advanced Analytics",
-      teamCollaboration: true,
+      teamCollaboration: false,
       support: "Priority Email Support",
       customBranding: false,
       apiAccess: false
@@ -110,9 +110,9 @@ const pricingPlans = [
       basicVideoTools: true,
       advancedContent: "All Pro features +",
       analytics: "Custom Analytics & Reporting",
-      teamCollaboration: "Advanced Collaboration",
+      teamCollaboration: false,
       support: "Dedicated Account Manager",
-      customBranding: true,
+      customBranding: false,
       apiAccess: true
     },
     buttonText: "Contact Sales",
@@ -138,20 +138,32 @@ export default function PricingPage() {
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex items-center justify-center gap-4 mb-8">
-            <Eye className="h-12 w-12 text-purple-400" />
-            <h1 className="text-4xl md:text-6xl font-bold tech-heading">
-              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Choose Your Plan
-              </span>
-            </h1>
+            <img 
+              src="/crows_eye_logo_transparent.png" 
+              alt="Crow's Eye Logo" 
+              className="h-16 w-16 opacity-90"
+            />
+            <div className="text-left">
+              <h1 className="text-2xl md:text-4xl font-bold tech-heading gradient-text-animated">
+                CROW'S EYE
+              </h1>
+              <p className="text-purple-300 text-sm md:text-base tech-subheading">
+                AI Marketing Suite
+              </p>
+            </div>
           </div>
+          
+          <h2 className="text-4xl md:text-6xl font-bold tech-heading mb-6">
+            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Choose Your Plan
+            </span>
+          </h2>
           
           <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed tech-body">
             Choose the{' '}
             <span 
               onClick={handlePerfectClick}
-              className="cursor-pointer hover:text-purple-300 transition-colors underline decoration-dotted"
-              style={{ textDecoration: 'underline', textDecorationStyle: 'dotted' }}
+              className="cursor-pointer"
               title="Click for special access"
             >
               perfect
@@ -169,19 +181,19 @@ export default function PricingPage() {
             <table className="w-full min-w-[800px] bg-black/20 rounded-2xl border border-purple-500/20">
               <thead>
                 <tr className="border-b border-purple-500/20">
-                  <th className="text-left p-6 text-purple-300 font-semibold">Feature Category</th>
+                  <th className="text-left p-6 text-white font-semibold">Feature Category</th>
                   {pricingPlans.map((plan, index) => (
-                    <th key={index} className="text-center p-6 relative">
+                    <th key={index} className="text-center p-6 relative pb-12">
                       {plan.popular && (
-                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                          <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                        <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                          <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-medium">
                             Most Popular
                           </span>
                         </div>
                       )}
                       <div className="text-white font-bold text-lg mb-2">{plan.name}</div>
-                      <div className="text-2xl font-bold text-purple-300 mb-2">{plan.price}</div>
-                      <div className="text-gray-400 text-sm">{plan.targetUser}</div>
+                      <div className="text-2xl font-bold text-white mb-2">{plan.price}</div>
+                      <div className="text-gray-300 text-sm">{plan.targetUser}</div>
                     </th>
                   ))}
                 </tr>
@@ -189,13 +201,13 @@ export default function PricingPage() {
               <tbody>
                 {/* Price Row */}
                 <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300 font-medium">Price</td>
+                  <td className="p-4 text-white font-medium">Price</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center text-white font-semibold">{plan.price}</td>
                   ))}
                 </tr>
                 <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300 font-medium">Target User</td>
+                  <td className="p-4 text-white font-medium">Target User</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center text-gray-300 text-sm">{plan.description}</td>
                   ))}
@@ -203,36 +215,36 @@ export default function PricingPage() {
 
                 {/* Core Usage Limits */}
                 <tr className="border-b border-purple-500/10">
-                  <td colSpan={5} className="p-4 bg-purple-900/20 font-semibold text-purple-300">
+                  <td colSpan={5} className="p-4 bg-purple-900/20 font-semibold text-white">
                     Core Usage Limits
                   </td>
                 </tr>
                 <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300">Linked Social Accounts</td>
+                  <td className="p-4 text-white">Linked Social Accounts</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center text-white">{plan.limits.linkedAccounts}</td>
                   ))}
                 </tr>
                 <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300">Users</td>
+                  <td className="p-4 text-white">Users</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center text-white">{plan.limits.users}</td>
                   ))}
                 </tr>
                 <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300">AI Credits</td>
+                  <td className="p-4 text-white">AI Credits</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center text-white">{plan.limits.aiCredits}</td>
                   ))}
                 </tr>
                 <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300">Scheduled Posts</td>
+                  <td className="p-4 text-white">Scheduled Posts</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center text-white">{plan.limits.scheduledPosts}</td>
                   ))}
                 </tr>
                 <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300">Media Storage</td>
+                  <td className="p-4 text-white">Media Storage</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center text-white">{plan.limits.mediaStorage}</td>
                   ))}
@@ -240,12 +252,12 @@ export default function PricingPage() {
 
                 {/* Key Features */}
                 <tr className="border-b border-purple-500/10">
-                  <td colSpan={5} className="p-4 bg-purple-900/20 font-semibold text-purple-300">
+                  <td colSpan={5} className="p-4 bg-purple-900/20 font-semibold text-white">
                     Key Features
                   </td>
                 </tr>
                 <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300">Basic Content Tools</td>
+                  <td className="p-4 text-white">Basic Content Tools</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center">
                       {plan.features.basicContentTools ? (
@@ -257,7 +269,7 @@ export default function PricingPage() {
                   ))}
                 </tr>
                 <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300">Smart Gallery</td>
+                  <td className="p-4 text-white">Smart Gallery</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center">
                       {plan.features.smartGallery ? (
@@ -269,7 +281,7 @@ export default function PricingPage() {
                   ))}
                 </tr>
                 <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300">Post Formatting</td>
+                  <td className="p-4 text-white">Post Formatting</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center">
                       {plan.features.postFormatting ? (
@@ -281,7 +293,7 @@ export default function PricingPage() {
                   ))}
                 </tr>
                 <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300">Basic Video Tools</td>
+                  <td className="p-4 text-white">Basic Video Tools</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center">
                       {plan.features.basicVideoTools ? (
@@ -293,13 +305,13 @@ export default function PricingPage() {
                   ))}
                 </tr>
                 <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300">Advanced Content</td>
+                  <td className="p-4 text-white">Advanced Content</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center text-white">
                       {plan.features.advancedContent === false ? (
                         <X className="h-5 w-5 text-red-400 mx-auto" />
                       ) : typeof plan.features.advancedContent === 'string' ? (
-                        <span className="text-sm text-purple-300">{plan.features.advancedContent}</span>
+                        <span className="text-sm text-white">{plan.features.advancedContent}</span>
                       ) : (
                         <Check className="h-5 w-5 text-green-400 mx-auto" />
                       )}
@@ -307,49 +319,23 @@ export default function PricingPage() {
                   ))}
                 </tr>
                 <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300">Analytics</td>
+                  <td className="p-4 text-white">Analytics</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center text-white">
-                      <span className="text-sm text-purple-300">{plan.features.analytics}</span>
+                      <span className="text-sm text-white">{plan.features.analytics}</span>
                     </td>
                   ))}
                 </tr>
                 <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300">Team Collaboration</td>
-                  {pricingPlans.map((plan, index) => (
-                    <td key={index} className="p-4 text-center">
-                      {plan.features.teamCollaboration === false ? (
-                        <X className="h-5 w-5 text-red-400 mx-auto" />
-                      ) : typeof plan.features.teamCollaboration === 'string' ? (
-                        <span className="text-sm text-purple-300">{plan.features.teamCollaboration}</span>
-                      ) : (
-                        <Check className="h-5 w-5 text-green-400 mx-auto" />
-                      )}
-                    </td>
-                  ))}
-                </tr>
-                <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300">Support</td>
+                  <td className="p-4 text-white">Support</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center text-white">
-                      <span className="text-sm text-purple-300">{plan.features.support}</span>
+                      <span className="text-sm text-white">{plan.features.support}</span>
                     </td>
                   ))}
                 </tr>
                 <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300">Custom Branding</td>
-                  {pricingPlans.map((plan, index) => (
-                    <td key={index} className="p-4 text-center">
-                      {plan.features.customBranding ? (
-                        <Check className="h-5 w-5 text-green-400 mx-auto" />
-                      ) : (
-                        <X className="h-5 w-5 text-red-400 mx-auto" />
-                      )}
-                    </td>
-                  ))}
-                </tr>
-                <tr className="border-b border-purple-500/10">
-                  <td className="p-4 text-gray-300">API Access</td>
+                  <td className="p-4 text-white">API Access</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center">
                       {plan.features.apiAccess ? (
