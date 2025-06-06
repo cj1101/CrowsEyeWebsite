@@ -60,7 +60,8 @@ const enhancedTiers = [
       aiCredits: "$0.12 per credit",
       aiEdits: "$2 per edit",
       storage: "$8 per GB"
-    }
+    },
+    isEnterprise: false
   },
   {
     ...TIERS[2], // Growth
@@ -91,7 +92,8 @@ const enhancedTiers = [
       aiEdits: "$1.75 per edit",
       storage: "$6 per GB",
       seats: "$18 per additional user"
-    }
+    },
+    isEnterprise: false
   },
   {
     ...TIERS[3], // Pro Agency
@@ -123,7 +125,8 @@ const enhancedTiers = [
       aiEdits: "$1.50 per edit",
       storage: "$4 per GB",
       seats: "$15 per additional user"
-    }
+    },
+    isEnterprise: false
   },
   {
     ...TIERS[4], // Enterprise
@@ -276,7 +279,7 @@ export default function PricingPage() {
                 key={plan.name}
                 className={`relative vision-card rounded-2xl p-6 hover:bg-white/5 transition-all duration-500 hover:scale-105 ${
                   plan.popular ? 'ring-2 ring-purple-500/50 scale-105' : ''
-                } ${plan.isEnterprise ? 'ring-2 ring-gradient-to-r from-amber-500 to-orange-500' : ''}`}
+                } ${(plan as any).isEnterprise ? 'ring-2 ring-gradient-to-r from-amber-500 to-orange-500' : ''}`}
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -287,21 +290,21 @@ export default function PricingPage() {
                   </div>
                 )}
 
-                {plan.isEnterprise && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <div className="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium tech-subheading">
-                      <Building className="h-3 w-3" />
-                      Enterprise
-                    </div>
-                  </div>
-                )}
-                
-                <div className="text-center mb-6">
-                  <h3 className="text-xl font-bold text-white mb-2 tech-heading">{plan.name}</h3>
-                  <p className="text-gray-400 mb-4 text-sm tech-body">{plan.description}</p>
-                  
-                  <div className="mb-4">
-                    {plan.isEnterprise ? (
+                                 {(plan as any).isEnterprise && (
+                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                     <div className="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium tech-subheading">
+                       <Building className="h-3 w-3" />
+                       Enterprise
+                     </div>
+                   </div>
+                 )}
+                 
+                 <div className="text-center mb-6">
+                   <h3 className="text-xl font-bold text-white mb-2 tech-heading">{plan.name}</h3>
+                   <p className="text-gray-400 mb-4 text-sm tech-body">{plan.description}</p>
+                   
+                   <div className="mb-4">
+                     {(plan as any).isEnterprise ? (
                       <div className="flex items-baseline justify-center gap-1">
                         <span className="text-3xl font-bold text-white tech-heading">Custom</span>
                       </div>
@@ -368,17 +371,17 @@ export default function PricingPage() {
                   </div>
                 </div>
 
-                {/* Overage Pricing */}
-                {plan.overage && (
-                  <div className="mb-6 p-3 bg-purple-900/20 rounded-lg">
-                    <h4 className="text-xs font-semibold text-purple-300 mb-2 tech-subheading">Overage</h4>
-                    <div className="space-y-1 text-xs">
-                      {Object.entries(plan.overage).map(([key, value]) => (
+                                 {/* Overage Pricing */}
+                 {(plan as any).overage && (
+                   <div className="mb-6 p-3 bg-purple-900/20 rounded-lg">
+                     <h4 className="text-xs font-semibold text-purple-300 mb-2 tech-subheading">Overage</h4>
+                     <div className="space-y-1 text-xs">
+                       {Object.entries((plan as any).overage).map(([key, value]) => (
                         <div key={key} className="flex justify-between">
                           <span className="text-gray-400 capitalize">
                             {key === 'aiCredits' ? 'Credits' : key === 'aiEdits' ? 'Edits' : key === 'seats' ? 'Users' : 'Storage'}
                           </span>
-                          <span className="text-purple-300">{value}</span>
+                                                     <span className="text-purple-300">{value as string}</span>
                         </div>
                       ))}
                     </div>
