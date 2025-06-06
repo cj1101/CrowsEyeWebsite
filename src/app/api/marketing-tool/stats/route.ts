@@ -42,26 +42,26 @@ export async function GET(request: NextRequest) {
       .limit(100)
       .get();
 
-    const posts = postsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const posts = postsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
     
     // Get analytics data
     const analyticsSnapshot = await db.collection('analytics')
       .where('userId', '==', userId)
       .get();
 
-    const analytics = analyticsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const analytics = analyticsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
 
     // Calculate stats
     const totalPosts = posts.length;
-    const scheduledPosts = posts.filter(post => 
+    const scheduledPosts = posts.filter((post: any) => 
       post.status === 'scheduled' && new Date(post.scheduledTime) > new Date()
     ).length;
     
-    const aiGenerated = posts.filter(post => post.isAiGenerated).length;
+    const aiGenerated = posts.filter((post: any) => post.isAiGenerated).length;
     
     // Calculate engagement rate
-    const totalEngagements = analytics.reduce((sum, entry) => sum + (entry.engagements || 0), 0);
-    const totalImpressions = analytics.reduce((sum, entry) => sum + (entry.impressions || 0), 0);
+    const totalEngagements = analytics.reduce((sum: number, entry: any) => sum + (entry.engagements || 0), 0);
+    const totalImpressions = analytics.reduce((sum: number, entry: any) => sum + (entry.impressions || 0), 0);
     const engagementRate = totalImpressions > 0 ? Math.round((totalEngagements / totalImpressions) * 100) : 0;
 
     // Get social accounts count
@@ -90,9 +90,9 @@ export async function GET(request: NextRequest) {
     const aiEditsRemaining = Math.floor(aiCreditsRemaining / 10);
 
     // Generate recent activity
-    const recentActivity = posts.slice(0, 5).map(post => ({
+    const recentActivity = posts.slice(0, 5).map((post: any) => ({
       id: post.id,
-      action: `Created ${post.platform} post: "${post.content.substring(0, 50)}..."`,
+      action: `Created ${post.platform} post: "${post.content?.substring(0, 50) || 'Untitled'}..."`,
       timestamp: new Date(post.createdAt).toLocaleDateString(),
       type: post.status === 'published' ? 'success' : 'info'
     }));
