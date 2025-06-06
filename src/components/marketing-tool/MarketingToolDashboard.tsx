@@ -4,50 +4,44 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   PhotoIcon, 
-  PaintBrushIcon,
-  CalendarIcon,
+  PlayIcon,
+  DocumentTextIcon,
   ChartBarIcon,
   CogIcon,
   FolderIcon,
   SparklesIcon,
-  MegaphoneIcon,
   UserGroupIcon,
   PlusIcon,
   CloudArrowUpIcon,
-  DocumentTextIcon,
-  ComputerDesktopIcon
+  MusicalNoteIcon,
+  VideoCameraIcon,
+  PresentationChartLineIcon,
+  CpuChipIcon,
+  ComputerDesktopIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 
-// Import sub-components
-import MediaLibrary from './MediaLibrary';
-import PostCreator from './PostCreator';
-import SchedulingPanel from './SchedulingPanel';
-import AnalyticsDashboard from './AnalyticsDashboard';
-import AITools from './AITools';
-import Settings from './Settings';
-
-type TabType = 'dashboard' | 'library' | 'create' | 'schedule' | 'analytics' | 'ai-tools' | 'desktop' | 'settings';
+type TabType = 'dashboard' | 'media' | 'gallery' | 'stories' | 'highlights' | 'audio' | 'analytics' | 'admin' | 'desktop' | 'settings';
 
 interface UserStats {
-  totalPosts: number;
-  scheduledPosts: number;
-  aiGenerated: number;
-  engagementRate: number;
-  socialAccounts: number;
-  mediaFiles: number;
+  totalMediaFiles: number;
+  totalGalleries: number;
+  totalStories: number;
+  totalHighlights: number;
+  totalAudioFiles: number;
+  subscriptionTier: string;
+  storageUsed: number;
+  storageLimit: number;
   recentActivity: Array<{
     id: string;
     action: string;
     timestamp: string;
     type: 'success' | 'info' | 'warning';
   }>;
-  subscriptionTier: string;
-  aiCreditsRemaining: number;
-  aiEditsRemaining: number;
 }
 
 export default function MarketingToolDashboard() {
-  const { user, loading } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [stats, setStats] = useState<UserStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -62,88 +56,69 @@ export default function MarketingToolDashboard() {
   const fetchStats = async () => {
     try {
       setStatsLoading(true);
-      const token = await user?.getIdToken();
-      const response = await fetch('/api/marketing-tool/stats', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      // Simulate API call - in real implementation, this would call your Python API
+      setStats({
+        totalMediaFiles: 0,
+        totalGalleries: 0,
+        totalStories: 0,
+        totalHighlights: 0,
+        totalAudioFiles: 0,
+        subscriptionTier: 'free',
+        storageUsed: 0,
+        storageLimit: 1000,
+        recentActivity: []
       });
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data.stats);
-      } else {
-        console.error('Failed to fetch stats:', response.statusText);
-        // Set default stats for demo purposes
-        setStats({
-          totalPosts: 0,
-          scheduledPosts: 0,
-          aiGenerated: 0,
-          engagementRate: 0,
-          socialAccounts: 0,
-          mediaFiles: 0,
-          recentActivity: [],
-          subscriptionTier: 'free',
-          aiCreditsRemaining: 50,
-          aiEditsRemaining: 5
-        });
-      }
     } catch (error) {
       console.error('Error fetching stats:', error);
-      // Set default stats for demo purposes
-      setStats({
-        totalPosts: 0,
-        scheduledPosts: 0,
-        aiGenerated: 0,
-        engagementRate: 0,
-        socialAccounts: 0,
-        mediaFiles: 0,
-        recentActivity: [],
-        subscriptionTier: 'free',
-        aiCreditsRemaining: 50,
-        aiEditsRemaining: 5
-      });
     } finally {
       setStatsLoading(false);
     }
   };
 
   // Show loading state while authenticating
-  if (loading || !user) {
+  if (loading) {
     return (
       <div className="min-h-screen darker-gradient-bg logo-bg-overlay flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500 mx-auto"></div>
-          <p className="text-gray-300 mt-4 tech-body">Loading Marketing Tool...</p>
+          <p className="text-gray-300 mt-4 tech-body">Loading Web Application...</p>
         </div>
       </div>
     );
   }
 
+  // Allow access even without authentication for this version
   const tabs = [
-    { id: 'dashboard', name: 'Dashboard', icon: ChartBarIcon },
-    { id: 'library', name: 'Media Library', icon: FolderIcon },
-    { id: 'create', name: 'Create Post', icon: PaintBrushIcon },
-    { id: 'schedule', name: 'Schedule', icon: CalendarIcon },
-    { id: 'analytics', name: 'Analytics', icon: ChartBarIcon },
-    { id: 'ai-tools', name: 'AI Tools', icon: SparklesIcon },
-    { id: 'desktop', name: 'Desktop App', icon: ComputerDesktopIcon },
-    { id: 'settings', name: 'Settings', icon: CogIcon },
+    { id: 'dashboard', name: 'Dashboard', icon: ChartBarIcon, tier: 'free' },
+    { id: 'media', name: 'Media Library', icon: FolderIcon, tier: 'free' },
+    { id: 'gallery', name: 'Smart Galleries', icon: PhotoIcon, tier: 'free' },
+    { id: 'stories', name: 'Story Formatting', icon: DocumentTextIcon, tier: 'free' },
+    { id: 'highlights', name: 'Highlight Reels', icon: VideoCameraIcon, tier: 'creator' },
+    { id: 'audio', name: 'Audio Import', icon: MusicalNoteIcon, tier: 'creator' },
+    { id: 'analytics', name: 'Analytics', icon: PresentationChartLineIcon, tier: 'pro' },
+    { id: 'admin', name: 'Admin', icon: BuildingOfficeIcon, tier: 'enterprise' },
+    { id: 'desktop', name: 'Desktop App', icon: ComputerDesktopIcon, tier: 'free' },
+    { id: 'settings', name: 'Settings', icon: CogIcon, tier: 'free' },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardOverview stats={stats} statsLoading={statsLoading} onRefresh={fetchStats} />;
-      case 'library':
-        return <MediaLibrary />;
-      case 'create':
-        return <PostCreator />;
-      case 'schedule':
-        return <SchedulingPanel />;
+      case 'media':
+        return <MediaManagement />;
+      case 'gallery':
+        return <SmartGalleries />;
+      case 'stories':
+        return <StoryFormatting />;
+      case 'highlights':
+        return <HighlightReels />;
+      case 'audio':
+        return <AudioImport />;
       case 'analytics':
-        return <AnalyticsDashboard />;
-      case 'ai-tools':
-        return <AITools />;
+        return <AnalyticsPanel />;
+      case 'admin':
+        return <AdminPanel />;
       case 'desktop':
         return <DesktopApp />;
       case 'settings':
@@ -161,16 +136,18 @@ export default function MarketingToolDashboard() {
           <div className="flex items-center justify-between h-20">
             <div className="flex items-center space-x-4">
               <div className="p-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500">
-                <MegaphoneIcon className="h-8 w-8 text-white" />
+                <CpuChipIcon className="h-8 w-8 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold gradient-text-animated tech-heading">Marketing Tool</h1>
+                <h1 className="text-2xl font-bold gradient-text-animated tech-heading">Web Application</h1>
                 <p className="text-gray-400 text-sm tech-body">AI-Powered Content Creation Suite</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right">
-                <span className="text-gray-300 text-sm tech-body">Welcome, {user?.displayName || user?.email}</span>
+                <span className="text-gray-300 text-sm tech-body">
+                  {user ? `Welcome, ${userProfile?.displayName || user?.email}` : 'Welcome to Crow\'s Eye'}
+                </span>
                 {stats && (
                   <div className="text-xs text-purple-300 tech-body">
                     {stats.subscriptionTier.charAt(0).toUpperCase() + stats.subscriptionTier.slice(1)} Plan
@@ -178,8 +155,8 @@ export default function MarketingToolDashboard() {
                 )}
               </div>
               <div className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
-                {(user as any)?.photoURL ? (
-                  <img src={(user as any).photoURL} alt="Profile" className="h-12 w-12 rounded-full object-cover" />
+                {user && (userProfile as any)?.photoURL ? (
+                  <img src={(userProfile as any).photoURL} alt="Profile" className="h-12 w-12 rounded-full object-cover" />
                 ) : (
                   <UserGroupIcon className="h-6 w-6 text-white" />
                 )}
@@ -196,190 +173,36 @@ export default function MarketingToolDashboard() {
             <nav className="space-y-2">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
+                const isLocked = tab.tier !== 'free' && (!stats || stats.subscriptionTier === 'free');
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id as TabType)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all duration-300 tech-subheading ${
+                    onClick={() => !isLocked && setActiveTab(tab.id as TabType)}
+                    className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-all duration-200 ${
                       activeTab === tab.id
-                        ? 'vision-button text-white shadow-lg'
-                        : 'text-gray-300 hover:bg-white/5 hover:text-white vision-card'
+                        ? 'vision-card border-purple-500/50 text-white gradient-text-animated'
+                        : isLocked
+                        ? 'text-gray-500 cursor-not-allowed opacity-50'
+                        : 'text-gray-300 hover:text-white hover:bg-gray-800/50'
                     }`}
+                    disabled={isLocked}
                   >
-                    <Icon className="h-5 w-5" />
-                    <span className="font-medium">{tab.name}</span>
+                    <Icon className="h-5 w-5 mr-3" />
+                    <span className="tech-body font-medium">{tab.name}</span>
+                    {isLocked && (
+                      <div className="ml-auto">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                      </div>
+                    )}
                   </button>
                 );
               })}
             </nav>
-            
-            {/* Quick Stats Sidebar */}
-            {stats && (
-              <div className="mt-8 vision-card rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 tech-heading">Quick Stats</h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400 text-sm tech-body">AI Credits</span>
-                    <span className="text-purple-300 font-bold tech-subheading">{stats.aiCreditsRemaining}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400 text-sm tech-body">AI Edits</span>
-                    <span className="text-purple-300 font-bold tech-subheading">{stats.aiEditsRemaining}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400 text-sm tech-body">Social Accounts</span>
-                    <span className="text-purple-300 font-bold tech-subheading">{stats.socialAccounts}</span>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-gray-700">
-                    <div className="text-xs text-gray-500 tech-body">Engagement Rate</div>
-                    <div className="text-green-400 font-bold text-lg tech-subheading">{stats.engagementRate}%</div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Main Content */}
           <div className="flex-1">
             {renderContent()}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Desktop App Download Component
-function DesktopApp() {
-  const handleDownload = (platform: string) => {
-    // Create a download link for the application
-    const link = document.createElement('a');
-    
-    switch (platform) {
-      case 'windows':
-        link.href = '/downloads/crow-eye-marketing-tool-windows-v5.0.0.exe';
-        link.download = 'crow-eye-install-windows.bat';
-        break;
-      case 'macos':
-        link.href = '/downloads/crow-eye-marketing-tool-macos-v5.0.0.dmg';
-        link.download = 'crow-eye-install-macos.sh';
-        break;
-      case 'linux':
-        link.href = '/downloads/crow-eye-marketing-tool-linux-v5.0.0.AppImage';
-        link.download = 'crow-eye-install-linux.sh';
-        break;
-      default:
-        console.log(`Platform ${platform} not supported yet`);
-        return;
-    }
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  return (
-    <div className="space-y-8">
-      <div className="vision-card rounded-2xl p-8">
-        <h2 className="text-3xl font-bold text-white mb-4 tech-heading">🖥️ Desktop Application</h2>
-        <p className="text-gray-300 mb-8 tech-body">
-          Download our powerful desktop app for enhanced performance and offline capabilities. 
-          Perfect for content creators who need maximum productivity.
-        </p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="vision-card rounded-xl p-6 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
-              <ComputerDesktopIcon className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-lg font-bold text-white mb-2 tech-subheading">Windows</h3>
-            <p className="text-gray-400 text-sm mb-4 tech-body">Windows 10/11 compatible</p>
-            <button 
-              onClick={() => handleDownload('windows')}
-              className="vision-button text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 tech-subheading"
-            >
-              Download
-            </button>
-          </div>
-          
-          <div className="vision-card rounded-xl p-6 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-gray-600 to-gray-700 rounded-xl flex items-center justify-center">
-              <ComputerDesktopIcon className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-lg font-bold text-white mb-2 tech-subheading">macOS</h3>
-            <p className="text-gray-400 text-sm mb-4 tech-body">macOS 12+ compatible</p>
-            <button 
-              onClick={() => handleDownload('macos')}
-              className="vision-button text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 tech-subheading"
-            >
-              Download
-            </button>
-          </div>
-          
-          <div className="vision-card rounded-xl p-6 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
-              <ComputerDesktopIcon className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-lg font-bold text-white mb-2 tech-subheading">Linux</h3>
-            <p className="text-gray-400 text-sm mb-4 tech-body">Ubuntu 20.04+ compatible</p>
-            <button 
-              onClick={() => handleDownload('linux')}
-              className="vision-button text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 tech-subheading"
-            >
-              Download
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div>
-            <h3 className="text-xl font-bold text-white mb-4 tech-heading">✨ Features</h3>
-            <ul className="space-y-2 text-gray-300 tech-body">
-              <li>• Offline content creation and editing</li>
-              <li>• Bulk upload and processing</li>
-              <li>• Advanced keyboard shortcuts</li>
-              <li>• Local file management</li>
-              <li>• System-level integrations</li>
-              <li>• Enhanced performance</li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="text-xl font-bold text-white mb-4 tech-heading">🌐 Platform Support</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-gray-300 tech-body">Instagram</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-gray-300 tech-body">Facebook</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-gray-300 tech-body">TikTok</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-gray-300 tech-body">YouTube</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-gray-300 tech-body">Pinterest</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-gray-300 tech-body">Snapchat</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-gray-300 tech-body">Discord</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-gray-300 tech-body">Telegram</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -397,135 +220,345 @@ interface DashboardOverviewProps {
 function DashboardOverview({ stats, statsLoading, onRefresh }: DashboardOverviewProps) {
   if (statsLoading) {
     return (
-      <div className="space-y-8">
-        <div className="vision-card rounded-2xl p-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-700 rounded w-1/3 mb-4"></div>
-            <div className="h-4 bg-gray-700 rounded w-2/3 mb-8"></div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 bg-gray-700 rounded-xl"></div>
-              ))}
-            </div>
-          </div>
-        </div>
+      <div className="vision-card p-8 text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-500 mx-auto"></div>
+        <p className="text-gray-300 mt-4 tech-body">Loading dashboard...</p>
       </div>
     );
   }
 
-  if (!stats) {
-    return (
-      <div className="vision-card rounded-2xl p-8 text-center">
-        <h2 className="text-2xl font-bold text-white mb-4 tech-heading">Welcome to Marketing Tool</h2>
-        <p className="text-gray-300 mb-6 tech-body">Start creating amazing content with AI-powered tools.</p>
-        <button 
-          onClick={onRefresh}
-          className="vision-button text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105 tech-subheading"
-        >
-          Get Started
-        </button>
-      </div>
-    );
-  }
+  const statCards = [
+    { title: 'Media Files', value: stats?.totalMediaFiles || 0, icon: PhotoIcon, color: 'purple' },
+    { title: 'Smart Galleries', value: stats?.totalGalleries || 0, icon: FolderIcon, color: 'blue' },
+    { title: 'Stories', value: stats?.totalStories || 0, icon: DocumentTextIcon, color: 'green' },
+    { title: 'Highlight Reels', value: stats?.totalHighlights || 0, icon: VideoCameraIcon, color: 'pink' },
+  ];
 
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
-      <div className="vision-card rounded-2xl p-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-3xl font-bold text-white mb-2 tech-heading">Dashboard Overview</h2>
-            <p className="text-gray-300 tech-body">Your content creation command center</p>
-          </div>
-          <button 
-            onClick={onRefresh}
-            className="vision-card text-white px-4 py-2 rounded-xl hover:bg-white/10 transition-all duration-300 tech-subheading"
-          >
-            Refresh
-          </button>
-        </div>
-        
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 vision-card rounded-xl p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm tech-body">Total Posts</p>
-                <p className="text-3xl font-bold text-white tech-heading">{stats.totalPosts}</p>
-              </div>
-              <DocumentTextIcon className="h-8 w-8 text-purple-400" />
-            </div>
-          </div>
-          
-          <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 vision-card rounded-xl p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm tech-body">Scheduled</p>
-                <p className="text-3xl font-bold text-white tech-heading">{stats.scheduledPosts}</p>
-              </div>
-              <CalendarIcon className="h-8 w-8 text-blue-400" />
-            </div>
-          </div>
-          
-          <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 vision-card rounded-xl p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm tech-body">AI Generated</p>
-                <p className="text-3xl font-bold text-white tech-heading">{stats.aiGenerated}</p>
-              </div>
-              <SparklesIcon className="h-8 w-8 text-green-400" />
-            </div>
-          </div>
-          
-          <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 vision-card rounded-xl p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm tech-body">Engagement</p>
-                <p className="text-3xl font-bold text-white tech-heading">{stats.engagementRate}%</p>
-              </div>
-              <ChartBarIcon className="h-8 w-8 text-yellow-400" />
-            </div>
-          </div>
-        </div>
+      <div className="vision-card p-8">
+        <h2 className="text-3xl font-bold gradient-text-animated tech-heading mb-4">
+          Welcome to Crow's Eye Web Application
+        </h2>
+        <p className="text-gray-300 tech-body text-lg leading-relaxed">
+          A comprehensive AI-powered marketing platform that replicates all the functionality of our desktop application. 
+          Create, manage, and optimize your content with advanced AI tools, media management, analytics, and more.
+        </p>
       </div>
 
-      {/* Recent Activity */}
-      <div className="vision-card rounded-2xl p-8">
-        <h3 className="text-xl font-bold text-white mb-6 tech-heading">Recent Activity</h3>
-        <div className="space-y-4">
-          {stats.recentActivity.map((activity) => (
-            <div key={activity.id} className="flex items-center space-x-4 p-4 bg-black/20 rounded-xl">
-              <div className={`w-3 h-3 rounded-full ${
-                activity.type === 'success' ? 'bg-green-500' : 
-                activity.type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
-              }`}></div>
-              <div className="flex-1">
-                <p className="text-white tech-body">{activity.action}</p>
-                <p className="text-gray-400 text-sm tech-body">{activity.timestamp}</p>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {statCards.map((card, index) => {
+          const Icon = card.icon;
+          return (
+            <div key={index} className="vision-card p-6 hover:border-purple-500/50 transition-all duration-300">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400 text-sm tech-body">{card.title}</p>
+                  <p className="text-3xl font-bold text-white tech-heading">{card.value}</p>
+                </div>
+                <div className={`p-3 rounded-lg bg-gradient-to-r from-${card.color}-500 to-${card.color}-600`}>
+                  <Icon className="h-6 w-6 text-white" />
+                </div>
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="vision-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer">
-          <PaintBrushIcon className="h-12 w-12 text-purple-400 mb-4" />
-          <h3 className="text-lg font-bold text-white mb-2 tech-subheading">Create New Post</h3>
-          <p className="text-gray-400 text-sm tech-body">Start creating your next viral content</p>
+      <div className="vision-card p-8">
+        <h3 className="text-xl font-bold text-white tech-heading mb-6">Quick Actions</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <button className="p-4 rounded-lg border border-gray-700 hover:border-purple-500 transition-all duration-200 text-left">
+            <CloudArrowUpIcon className="h-8 w-8 text-purple-400 mb-2" />
+            <h4 className="text-white font-semibold tech-body">Upload Media</h4>
+            <p className="text-gray-400 text-sm">Add images and videos to your library</p>
+          </button>
+          <button className="p-4 rounded-lg border border-gray-700 hover:border-purple-500 transition-all duration-200 text-left">
+            <SparklesIcon className="h-8 w-8 text-blue-400 mb-2" />
+            <h4 className="text-white font-semibold tech-body">Create Gallery</h4>
+            <p className="text-gray-400 text-sm">Generate AI-powered photo galleries</p>
+          </button>
+          <button className="p-4 rounded-lg border border-gray-700 hover:border-purple-500 transition-all duration-200 text-left">
+            <DocumentTextIcon className="h-8 w-8 text-green-400 mb-2" />
+            <h4 className="text-white font-semibold tech-body">Format Story</h4>
+            <p className="text-gray-400 text-sm">Create engaging stories with templates and AI assistance</p>
+          </button>
         </div>
-        
-        <div className="vision-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer">
-          <CalendarIcon className="h-12 w-12 text-blue-400 mb-4" />
-          <h3 className="text-lg font-bold text-white mb-2 tech-subheading">Schedule Content</h3>
-          <p className="text-gray-400 text-sm tech-body">Plan your content calendar</p>
+      </div>
+
+      {/* Feature Highlights */}
+      <div className="vision-card p-8">
+        <h3 className="text-xl font-bold text-white tech-heading mb-6">Platform Features</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <h4 className="text-purple-300 font-semibold tech-body">Free Tier</h4>
+            <ul className="space-y-2 text-gray-300 text-sm">
+              <li>• Media library management</li>
+              <li>• Smart galleries with AI</li>
+              <li>• Story formatting tools</li>
+              <li>• Basic analytics</li>
+            </ul>
+          </div>
+          <div className="space-y-4">
+            <h4 className="text-blue-300 font-semibold tech-body">Premium Features</h4>
+            <ul className="space-y-2 text-gray-300 text-sm">
+              <li>• 30-second highlight reels (Creator+)</li>
+              <li>• Custom audio imports (Creator+)</li>
+              <li>• Advanced analytics (Pro+)</li>
+              <li>• Multi-account management (Enterprise)</li>
+            </ul>
+          </div>
         </div>
-        
-        <div className="vision-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer">
-          <ChartBarIcon className="h-12 w-12 text-green-400 mb-4" />
-          <h3 className="text-lg font-bold text-white mb-2 tech-subheading">View Analytics</h3>
-          <p className="text-gray-400 text-sm tech-body">Track your performance metrics</p>
+      </div>
+    </div>
+  );
+}
+
+// Media Management Component
+function MediaManagement() {
+  return (
+    <div className="space-y-8">
+      <div className="vision-card p-8">
+        <h2 className="text-2xl font-bold text-white tech-heading mb-6">Media Library</h2>
+        <div className="text-center py-12">
+          <PhotoIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-300 mb-2">Upload Your Media</h3>
+          <p className="text-gray-400 mb-6">Drag and drop images or videos to get started</p>
+          <button className="vision-button">
+            <CloudArrowUpIcon className="h-5 w-5 mr-2" />
+            Upload Files
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Smart Galleries Component
+function SmartGalleries() {
+  return (
+    <div className="space-y-8">
+      <div className="vision-card p-8">
+        <h2 className="text-2xl font-bold text-white tech-heading mb-6">Smart Galleries</h2>
+        <div className="text-center py-12">
+          <SparklesIcon className="h-16 w-16 text-purple-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-300 mb-2">AI-Powered Gallery Creation</h3>
+          <p className="text-gray-400 mb-6">Create curated photo galleries with AI assistance</p>
+          <button className="vision-button">
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Create Gallery
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Story Formatting Component
+function StoryFormatting() {
+  return (
+    <div className="space-y-8">
+      <div className="vision-card p-8">
+        <h2 className="text-2xl font-bold text-white tech-heading mb-6">Story Formatting</h2>
+        <div className="text-center py-12">
+          <DocumentTextIcon className="h-16 w-16 text-green-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-300 mb-2">Format Stories for Social Media</h3>
+          <p className="text-gray-400 mb-6">Create engaging stories with templates and AI assistance</p>
+          <button className="vision-button">
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Create Story
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Highlight Reels Component
+function HighlightReels() {
+  return (
+    <div className="space-y-8">
+      <div className="vision-card p-8">
+        <h2 className="text-2xl font-bold text-white tech-heading mb-6">Highlight Reels</h2>
+        <div className="text-center py-12">
+          <VideoCameraIcon className="h-16 w-16 text-pink-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-300 mb-2">30-Second Highlight Reels</h3>
+          <p className="text-gray-400 mb-6">Create dynamic video highlights with AI editing</p>
+          <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-4 mb-6">
+            <p className="text-orange-300 text-sm">Creator+ subscription required</p>
+          </div>
+          <button className="vision-button opacity-50 cursor-not-allowed" disabled>
+            <PlayIcon className="h-5 w-5 mr-2" />
+            Create Highlight Reel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Audio Import Component
+function AudioImport() {
+  return (
+    <div className="space-y-8">
+      <div className="vision-card p-8">
+        <h2 className="text-2xl font-bold text-white tech-heading mb-6">Audio Import</h2>
+        <div className="text-center py-12">
+          <MusicalNoteIcon className="h-16 w-16 text-blue-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-300 mb-2">Custom Audio Files</h3>
+          <p className="text-gray-400 mb-6">Import and edit audio with natural language commands</p>
+          <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-4 mb-6">
+            <p className="text-orange-300 text-sm">Creator+ subscription required</p>
+          </div>
+          <button className="vision-button opacity-50 cursor-not-allowed" disabled>
+            <CloudArrowUpIcon className="h-5 w-5 mr-2" />
+            Import Audio
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Analytics Panel Component
+function AnalyticsPanel() {
+  return (
+    <div className="space-y-8">
+      <div className="vision-card p-8">
+        <h2 className="text-2xl font-bold text-white tech-heading mb-6">Analytics</h2>
+        <div className="text-center py-12">
+          <PresentationChartLineIcon className="h-16 w-16 text-purple-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-300 mb-2">Performance Analytics</h3>
+          <p className="text-gray-400 mb-6">Track performance and get AI-powered insights</p>
+          <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-4 mb-6">
+            <p className="text-orange-300 text-sm">Pro+ subscription required</p>
+          </div>
+          <button className="vision-button opacity-50 cursor-not-allowed" disabled>
+            <ChartBarIcon className="h-5 w-5 mr-2" />
+            View Analytics
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Admin Panel Component
+function AdminPanel() {
+  return (
+    <div className="space-y-8">
+      <div className="vision-card p-8">
+        <h2 className="text-2xl font-bold text-white tech-heading mb-6">Admin Panel</h2>
+        <div className="text-center py-12">
+          <BuildingOfficeIcon className="h-16 w-16 text-red-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-300 mb-2">Multi-Account Management</h3>
+          <p className="text-gray-400 mb-6">Manage team members and organization accounts</p>
+          <div className="bg-orange-500/20 border border-orange-500/50 rounded-lg p-4 mb-6">
+            <p className="text-orange-300 text-sm">Enterprise subscription required</p>
+          </div>
+          <button className="vision-button opacity-50 cursor-not-allowed" disabled>
+            <UserGroupIcon className="h-5 w-5 mr-2" />
+            Manage Accounts
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Desktop App Component
+function DesktopApp() {
+  const handleDownload = (platform: string) => {
+    window.open(`/download?platform=${platform}`, '_blank');
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="vision-card p-8">
+        <h2 className="text-2xl font-bold text-white tech-heading mb-6">Desktop Application</h2>
+        <div className="text-center py-12">
+          <ComputerDesktopIcon className="h-16 w-16 text-purple-400 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-300 mb-2">Full-Featured Desktop App</h3>
+          <p className="text-gray-400 mb-6">Download the complete desktop version with all features unlocked</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
+            <button
+              onClick={() => handleDownload('windows')}
+              className="vision-button flex items-center justify-center"
+            >
+              <ComputerDesktopIcon className="h-5 w-5 mr-2" />
+              Windows
+            </button>
+            <button
+              onClick={() => handleDownload('mac')}
+              className="vision-button flex items-center justify-center"
+            >
+              <ComputerDesktopIcon className="h-5 w-5 mr-2" />
+              macOS
+            </button>
+            <button
+              onClick={() => handleDownload('linux')}
+              className="vision-button flex items-center justify-center"
+            >
+              <ComputerDesktopIcon className="h-5 w-5 mr-2" />
+              Linux
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Settings Component
+function Settings() {
+  return (
+    <div className="space-y-8">
+      <div className="vision-card p-8">
+        <h2 className="text-2xl font-bold text-white tech-heading mb-6">Settings</h2>
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold text-white tech-body mb-4">API Configuration</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">API Base URL</label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:outline-none"
+                  placeholder="http://localhost:8000"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">API Key</label>
+                <input
+                  type="password"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:outline-none"
+                  placeholder="Enter your API key"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="text-lg font-semibold text-white tech-body mb-4">Preferences</h3>
+            <div className="space-y-4">
+              <label className="flex items-center">
+                <input type="checkbox" className="rounded bg-gray-800 border-gray-600 text-purple-500 focus:ring-purple-500" />
+                <span className="ml-2 text-gray-300">Enable notifications</span>
+              </label>
+              <label className="flex items-center">
+                <input type="checkbox" className="rounded bg-gray-800 border-gray-600 text-purple-500 focus:ring-purple-500" />
+                <span className="ml-2 text-gray-300">Auto-save work</span>
+              </label>
+            </div>
+          </div>
+          
+          <button className="vision-button">
+            Save Settings
+          </button>
         </div>
       </div>
     </div>

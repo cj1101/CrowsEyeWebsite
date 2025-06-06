@@ -6,33 +6,33 @@ This guide is designed for quick diagnosis of issues with yes/no answers. For ea
 
 ### Authentication & Login Problems
 
-**Q1: Can you access the website at all?**
+**Q1: Can you access the website at all?**y
 - **NO** → Check internet connection, try different browser, check if website is down
 - **YES** → Continue to Q2
 
-**Q2: Does the login page load without errors?**
+**Q2: Does the login page load without errors?**y
 - **NO** → Browser compatibility issue or JavaScript errors
 - **YES** → Continue to Q3
 
-**Q3: Can you create an account with email/password?**
+**Q3: Can you create an account with email/password?**y
 - **NO** → Firebase authentication issue
 - **YES** → Continue to Q4
 
-**Q4: Do you receive a verification email after signup?**
+**Q4: Do you receive a verification email after signup?**y
 - **NO** → Email delivery issue or Firebase config problem
 - **YES** → Continue to Q5
 
-**Q5: Can you sign in after email verification?**
+**Q5: Can you sign in after email verification?**y
 - **NO** → Account verification issue
 - **YES** → Authentication working correctly
 
 ### Marketing Tool Features
 
-**Q6: Are all social media platforms (Facebook, Twitter, LinkedIn, TikTok, YouTube) visible in the platform selector?**
+**Q6: Are all social media platforms (Facebook, Twitter, LinkedIn, TikTok, YouTube) visible in the platform selector?**y
 - **NO** → Platform configuration issue
 - **YES** → Continue to Q7
 
-**Q7: Can you generate AI content for any platform?**
+**Q7: Can you generate AI content for any platform?** n, failed to generate content. Please try again
 - **NO** → AI service integration issue
 - **YES** → Continue to Q8
 

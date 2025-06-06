@@ -12,7 +12,7 @@ const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   const { t } = useI18n()
-  const { user, logout, loading } = useAuth()
+  const { user, userProfile, logout, loading } = useAuth()
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const navigation = [
@@ -24,11 +24,11 @@ const Navigation = () => {
     { name: t('nav.contact'), href: '/contact' },
   ]
 
-  // Add Marketing Tool for logged-in users
-  const userNavigation = user ? [
+  // Add Web Application for all users (always visible)
+  const userNavigation = [
     ...navigation,
-    { name: 'Marketing Tool', href: '/marketing-tool' }
-  ] : navigation
+    { name: 'Web Application', href: '/marketing-tool' }
+  ]
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -114,10 +114,10 @@ const Navigation = () => {
                       onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                       className="flex items-center space-x-2 text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:bg-vision-purple/10"
                     >
-                      {user.photoURL ? (
+                      {userProfile?.avatar ? (
                         <div className="relative">
                           <img
-                            src={user.photoURL}
+                            src={userProfile.avatar}
                             alt="Profile"
                             className="h-6 w-6 rounded-full border border-vision-purple/30"
                           />
@@ -128,7 +128,7 @@ const Navigation = () => {
                           <UserIcon className="h-4 w-4 text-white" />
                         </div>
                       )}
-                      <span>{user.displayName || user.email?.split('@')[0] || 'Account'}</span>
+                      <span>{userProfile?.displayName || user.email?.split('@')[0] || 'Account'}</span>
                       <ChevronDownIcon className="h-4 w-4" />
                     </button>
 
@@ -219,10 +219,10 @@ const Navigation = () => {
                 <>
                   {user ? (
                     <div className="flex items-center px-3 pb-3">
-                      {user.photoURL ? (
+                      {userProfile?.avatar ? (
                         <div className="relative">
                           <img
-                            src={user.photoURL}
+                            src={userProfile.avatar}
                             alt="Profile"
                             className="h-8 w-8 rounded-full border border-vision-purple/30"
                           />
@@ -235,7 +235,7 @@ const Navigation = () => {
                       )}
                       <div className="ml-3">
                         <div className="text-sm font-medium text-white">
-                          {user.displayName || user.email}
+                          {userProfile?.displayName || user.email}
                         </div>
                       </div>
                     </div>

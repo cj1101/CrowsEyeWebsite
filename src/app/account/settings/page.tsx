@@ -40,7 +40,7 @@ export default function AccountSettingsPage() {
     if (user && userProfile) {
       setFormData(prev => ({
         ...prev,
-        displayName: user.displayName || '',
+        displayName: userProfile.displayName || '',
         email: user.email || '',
         emailNotifications: true,
         marketingEmails: false,
