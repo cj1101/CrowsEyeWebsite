@@ -1,18 +1,31 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   SparklesIcon, 
-  PhotoIcon, 
-  DocumentTextIcon, 
+  PhotoIcon,
+  VideoCameraIcon,
   MicrophoneIcon,
-  CogIcon,
+  DocumentTextIcon,
+  ChartBarIcon,
+  ClipboardDocumentIcon,
+  PencilIcon,
+  BeakerIcon,
+  GlobeAltIcon,
   HashtagIcon,
-  PaintBrushIcon,
+  ArrowTrendingUpIcon,
+  BoltIcon,
+  AcademicCapIcon,
+  ClockIcon,
+  UserGroupIcon,
+  TagIcon,
+  CalendarIcon,
   EyeIcon,
-  FilmIcon,
-  FolderIcon,
-  MagnifyingGlassIcon
+  MegaphoneIcon,
+  StarIcon,
+  FireIcon,
+  LightBulbIcon,
+  CloudArrowUpIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCrowsEye } from '@/hooks/api/useCrowsEye';
@@ -32,1106 +45,602 @@ interface UserSettings {
   };
 }
 
+const aiTools = [
+  {
+    id: 'content-generator',
+    name: 'AI Content Generator',
+    description: 'Generate engaging social media posts with AI',
+    icon: <DocumentTextIcon className="h-6 w-6" />,
+    category: 'Content Creation',
+    color: 'from-purple-500 to-pink-500',
+    features: ['Multi-platform optimization', 'Tone customization', 'Brand voice adaptation']
+  },
+  {
+    id: 'image-generator',
+    name: 'AI Image Generator',
+    description: 'Create stunning visuals with DALL-E powered generation',
+    icon: <PhotoIcon className="h-6 w-6" />,
+    category: 'Visual Content',
+    color: 'from-blue-500 to-cyan-500',
+    features: ['Custom styles', 'Brand templates', 'High-resolution output']
+  },
+  {
+    id: 'video-editor',
+    name: 'AI Video Editor',
+    description: 'Edit videos with AI-powered automation',
+    icon: <VideoCameraIcon className="h-6 w-6" />,
+    category: 'Video Content',
+    color: 'from-red-500 to-orange-500',
+    features: ['Auto-editing', 'Music sync', 'Subtitle generation']
+  },
+  {
+    id: 'voice-generator',
+    name: 'AI Voice Generator',
+    description: 'Generate voiceovers and audio content',
+    icon: <MicrophoneIcon className="h-6 w-6" />,
+    category: 'Audio Content',
+    color: 'from-green-500 to-emerald-500',
+    features: ['Multiple voices', 'Language support', 'Emotion control']
+  },
+  {
+    id: 'analytics-insights',
+    name: 'AI Analytics Insights',
+    description: 'Get intelligent insights from your social media data',
+    icon: <ChartBarIcon className="h-6 w-6" />,
+    category: 'Analytics',
+    color: 'from-yellow-500 to-amber-500',
+    features: ['Performance analysis', 'Trend prediction', 'Optimization tips']
+  },
+  {
+    id: 'hashtag-generator',
+    name: 'Smart Hashtag Generator',
+    description: 'Generate trending and relevant hashtags',
+    icon: <HashtagIcon className="h-6 w-6" />,
+    category: 'Optimization',
+    color: 'from-indigo-500 to-purple-500',
+    features: ['Trending hashtags', 'Niche targeting', 'Performance scoring']
+  },
+  {
+    id: 'trend-analyzer',
+    name: 'Trend Analyzer',
+    description: 'Analyze social media trends and viral content',
+    icon: <ArrowTrendingUpIcon className="h-6 w-6" />,
+    category: 'Research',
+    color: 'from-pink-500 to-rose-500',
+    features: ['Real-time trends', 'Competitor analysis', 'Viral prediction']
+  },
+  {
+    id: 'competitor-analysis',
+    name: 'Competitor Analysis',
+    description: 'Analyze competitor strategies and performance',
+    icon: <EyeIcon className="h-6 w-6" />,
+    category: 'Research',
+    color: 'from-slate-500 to-gray-500',
+    features: ['Content analysis', 'Strategy insights', 'Performance comparison']
+  },
+  {
+    id: 'content-optimizer',
+    name: 'Content Optimizer',
+    description: 'Optimize your content for maximum engagement',
+    icon: <BoltIcon className="h-6 w-6" />,
+    category: 'Optimization',
+    color: 'from-orange-500 to-red-500',
+    features: ['Engagement prediction', 'Best time to post', 'Content scoring']
+  },
+  {
+    id: 'brand-voice',
+    name: 'Brand Voice Trainer',
+    description: 'Train AI to match your unique brand voice',
+    icon: <AcademicCapIcon className="h-6 w-6" />,
+    category: 'Branding',
+    color: 'from-violet-500 to-purple-500',
+    features: ['Voice analysis', 'Style adaptation', 'Consistency checking']
+  },
+  {
+    id: 'auto-scheduler',
+    name: 'AI Auto Scheduler',
+    description: 'Automatically schedule posts for optimal engagement',
+    icon: <ClockIcon className="h-6 w-6" />,
+    category: 'Automation',
+    color: 'from-teal-500 to-cyan-500',
+    features: ['Optimal timing', 'Audience analysis', 'Cross-platform sync']
+  },
+  {
+    id: 'audience-insights',
+    name: 'Audience Insights',
+    description: 'Deep analysis of your audience behavior and preferences',
+    icon: <UserGroupIcon className="h-6 w-6" />,
+    category: 'Analytics',
+    color: 'from-emerald-500 to-green-500',
+    features: ['Demographic analysis', 'Behavior patterns', 'Engagement preferences']
+  },
+  {
+    id: 'caption-writer',
+    name: 'AI Caption Writer',
+    description: 'Generate compelling captions for your posts',
+    icon: <PencilIcon className="h-6 w-6" />,
+    category: 'Content Creation',
+    color: 'from-blue-600 to-indigo-600',
+    features: ['Multiple styles', 'Call-to-action optimization', 'Length variations']
+  },
+  {
+    id: 'meme-generator',
+    name: 'Meme Generator',
+    description: 'Create viral memes and trending content',
+    icon: <FireIcon className="h-6 w-6" />,
+    category: 'Viral Content',
+    color: 'from-red-600 to-pink-600',
+    features: ['Trending templates', 'Custom memes', 'Viral prediction']
+  },
+  {
+    id: 'idea-generator',
+    name: 'Content Idea Generator',
+    description: 'Never run out of content ideas again',
+    icon: <LightBulbIcon className="h-6 w-6" />,
+    category: 'Ideation',
+    color: 'from-yellow-600 to-orange-600',
+    features: ['Topic suggestions', 'Seasonal content', 'Trending ideas']
+  }
+];
+
+const categories = [
+  'All',
+  'Content Creation',
+  'Visual Content',
+  'Video Content',
+  'Audio Content',
+  'Analytics',
+  'Optimization',
+  'Research',
+  'Branding',
+  'Automation',
+  'Viral Content',
+  'Ideation'
+];
+
 export default function AITools() {
-  const { user } = useAuth(); // Reserved for future permission checks
-  const [activeTab, setActiveTab] = useState('content');
-  
-  // Initialize API hooks
-  const crowsEye = useCrowsEye();
-  const audioImport = useAudioImport();
-  const storyFormatter = useStoryFormatter();
-  const highlightReel = useHighlightReel();
-  const gallery = useGallery();
+  const { user } = useAuth();
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedTool, setSelectedTool] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [platform, setPlatform] = useState('instagram');
   const [tone, setTone] = useState('professional');
   const [generatedContent, setGeneratedContent] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [settings, setSettings] = useState<UserSettings>({
-    apiKeys: {},
-    preferences: { defaultPlatform: 'instagram', defaultTone: 'professional' }
-  });
-  const [showApiKeys, setShowApiKeys] = useState(false);
-  
-  // Crow's Eye specific state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMedia, setSelectedMedia] = useState<string[]>([]);
-  const [galleryPrompt, setGalleryPrompt] = useState('');
-  const [captionTone, setCaptionTone] = useState('professional');
-  const [generatedGallery, setGeneratedGallery] = useState<string[]>([]);
-  const [generatedCaption, setGeneratedCaption] = useState('');
-  const [searchResults, setSearchResults] = useState<any>(null);
-  
-  // Highlight reel state
-  const [highlightTitle, setHighlightTitle] = useState('');
-  const [highlightDescription, setHighlightDescription] = useState('');
-  
-  // Gallery state
-  const [galleryName, setGalleryName] = useState('');
-  const [galleryDescription, setGalleryDescription] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const platforms = [
-    'instagram',
-    'facebook', 
-    'twitter',
-    'linkedin',
-    'tiktok',
-    'youtube'
-  ];
+  const filteredTools = selectedCategory === 'All' 
+    ? aiTools 
+    : aiTools.filter(tool => tool.category === selectedCategory);
 
-  const tones = [
-    'professional',
-    'casual',
-    'friendly',
-    'formal',
-    'humorous',
-    'inspiring'
-  ];
-
-  const tabs = [
-    { id: 'content', name: 'Content Generation', icon: DocumentTextIcon },
-    { id: 'crowseye', name: 'Crow\'s Eye AI', icon: EyeIcon },
-    { id: 'gallery', name: 'Smart Gallery', icon: FolderIcon },
-    { id: 'highlights', name: 'Highlight Reels', icon: FilmIcon },
-    { id: 'hashtags', name: 'Hashtag Generator', icon: HashtagIcon },
-    { id: 'templates', name: 'Templates', icon: PaintBrushIcon },
-    { id: 'image', name: 'Image Enhancement', icon: PhotoIcon },
-    { id: 'voice', name: 'Voice & Audio', icon: MicrophoneIcon },
-    { id: 'settings', name: 'AI Settings', icon: CogIcon },
-  ];
-
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  useEffect(() => {
-    if (settings.preferences.defaultPlatform) {
-      setPlatform(settings.preferences.defaultPlatform);
-    }
-    if (settings.preferences.defaultTone) {
-      setTone(settings.preferences.defaultTone);
-    }
-  }, [settings]);
-
-  const loadSettings = async () => {
-    try {
-      const { settingsStore } = await import('@/lib/marketing-tool-store');
-      const userSettings = settingsStore.getSettings();
-      setSettings(userSettings);
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    }
-  };
-
-  const saveSettings = async (newSettings: Partial<UserSettings>) => {
-    try {
-      const { settingsStore } = await import('@/lib/marketing-tool-store');
-      const updatedSettings = settingsStore.updateSettings(newSettings);
-      setSettings(updatedSettings);
-      return true;
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      return false;
-    }
-  };
-
-  const generateContent = async () => {
+  const generateContent = async (toolId: string) => {
     if (!prompt.trim()) {
-      alert('Please enter a prompt for content generation.');
+      alert('Please enter a prompt first.');
       return;
     }
 
     setIsGenerating(true);
-    setGeneratedContent('🤖 Generating content... Please wait...');
-
     try {
-      // Simulate API delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const { aiStore } = await import('@/lib/marketing-tool-store');
-      const content = aiStore.generateContent(prompt, platform, tone);
+      // Simulate AI generation
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      let content = '';
+      switch (toolId) {
+        case 'content-generator':
+          content = generateSocialMediaPost(prompt, platform, tone);
+          break;
+        case 'hashtag-generator':
+          content = generateHashtags(prompt);
+          break;
+        case 'caption-writer':
+          content = generateCaption(prompt, platform);
+          break;
+        case 'meme-generator':
+          content = generateMemeIdea(prompt);
+          break;
+        case 'idea-generator':
+          content = generateContentIdeas(prompt);
+          break;
+        default:
+          content = `Generated content for ${toolId}: ${prompt}`;
+      }
+      
       setGeneratedContent(content);
     } catch (error) {
       console.error('Error generating content:', error);
-      setGeneratedContent('Error generating content. Please try again.');
+      alert('Error generating content. Please try again.');
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const saveAsDraft = async () => {
-    if (!generatedContent.trim()) {
-      alert('No content to save.');
-      return;
-    }
-
-    try {
-      const { postsStore } = await import('@/lib/marketing-tool-store');
-      postsStore.addPost({
-        content: generatedContent,
-        platform,
-        status: 'draft',
-        userId: user?.uid || 'anonymous'
-      });
-
-      alert('Draft saved successfully!');
-      setGeneratedContent('');
-      setPrompt('');
-    } catch (error) {
-      console.error('Error saving draft:', error);
-      alert('Error saving draft.');
-    }
+  const generateSocialMediaPost = (prompt: string, platform: string, tone: string) => {
+    const templates: Record<string, Record<string, string>> = {
+      instagram: {
+        professional: `🌟 ${prompt} 🌟\n\nThis breakthrough represents a significant step forward in our industry. We're excited to share this innovation with our community and look forward to the positive impact it will create.\n\n#Innovation #Progress #${platform} #Professional #Growth`,
+        casual: `Hey everyone! 👋\n\nJust wanted to share something cool about ${prompt}! It's been such an amazing journey and I can't wait to tell you more about it. What do you think? Drop your thoughts below! ⬇️\n\n#Casual #Sharing #Community #${prompt.replace(/\s+/g, '')}`,
+        creative: `✨ Imagine if ${prompt} could transform everything... ✨\n\nWell, guess what? It's not just imagination anymore! We're diving deep into this creative exploration and the results are mind-blowing 🤯\n\n#Creative #Innovation #Transformation #${platform}`
+      },
+      facebook: {
+        professional: `We're thrilled to announce our latest development regarding ${prompt}.\n\nThis initiative reflects our commitment to excellence and innovation. Our team has worked tirelessly to bring this vision to life, and we believe it will make a meaningful difference.\n\nWe'd love to hear your thoughts and feedback on this exciting development.`,
+        casual: `Hey Facebook friends!\n\nI had to share this with you all - ${prompt} has been on my mind lately and I think you'll find it as fascinating as I do!\n\nWhat's your take on this? I'd love to start a conversation about it in the comments!`,
+        creative: `🎨 Breaking the mold with ${prompt} 🎨\n\nSometimes the best ideas come from thinking outside the box. We're exploring new creative territories and pushing boundaries like never before.\n\nJoin us on this creative journey!`
+      }
+    };
+    
+    return templates[platform]?.[tone] || templates.instagram.professional;
   };
 
-  const schedulePost = async () => {
-    if (!generatedContent.trim()) {
-      alert('No content to schedule.');
-      return;
-    }
-
-    try {
-      const scheduledTime = new Date();
-      scheduledTime.setHours(scheduledTime.getHours() + 1); // Schedule for 1 hour from now
-
-      const { postsStore } = await import('@/lib/marketing-tool-store');
-      postsStore.addPost({
-        content: generatedContent,
-        platform,
-        status: 'scheduled',
-        scheduledTime: scheduledTime.toISOString(),
-        userId: user?.uid || 'anonymous'
-      });
-
-      alert('Post scheduled successfully!');
-      setGeneratedContent('');
-      setPrompt('');
-    } catch (error) {
-      console.error('Error scheduling post:', error);
-      alert('Error scheduling post.');
-    }
-  };
-
-  const generateHashtags = async (topic: string) => {
-    if (!topic.trim()) return;
-
-    const hashtags = [
+  const generateHashtags = (topic: string) => {
+    const baseHashtags = [
       `#${topic.toLowerCase().replace(/\s+/g, '')}`,
       '#marketing',
       '#socialmedia',
       '#content',
-      '#business',
+      '#digital',
+      '#branding',
+      '#engagement',
       '#growth',
-      '#success',
-      '#inspiration',
-      '#motivation',
-      '#entrepreneur'
+      '#strategy',
+      '#innovation'
     ];
 
-    return hashtags.slice(0, 8).join(' ');
+    const trendingHashtags = [
+      '#viral',
+      '#trending',
+      '#fyp',
+      '#explore',
+      '#discover',
+      '#popular',
+      '#featured',
+      '#spotlight'
+    ];
+
+    const nicheHashtags = [
+      '#entrepreneur',
+      '#success',
+      '#motivation',
+      '#inspiration',
+      '#business',
+      '#lifestyle',
+      '#creativity',
+      '#passion'
+    ];
+
+    return `🏷️ Recommended Hashtags for "${topic}":\n\n📍 Main Tags:\n${baseHashtags.slice(0, 5).join(' ')}\n\n🔥 Trending:\n${trendingHashtags.slice(0, 4).join(' ')}\n\n🎯 Niche Specific:\n${nicheHashtags.slice(0, 4).join(' ')}\n\n💡 Tip: Use 15-20 hashtags for optimal reach on Instagram!`;
   };
 
-  const contentTemplates = [
-    {
-      name: 'Product Launch',
-      template: '🚀 Exciting news! We\'re thrilled to announce {product}! \n\n✨ Key features:\n• Feature 1\n• Feature 2\n• Feature 3\n\nReady to get started? Check it out! 👇\n\n#productlaunch #innovation #excited'
-    },
-    {
-      name: 'Behind the Scenes',
-      template: '👀 Behind the scenes at {company}! \n\nHere\'s a sneak peek at how we {process}. It\'s amazing to see the dedication and creativity that goes into every {output}!\n\n#behindthescenes #teamwork #process #passion'
-    },
-    {
-      name: 'Motivational Quote',
-      template: '💪 "{quote}" \n\nThis quote perfectly captures the spirit of {topic}. What motivates you to keep pushing forward?\n\n#motivation #inspiration #success #mindset #growth'
-    },
-    {
-      name: 'Tutorial/Tips',
-      template: '📚 Pro Tip: {tip_title}\n\nHere\'s how to {action}:\n\n1️⃣ Step 1\n2️⃣ Step 2  \n3️⃣ Step 3\n\nTry this out and let us know how it works for you! 💬\n\n#tips #tutorial #howto #learning'
+  const generateCaption = (topic: string, platform: string) => {
+    const hooks = [
+      "Stop scrolling! 🛑",
+      "This will blow your mind 🤯",
+      "You won't believe what happened...",
+      "The secret to success? 🔐",
+      "Everyone's talking about this 🗣️"
+    ];
+
+    const hook = hooks[Math.floor(Math.random() * hooks.length)];
+    
+    return `${hook}\n\n${topic} is changing the game, and here's why you should care:\n\n✅ It's revolutionary\n✅ It's accessible to everyone\n✅ It's the future\n\nDouble-tap if you agree! 💙\n\nWhat's your experience with ${topic}? Share in the comments! 👇`;
+  };
+
+  const generateMemeIdea = (topic: string) => {
+    const memeFormats = [
+      "Drake pointing meme",
+      "Distracted boyfriend meme",
+      "Woman yelling at cat meme",
+      "This is fine dog meme",
+      "Expanding brain meme"
+    ];
+
+    const format = memeFormats[Math.floor(Math.random() * memeFormats.length)];
+    
+    return `🎭 Meme Idea: ${format}\n\nTop text: "When someone mentions ${topic}"\nBottom text: "Me: *immediately becomes an expert*"\n\n💡 Alternative:\nPanel 1: Life before ${topic}\nPanel 2: Life after discovering ${topic}\n\n🔥 This format has 87% viral potential based on current trends!`;
+  };
+
+  const generateContentIdeas = (topic: string) => {
+    return `💡 Content Ideas for "${topic}":\n\n📱 Posts:\n• 5 surprising facts about ${topic}\n• Behind-the-scenes of ${topic}\n• Before/after transformation with ${topic}\n• Common myths about ${topic} debunked\n• Your ${topic} journey in 30 seconds\n\n🎥 Video Ideas:\n• Day in the life featuring ${topic}\n• ${topic} tutorial for beginners\n• Reacting to ${topic} trends\n• Q&A about ${topic}\n\n📊 Engagement Boosters:\n• Poll: What's your favorite aspect of ${topic}?\n• Challenge: Show us your ${topic} setup\n• Quiz: How much do you know about ${topic}?`;
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    alert('Content copied to clipboard!');
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      // Simulate upload progress
+      setUploadProgress(0);
+      const interval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(interval);
+            return 100;
+          }
+          return prev + 10;
+        });
+      }, 200);
     }
-  ];
+  };
 
-  return (
-    <div className="space-y-6">
-      <h2 className="text-3xl font-bold text-white">AI Tools</h2>
-      
-      {/* Tab Navigation */}
-      <div className="flex space-x-2 border-b border-gray-700 overflow-x-auto">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center space-x-2 px-4 py-3 rounded-t-lg transition-colors whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'bg-primary-600 text-white border-b-2 border-primary-500'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
-              }`}
-            >
-              <Icon className="h-5 w-5" />
-              <span>{tab.name}</span>
-            </button>
-          );
-        })}
-      </div>
+  if (selectedTool) {
+    const tool = aiTools.find(t => t.id === selectedTool);
+    
+    if (!tool) {
+      return <div>Tool not found</div>;
+    }
+    
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setSelectedTool(null)}
+            className="text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-2"
+          >
+            ← Back to Tools
+          </button>
+          <div className="flex items-center gap-3">
+            <div className={`p-3 rounded-xl bg-gradient-to-r ${tool.color}`}>
+              {tool.icon}
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white tech-heading">{tool.name}</h2>
+              <p className="text-gray-400 tech-body">{tool.description}</p>
+            </div>
+          </div>
+        </div>
 
-      {/* Content Generation */}
-      {activeTab === 'content' && (
-        <div className="space-y-6">
-          <div className="bg-gray-700/50 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">AI Content Generator</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Input Panel */}
+          <div className="vision-card rounded-2xl p-6">
+            <h3 className="text-xl font-bold text-white mb-6 tech-heading">Configuration</h3>
             
-            {/* Input Section */}
-            <div className="space-y-4 mb-6">
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Describe what you want to post about:
+                <label className="block text-sm font-medium text-gray-300 mb-2 tech-body">
+                  {tool.category === 'Visual Content' ? 'Image Description' : 'Prompt/Topic'}
                 </label>
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="E.g., 'New product launch for eco-friendly water bottles'"
-                  className="w-full h-24 bg-gray-800 border border-gray-600 rounded-lg p-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                  placeholder={`Enter your ${tool.category === 'Visual Content' ? 'image description' : 'prompt'} here...`}
+                  className="w-full p-4 bg-black/20 border border-purple-500/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 tech-body"
+                  rows={4}
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Platform:</label>
-                  <select
-                    value={platform}
-                    onChange={(e) => setPlatform(e.target.value)}
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    {platforms.map(p => (
-                      <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
-                    ))}
-                  </select>
-                </div>
+              {tool.category === 'Content Creation' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2 tech-body">Platform</label>
+                    <select
+                      value={platform}
+                      onChange={(e) => setPlatform(e.target.value)}
+                      className="w-full p-3 bg-black/20 border border-purple-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 tech-body"
+                    >
+                      <option value="instagram">Instagram</option>
+                      <option value="facebook">Facebook</option>
+                      <option value="twitter">Twitter/X</option>
+                      <option value="linkedin">LinkedIn</option>
+                      <option value="tiktok">TikTok</option>
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Tone:</label>
-                  <select
-                    value={tone}
-                    onChange={(e) => setTone(e.target.value)}
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    {tones.map(t => (
-                      <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2 tech-body">Tone</label>
+                    <select
+                      value={tone}
+                      onChange={(e) => setTone(e.target.value)}
+                      className="w-full p-3 bg-black/20 border border-purple-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 tech-body"
+                    >
+                      <option value="professional">Professional</option>
+                      <option value="casual">Casual</option>
+                      <option value="creative">Creative</option>
+                      <option value="humorous">Humorous</option>
+                      <option value="inspiring">Inspiring</option>
+                    </select>
+                  </div>
+                </>
+              )}
 
-              <button 
-                onClick={generateContent}
+              {tool.category === 'Visual Content' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2 tech-body">Upload Reference Image (Optional)</label>
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full p-8 border-2 border-dashed border-purple-500/30 rounded-xl text-center cursor-pointer hover:border-purple-500/50 transition-colors"
+                  >
+                    <CloudArrowUpIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-400 tech-body">Click to upload or drag and drop</p>
+                    <p className="text-sm text-gray-500 tech-body">PNG, JPG, GIF up to 10MB</p>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  {uploadProgress > 0 && uploadProgress < 100 && (
+                    <div className="mt-4">
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div 
+                          className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button
+                onClick={() => generateContent(tool.id)}
                 disabled={isGenerating || !prompt.trim()}
-                className="bg-primary-600 hover:bg-primary-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
+                className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-semibold transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed tech-subheading"
               >
-                <SparklesIcon className="h-5 w-5" />
-                <span>{isGenerating ? 'Generating...' : 'Generate Content'}</span>
+                {isGenerating ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Generating...
+                  </div>
+                ) : (
+                  `Generate ${tool.category === 'Visual Content' ? 'Image' : 'Content'}`
+                )}
               </button>
             </div>
+          </div>
 
-            {/* Generated Content */}
-            {generatedContent && (
+          {/* Output Panel */}
+          <div className="vision-card rounded-2xl p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white tech-heading">Generated Output</h3>
+              {generatedContent && (
+                <button
+                  onClick={() => copyToClipboard(generatedContent)}
+                  className="text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-2 tech-body"
+                >
+                  <ClipboardDocumentIcon className="h-5 w-5" />
+                  Copy
+                </button>
+              )}
+            </div>
+
+            {generatedContent ? (
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-300">Generated Content:</label>
-                <textarea
-                  value={generatedContent}
-                  onChange={(e) => setGeneratedContent(e.target.value)}
-                  className="w-full h-40 bg-gray-800 border border-gray-600 rounded-lg p-4 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-                />
+                <div className="p-4 bg-black/20 rounded-xl">
+                  <pre className="whitespace-pre-wrap text-gray-300 tech-body">{generatedContent}</pre>
+                </div>
                 
-                <div className="flex space-x-3">
-                  <button
-                    onClick={saveAsDraft}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
-                  >
-                    Save as Draft
+                <div className="flex gap-3">
+                  <button className="flex-1 py-2 px-4 bg-purple-500/20 text-purple-300 rounded-lg hover:bg-purple-500/30 transition-colors tech-body">
+                    Edit
                   </button>
-                  <button
-                    onClick={schedulePost}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-                  >
+                  <button className="flex-1 py-2 px-4 bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors tech-body">
                     Schedule Post
                   </button>
-                  <button
-                    onClick={() => {
-                      setGeneratedContent('');
-                      setPrompt('');
-                    }}
-                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
-                  >
-                    Clear
+                  <button className="flex-1 py-2 px-4 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30 transition-colors tech-body">
+                    Save Draft
                   </button>
                 </div>
+              </div>
+            ) : (
+              <div className="text-center text-gray-400 py-12">
+                <BeakerIcon className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <p className="tech-body">Your generated content will appear here</p>
               </div>
             )}
           </div>
         </div>
-      )}
 
-      {/* Crow's Eye AI */}
-      {activeTab === 'crowseye' && (
-        <div className="space-y-6">
-          <div className="bg-gray-700/50 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-              <EyeIcon className="h-6 w-6 text-primary-500" />
-              <span>Crow's Eye AI - Smart Media Organization</span>
-            </h3>
+        {/* Features Showcase */}
+        <div className="vision-card rounded-2xl p-6">
+          <h3 className="text-xl font-bold text-white mb-4 tech-heading">Key Features</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {tool.features.slice(0, 2).map((feature, index) => (
+              <div key={index} className="flex items-center gap-3 p-3 bg-black/20 rounded-lg">
+                <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                <span className="text-gray-300 tech-body">{feature}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="text-center">
+        <h2 className="text-4xl font-bold text-white mb-4 tech-heading">🤖 AI Marketing Tools</h2>
+        <p className="text-xl text-gray-300 max-w-3xl mx-auto tech-body">
+          Supercharge your content creation with our comprehensive suite of AI-powered marketing tools. 
+          From content generation to trend analysis, we've got everything you need to dominate social media.
+        </p>
+      </div>
+
+      {/* Category Filter */}
+      <div className="flex flex-wrap gap-3 justify-center">
+        {categories.map((category) => (
+          <button
+            key={category}
+            onClick={() => setSelectedCategory(category)}
+            className={`px-4 py-2 rounded-full font-medium transition-all duration-300 tech-body ${
+              selectedCategory === category
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+            }`}
+          >
+            {category}
+          </button>
+        ))}
+      </div>
+
+      {/* Tools Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredTools.map((tool) => (
+          <div
+            key={tool.id}
+            onClick={() => setSelectedTool(tool.id)}
+            className="vision-card rounded-2xl p-6 hover:bg-white/5 transition-all duration-300 cursor-pointer group hover:scale-105"
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className={`p-3 rounded-xl bg-gradient-to-r ${tool.color} group-hover:scale-110 transition-transform duration-300`}>
+                {tool.icon}
+              </div>
+              <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full tech-body">
+                {tool.category}
+              </span>
+            </div>
             
-            {/* Media Search */}
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Search Your Media:
-                </label>
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search for bread, bakery, people, etc..."
-                    className="flex-1 bg-gray-800 border border-gray-600 rounded-lg p-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                  <button
-                    onClick={async () => {
-                      const results = await crowsEye.searchMedia(searchQuery);
-                      setSearchResults(results);
-                    }}
-                    disabled={crowsEye.loading}
-                    className="bg-primary-600 hover:bg-primary-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
-                  >
-                    <MagnifyingGlassIcon className="h-5 w-5" />
-                    <span>{crowsEye.loading ? 'Searching...' : 'Search'}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Search Results */}
-              {searchResults && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-gray-600/50 rounded-lg p-4">
-                    <h4 className="text-white font-semibold mb-2">Raw Photos ({searchResults.raw_photos?.length || 0})</h4>
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {searchResults.raw_photos?.map((photo: string, index: number) => (
-                        <label key={index} className="flex items-center space-x-2 text-sm text-gray-300">
-                          <input
-                            type="checkbox"
-                            checked={selectedMedia.includes(photo)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedMedia([...selectedMedia, photo]);
-                              } else {
-                                setSelectedMedia(selectedMedia.filter(m => m !== photo));
-                              }
-                            }}
-                            className="rounded"
-                          />
-                          <span>{photo.split('/').pop()}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gray-600/50 rounded-lg p-4">
-                    <h4 className="text-white font-semibold mb-2">Raw Videos ({searchResults.raw_videos?.length || 0})</h4>
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {searchResults.raw_videos?.map((video: string, index: number) => (
-                        <label key={index} className="flex items-center space-x-2 text-sm text-gray-300">
-                          <input
-                            type="checkbox"
-                            checked={selectedMedia.includes(video)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedMedia([...selectedMedia, video]);
-                              } else {
-                                setSelectedMedia(selectedMedia.filter(m => m !== video));
-                              }
-                            }}
-                            className="rounded"
-                          />
-                          <span>{video.split('/').pop()}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gray-600/50 rounded-lg p-4">
-                    <h4 className="text-white font-semibold mb-2">Finished Posts ({searchResults.finished_posts?.length || 0})</h4>
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {searchResults.finished_posts?.map((post: string, index: number) => (
-                        <label key={index} className="flex items-center space-x-2 text-sm text-gray-300">
-                          <input
-                            type="checkbox"
-                            checked={selectedMedia.includes(post)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedMedia([...selectedMedia, post]);
-                              } else {
-                                setSelectedMedia(selectedMedia.filter(m => m !== post));
-                              }
-                            }}
-                            className="rounded"
-                          />
-                          <span>{post.split('/').pop()}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Gallery Generation */}
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Gallery Generation Prompt:
-                </label>
-                <textarea
-                  value={galleryPrompt}
-                  onChange={(e) => setGalleryPrompt(e.target.value)}
-                  placeholder="E.g., 'Create a gallery showcasing our best bread products for Instagram'"
-                  className="w-full h-20 bg-gray-800 border border-gray-600 rounded-lg p-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-                />
-              </div>
-
-              <button
-                onClick={async () => {
-                  if (selectedMedia.length === 0) {
-                    alert('Please select some media first');
-                    return;
-                  }
-                  const gallery = await crowsEye.generateGallery({
-                    media_paths: selectedMedia,
-                    prompt: galleryPrompt,
-                    enhance_photos: true
-                  });
-                  setGeneratedGallery(gallery);
-                }}
-                disabled={crowsEye.loading || selectedMedia.length === 0}
-                className="bg-primary-600 hover:bg-primary-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
-              >
-                <SparklesIcon className="h-5 w-5" />
-                <span>{crowsEye.loading ? 'Generating...' : 'Generate Gallery'}</span>
-              </button>
-            </div>
-
-            {/* Caption Generation */}
-            <div className="space-y-4 mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Caption Tone:</label>
-                  <select
-                    value={captionTone}
-                    onChange={(e) => setCaptionTone(e.target.value)}
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    {tones.map(t => (
-                      <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="flex items-end">
-                  <button
-                    onClick={async () => {
-                      if (selectedMedia.length === 0) {
-                        alert('Please select some media first');
-                        return;
-                      }
-                      const caption = await crowsEye.generateCaption({
-                        media_paths: selectedMedia,
-                        tone_prompt: captionTone
-                      });
-                      setGeneratedCaption(caption);
-                    }}
-                    disabled={crowsEye.loading || selectedMedia.length === 0}
-                    className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors"
-                  >
-                    <DocumentTextIcon className="h-5 w-5" />
-                    <span>{crowsEye.loading ? 'Generating...' : 'Generate Caption'}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Generated Results */}
-            {(generatedGallery.length > 0 || generatedCaption) && (
-              <div className="space-y-4">
-                {generatedGallery.length > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Generated Gallery ({generatedGallery.length} items):</label>
-                    <div className="bg-gray-800 rounded-lg p-4 max-h-32 overflow-y-auto">
-                      {generatedGallery.map((item, index) => (
-                        <div key={index} className="text-gray-300 text-sm">{item.split('/').pop()}</div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {generatedCaption && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Generated Caption:</label>
-                    <textarea
-                      value={generatedCaption}
-                      onChange={(e) => setGeneratedCaption(e.target.value)}
-                      className="w-full h-32 bg-gray-800 border border-gray-600 rounded-lg p-4 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-                    />
-                  </div>
-                )}
-
-                <div className="flex space-x-3">
-                  <button
-                                         onClick={async () => {
-                       const name = window.prompt(`Enter gallery name:`) || `Gallery ${Date.now()}`;
-                       await crowsEye.saveGallery(name, generatedGallery, generatedCaption);
-                       alert('Gallery saved successfully!');
-                     }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-                  >
-                    Save Gallery
-                  </button>
-                  <button
-                    onClick={() => {
-                      setGeneratedGallery([]);
-                      setGeneratedCaption('');
-                      setSelectedMedia([]);
-                      setGalleryPrompt('');
-                    }}
-                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
-                  >
-                    Clear All
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {crowsEye.error && (
-              <div className="bg-red-600/20 border border-red-600 rounded-lg p-4 text-red-300">
-                Error: {crowsEye.error}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Smart Gallery */}
-      {activeTab === 'gallery' && (
-        <div className="space-y-6">
-          <div className="bg-gray-700/50 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-              <FolderIcon className="h-6 w-6 text-primary-500" />
-              <span>Smart Gallery Management</span>
-            </h3>
+            <h3 className="text-lg font-bold text-white mb-2 tech-subheading">{tool.name}</h3>
+            <p className="text-gray-400 mb-4 text-sm tech-body">{tool.description}</p>
             
-            {/* Create New Gallery */}
-            <div className="space-y-4 mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Gallery Name:</label>
-                  <input
-                    type="text"
-                    value={galleryName}
-                    onChange={(e) => setGalleryName(e.target.value)}
-                    placeholder="E.g., 'Summer Product Collection'"
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Description:</label>
-                  <input
-                    type="text"
-                    value={galleryDescription}
-                    onChange={(e) => setGalleryDescription(e.target.value)}
-                    placeholder="Brief description of the gallery"
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-              </div>
-
-              <button
-                onClick={async () => {
-                  if (!galleryName.trim()) {
-                    alert('Please enter a gallery name');
-                    return;
-                  }
-                  await gallery.createGallery(
-                    galleryName,
-                    galleryDescription,
-                    { auto_select: true },
-                    'chronological'
-                  );
-                  setGalleryName('');
-                  setGalleryDescription('');
-                  alert('Gallery created successfully!');
-                }}
-                disabled={gallery.loading}
-                className="bg-primary-600 hover:bg-primary-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
-              >
-                <FolderIcon className="h-5 w-5" />
-                <span>{gallery.loading ? 'Creating...' : 'Create Gallery'}</span>
-              </button>
-            </div>
-
-            {/* Existing Galleries */}
-            <div>
-              <h4 className="text-white font-semibold mb-4">Your Galleries</h4>
-              {gallery.loading ? (
-                <div className="text-gray-400">Loading galleries...</div>
-              ) : gallery.galleries.length === 0 ? (
-                <div className="text-gray-400">No galleries found. Create your first gallery above!</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {gallery.galleries.map((g) => (
-                    <div key={g.id} className="bg-gray-600/50 rounded-lg p-4">
-                      <h5 className="text-white font-semibold mb-2">{g.title}</h5>
-                      <p className="text-gray-300 text-sm mb-2">{g.description}</p>
-                      <p className="text-gray-400 text-xs mb-3">{g.images.length} items</p>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => {
-                            // View gallery functionality
-                            alert(`Viewing gallery: ${g.title}`);
-                          }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                        >
-                          View
-                        </button>
-                        <button
-                          onClick={async () => {
-                            if (confirm(`Delete gallery "${g.title}"?`)) {
-                              await gallery.deleteGallery(g.id);
-                            }
-                          }}
-                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {gallery.error && (
-              <div className="bg-red-600/20 border border-red-600 rounded-lg p-4 text-red-300">
-                Error: {gallery.error}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Highlight Reels */}
-      {activeTab === 'highlights' && (
-        <div className="space-y-6">
-          <div className="bg-gray-700/50 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-              <FilmIcon className="h-6 w-6 text-primary-500" />
-              <span>AI Highlight Reels</span>
-            </h3>
-            
-            {/* Create New Highlight Reel */}
-            <div className="space-y-4 mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Reel Title:</label>
-                  <input
-                    type="text"
-                    value={highlightTitle}
-                    onChange={(e) => setHighlightTitle(e.target.value)}
-                    placeholder="E.g., 'Best Moments 2024'"
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Description:</label>
-                  <input
-                    type="text"
-                    value={highlightDescription}
-                    onChange={(e) => setHighlightDescription(e.target.value)}
-                    placeholder="Brief description of the highlight reel"
-                    className="w-full bg-gray-800 border border-gray-600 rounded-lg p-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-              </div>
-
-              <button
-                onClick={async () => {
-                  if (!highlightTitle.trim()) {
-                    alert('Please enter a title');
-                    return;
-                  }
-                  await highlightReel.createHighlightReel(
-                    highlightTitle,
-                    highlightDescription,
-                    { auto_select: true, duration: '60s' },
-                    '60s',
-                    { style: 'dynamic' }
-                  );
-                  setHighlightTitle('');
-                  setHighlightDescription('');
-                  alert('Highlight reel created successfully!');
-                }}
-                disabled={highlightReel.loading}
-                className="bg-primary-600 hover:bg-primary-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors"
-              >
-                <FilmIcon className="h-5 w-5" />
-                <span>{highlightReel.loading ? 'Creating...' : 'Create Highlight Reel'}</span>
-              </button>
-            </div>
-
-            {/* Existing Highlight Reels */}
-            <div>
-              <h4 className="text-white font-semibold mb-4">Your Highlight Reels</h4>
-              {highlightReel.loading ? (
-                <div className="text-gray-400">Loading highlight reels...</div>
-              ) : highlightReel.highlights.length === 0 ? (
-                <div className="text-gray-400">No highlight reels found. Create your first reel above!</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {highlightReel.highlights.map((h) => (
-                    <div key={h.id} className="bg-gray-600/50 rounded-lg p-4">
-                      <h5 className="text-white font-semibold mb-2">{h.title}</h5>
-                      <p className="text-gray-300 text-sm mb-2">{h.description}</p>
-                      <p className="text-gray-400 text-xs mb-3">{h.duration}s • {h.clips.length} clips</p>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={async () => {
-                            try {
-                              const jobId = await highlightReel.renderHighlightReel(h.id);
-                              alert(`Rendering started! Job ID: ${jobId}`);
-                            } catch (error) {
-                              alert('Failed to start rendering');
-                            }
-                          }}
-                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                        >
-                          Render
-                        </button>
-                        <button
-                          onClick={async () => {
-                            if (confirm(`Delete highlight reel "${h.title}"?`)) {
-                              await highlightReel.deleteHighlightReel(h.id);
-                            }
-                          }}
-                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {highlightReel.error && (
-              <div className="bg-red-600/20 border border-red-600 rounded-lg p-4 text-red-300">
-                Error: {highlightReel.error}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Hashtag Generator */}
-      {activeTab === 'hashtags' && (
-        <div className="space-y-6">
-          <div className="bg-gray-700/50 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Hashtag Generator</h3>
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Enter your topic (e.g., fitness, cooking, travel)..."
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                onKeyPress={async (e) => {
-                  if (e.key === 'Enter') {
-                    const target = e.target as HTMLInputElement;
-                    const hashtags = await generateHashtags(target.value);
-                                         const resultDiv = document.getElementById('hashtag-result');
-                     if (resultDiv) {
-                       resultDiv.textContent = hashtags || '';
-                    }
-                  }
-                }}
-              />
-              <div id="hashtag-result" className="p-4 bg-gray-800 rounded-lg text-gray-300 min-h-[60px] flex items-center">
-                Press Enter to generate hashtags...
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Templates */}
-      {activeTab === 'templates' && (
-        <div className="space-y-6">
-          <div className="bg-gray-700/50 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Content Templates</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {contentTemplates.map((template, index) => (
-                <div key={index} className="bg-gray-600/50 rounded-lg p-4">
-                  <h4 className="text-white font-semibold mb-2">{template.name}</h4>
-                  <p className="text-gray-300 text-sm mb-3">{template.template}</p>
-                  <button
-                    onClick={() => {
-                      setActiveTab('content');
-                      setGeneratedContent(template.template);
-                    }}
-                    className="bg-primary-600 hover:bg-primary-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                  >
-                    Use Template
-                  </button>
+            <div className="space-y-2">
+              {tool.features.slice(0, 2).map((feature, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
+                  <span className="text-gray-500 text-xs tech-body">{feature}</span>
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Image Enhancement - Placeholder */}
-      {activeTab === 'image' && (
-        <div className="space-y-6">
-          <div className="bg-gray-700/50 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">AI Image Enhancement</h3>
-            <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center">
-              <PhotoIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-400 mb-4">Upload an image to enhance with AI</p>
-              <button className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg transition-colors">
-                Upload Image
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Voice & Audio */}
-      {activeTab === 'voice' && (
-        <div className="space-y-6">
-          <div className="bg-gray-700/50 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center space-x-2">
-              <MicrophoneIcon className="h-6 w-6 text-primary-500" />
-              <span>Voice & Audio Tools</span>
-            </h3>
             
-            {/* Audio Import */}
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Import Audio File:
-                </label>
-                <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
-                  <MicrophoneIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400 mb-4">Upload an audio file to enhance and edit</p>
-                  <input
-                    type="file"
-                    accept="audio/*"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        try {
-                          await audioImport.importAudio(file, {
-                            name: file.name,
-                            autoEnhance: true,
-                            normalizeVolume: true
-                          });
-                          alert('Audio imported successfully!');
-                        } catch (error) {
-                          alert('Failed to import audio');
-                        }
-                      }
-                    }}
-                    className="hidden"
-                    id="audio-upload"
-                  />
-                  <label
-                    htmlFor="audio-upload"
-                    className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg cursor-pointer inline-block transition-colors"
-                  >
-                    Choose Audio File
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Audio Library */}
-            <div>
-              <h4 className="text-white font-semibold mb-4">Your Audio Library</h4>
-              {audioImport.loading ? (
-                <div className="text-gray-400">Loading audio files...</div>
-              ) : audioImport.audioTracks.length === 0 ? (
-                <div className="text-gray-400">No audio files found. Import your first audio file above!</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {audioImport.audioTracks.map((track) => (
-                    <div key={track.id} className="bg-gray-600/50 rounded-lg p-4">
-                      <h5 className="text-white font-semibold mb-2">{track.name}</h5>
-                      <p className="text-gray-400 text-xs mb-2">
-                        {track.format} • {Math.round(track.duration)}s • {Math.round(track.size / 1024)}KB
-                      </p>
-                      {track.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {track.tags.map((tag, index) => (
-                            <span key={index} className="bg-primary-600/20 text-primary-300 px-2 py-1 rounded text-xs">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={async () => {
-                            try {
-                              await audioImport.editAudio(track.id, [
-                                { type: 'normalize', strength: 0.8 },
-                                { type: 'enhance', preset: 'voice' }
-                              ]);
-                              alert('Audio enhanced successfully!');
-                            } catch (error) {
-                              alert('Failed to enhance audio');
-                            }
-                          }}
-                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                        >
-                          Enhance
-                        </button>
-                        <button
-                          onClick={async () => {
-                            if (confirm(`Delete audio "${track.name}"?`)) {
-                              await audioImport.deleteAudio(track.id);
-                            }
-                          }}
-                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {audioImport.error && (
-              <div className="bg-red-600/20 border border-red-600 rounded-lg p-4 text-red-300">
-                Error: {audioImport.error}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* AI Settings */}
-      {activeTab === 'settings' && (
-        <div className="space-y-6">
-          <div className="bg-gray-700/50 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">AI Settings</h3>
-            
-            <div className="space-y-6">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-white font-medium">API Keys Configuration</h4>
-                  <button
-                    onClick={() => setShowApiKeys(!showApiKeys)}
-                    className="text-primary-400 hover:text-primary-300 text-sm"
-                  >
-                    {showApiKeys ? 'Hide' : 'Show'} API Keys
-                  </button>
-                </div>
-                
-                {showApiKeys && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">OpenAI API Key:</label>
-                      <input
-                        type="password"
-                        value={settings.apiKeys.openai || ''}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          apiKeys: { ...settings.apiKeys, openai: e.target.value }
-                        })}
-                        placeholder="sk-..."
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Google Gemini API Key:</label>
-                      <input
-                        type="password"
-                        value={settings.apiKeys.gemini || ''}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          apiKeys: { ...settings.apiKeys, gemini: e.target.value }
-                        })}
-                        placeholder="AIza..."
-                        className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <h4 className="text-white font-medium mb-4">Default Preferences</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Default Platform:</label>
-                    <select
-                      value={settings.preferences.defaultPlatform || 'instagram'}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        preferences: { ...settings.preferences, defaultPlatform: e.target.value }
-                      })}
-                      className="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    >
-                      {platforms.map(p => (
-                        <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Default Tone:</label>
-                    <select
-                      value={settings.preferences.defaultTone || 'professional'}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        preferences: { ...settings.preferences, defaultTone: e.target.value }
-                      })}
-                      className="w-full bg-gray-800 border border-gray-600 rounded-lg p-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    >
-                      {tones.map(t => (
-                        <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => saveSettings(settings)}
-                className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-lg transition-colors"
-              >
-                Save Settings
-              </button>
-            </div>
-
-            <div className="mt-8 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-              <h4 className="text-blue-400 font-medium mb-2">💡 How to get API Keys:</h4>
-              <ul className="text-blue-300 text-sm space-y-1">
-                <li>• <strong>OpenAI:</strong> Visit platform.openai.com → API Keys</li>
-                <li>• <strong>Gemini:</strong> Visit aistudio.google.com → Get API Key</li>
-                <li>• API keys enable more advanced AI content generation</li>
-              </ul>
+            <div className="mt-4 pt-4 border-t border-gray-700">
+              <span className="text-purple-400 text-sm font-medium tech-body">
+                Click to explore →
+              </span>
             </div>
           </div>
+        ))}
+      </div>
+
+      {/* Stats Section */}
+      <div className="vision-card rounded-2xl p-8">
+        <h3 className="text-2xl font-bold text-white mb-6 text-center tech-heading">AI Tools Analytics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-purple-400 mb-2 tech-heading">15+</div>
+            <div className="text-gray-400 tech-body">AI Tools Available</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-blue-400 mb-2 tech-heading">10k+</div>
+            <div className="text-gray-400 tech-body">Content Generated</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-green-400 mb-2 tech-heading">95%</div>
+            <div className="text-gray-400 tech-body">User Satisfaction</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-yellow-400 mb-2 tech-heading">3x</div>
+            <div className="text-gray-400 tech-body">Faster Creation</div>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 } 
