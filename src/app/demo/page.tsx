@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
-import { Upload, Wand2, Download, Image as ImageIcon, Video, Type, Sparkles, Eye, Edit3 } from 'lucide-react'
+import { Upload, Wand2, Download, Image as ImageIcon, Video, Type, Sparkles, Eye, Edit3, PlayIcon } from 'lucide-react'
 
 interface MediaFile {
   id: string
@@ -92,264 +92,296 @@ export default function DemoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-crowseye-dark via-crowseye-dark-light to-black text-white">
-      {/* Header */}
-      <div className="bg-black/20 border-b border-primary-500/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-white">
-                Crow's Eye Demo
-              </h1>
-              <p className="text-gray-400 mt-1">
-                Experience AI-powered content creation in your browser
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-primary-400 font-medium">Free Demo Version</p>
-              <p className="text-xs text-gray-500">No installation required</p>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Hero Section */}
+      <section className="relative pt-32 pb-16 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-6 py-3 mb-8">
+            <PlayIcon className="h-5 w-5 text-purple-400" />
+            <span className="text-sm font-medium text-gray-300">Live Demo</span>
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl font-bold mb-6">
+            <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              Experience
+            </span>
+            <br />
+            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              Crow's Eye AI
+            </span>
+          </h1>
+          
+          <p className="text-xl text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed">
+            See AI-powered content creation in action. Upload your media and watch Google's Gemini 
+            analyze and generate engaging social media content instantly.
+          </p>
+          
+          <div className="inline-flex items-center gap-2 bg-green-500/20 backdrop-blur-sm border border-green-500/30 rounded-full px-6 py-3">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-sm font-medium text-green-300">Free Demo - No Installation Required</span>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Media Upload Section */}
-          <div className="lg:col-span-1">
-            <div className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-primary-500/20">
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <Upload className="h-5 w-5 text-primary-500" />
-                Media Library
-              </h2>
-              
-              <div 
-                className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-primary-500 transition-colors"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                <p className="text-gray-400 mb-2">Click to upload media</p>
-                <p className="text-xs text-gray-600">Images and videos supported</p>
-              </div>
-              
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/*,video/*"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-
-              {/* Media Files List */}
-              <div className="mt-6 space-y-3">
-                {mediaFiles.map((file) => (
-                  <div 
-                    key={file.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                      selectedFile?.id === file.id 
-                        ? 'border-primary-500 bg-primary-500/10' 
-                        : 'border-gray-700 hover:border-gray-600'
-                    }`}
-                    onClick={() => setSelectedFile(file)}
-                  >
-                    <div className="flex items-center gap-3">
-                      {file.type === 'image' ? (
-                        <ImageIcon className="h-5 w-5 text-blue-400" />
-                      ) : (
-                        <Video className="h-5 w-5 text-green-400" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">
-                          {file.file.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {(file.file.size / 1024 / 1024).toFixed(1)} MB
-                        </p>
-                      </div>
+      {/* Demo Interface */}
+      <section className="pb-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* Media Upload Section */}
+            <div className="lg:col-span-1">
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden">
+                <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 p-6 border-b border-white/10">
+                  <h2 className="text-xl font-semibold flex items-center gap-3">
+                    <div className="p-2 bg-white/10 rounded-lg">
+                      <Upload className="h-5 w-5 text-purple-400" />
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Main Content Area */}
-          <div className="lg:col-span-2">
-            {selectedFile ? (
-              <div className="space-y-6">
-                {/* Media Preview */}
-                <div className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-primary-500/20">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Eye className="h-5 w-5 text-primary-500" />
-                    Media Preview
-                  </h3>
-                  
-                  <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden">
-                    {selectedFile.type === 'image' ? (
-                      <img 
-                        src={selectedFile.url} 
-                        alt="Preview" 
-                        className="w-full h-full object-contain"
-                      />
-                    ) : (
-                      <video 
-                        src={selectedFile.url} 
-                        controls 
-                        className="w-full h-full"
-                      />
-                    )}
-                  </div>
-
-                  <div className="mt-4">
-                    <button
-                      onClick={() => analyzeAndGenerate(selectedFile, customPrompt)}
-                      disabled={isAnalyzing || isGenerating}
-                      className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                    >
-                      {isAnalyzing || isGenerating ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                          {isAnalyzing && !isGenerating ? 'Analyzing...' : 'Generating Content...'}
-                        </>
-                      ) : (
-                        <>
-                          <Wand2 className="h-4 w-4" />
-                          <Sparkles className="h-4 w-4" />
-                          AI Analyze & Generate
-                        </>
-                      )}
-                    </button>
-                  </div>
+                    Media Library
+                  </h2>
+                  <p className="text-gray-300 text-sm mt-2">Upload images or videos to analyze</p>
                 </div>
-
-                {/* AI Analysis Results */}
-                {selectedFile.analysis && (
-                  <div className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-blue-500/20">
-                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-blue-400">
-                      <Sparkles className="h-5 w-5" />
-                      AI Analysis
-                    </h3>
-                    <p className="text-gray-300 leading-relaxed">{selectedFile.analysis}</p>
+                
+                <div className="p-6">
+                  <div 
+                    className="border-2 border-dashed border-white/20 rounded-xl p-8 text-center cursor-pointer hover:border-purple-500/50 hover:bg-white/5 transition-all duration-300"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-300 mb-2 font-medium">Click to upload media</p>
+                    <p className="text-xs text-gray-500">Images and videos supported</p>
                   </div>
-                )}
-
-                {/* Content Generation */}
-                <div className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-primary-500/20">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Type className="h-5 w-5 text-primary-500" />
-                    Content Generation
-                  </h3>
                   
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Custom Prompt (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        value={customPrompt}
-                        onChange={(e) => setCustomPrompt(e.target.value)}
-                        placeholder="e.g., 'Make it sound professional and inspiring'"
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-                      />
-                    </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,video/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
 
-                    {(selectedFile.generatedCaption || generatedContent) && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Generated Caption
-                        </label>
-                        <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-                          <p className="text-white leading-relaxed">
-                            {selectedFile.generatedCaption || generatedContent}
-                          </p>
-                          <div className="mt-3 flex gap-2">
-                            <button
-                              onClick={() => navigator.clipboard.writeText(selectedFile.generatedCaption || generatedContent)}
-                              className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded transition-colors"
-                            >
-                              Copy
-                            </button>
-                            <button
-                              onClick={() => downloadContent(selectedFile.generatedCaption || generatedContent, 'caption.txt')}
-                              className="text-xs bg-primary-600 hover:bg-primary-700 text-white px-3 py-1 rounded transition-colors flex items-center gap-1"
-                            >
-                              <Download className="h-3 w-3" />
-                              Download
-                            </button>
+                  {/* Media Files List */}
+                  {mediaFiles.length > 0 && (
+                    <div className="mt-6 space-y-3">
+                      <h3 className="text-sm font-medium text-gray-300 mb-3">Uploaded Files</h3>
+                      {mediaFiles.map((file) => (
+                        <div 
+                          key={file.id}
+                          className={`p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
+                            selectedFile?.id === file.id 
+                              ? 'border-purple-500/50 bg-purple-500/10 ring-2 ring-purple-500/20' 
+                              : 'border-white/20 hover:border-white/30 hover:bg-white/5'
+                          }`}
+                          onClick={() => setSelectedFile(file)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${file.type === 'image' ? 'bg-blue-500/20' : 'bg-green-500/20'}`}>
+                              {file.type === 'image' ? (
+                                <ImageIcon className="h-5 w-5 text-blue-400" />
+                              ) : (
+                                <Video className="h-5 w-5 text-green-400" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-white truncate">
+                                {file.file.name}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {(file.file.size / 1024 / 1024).toFixed(1)} MB
+                              </p>
+                            </div>
+                            {selectedFile?.id === file.id && (
+                              <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                            )}
                           </div>
                         </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Main Content Area */}
+            <div className="lg:col-span-2">
+              {selectedFile ? (
+                <div className="space-y-6">
+                  {/* Media Preview */}
+                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden">
+                    <div className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 p-6 border-b border-white/10">
+                      <h3 className="text-xl font-semibold flex items-center gap-3">
+                        <div className="p-2 bg-white/10 rounded-lg">
+                          <Eye className="h-5 w-5 text-blue-400" />
+                        </div>
+                        Media Preview
+                      </h3>
+                      <p className="text-gray-300 text-sm mt-2">
+                        {selectedFile.type === 'image' ? 'Image' : 'Video'} • {selectedFile.file.name}
+                      </p>
+                    </div>
+                    
+                    <div className="p-6">
+                      <div className="aspect-video bg-black/50 rounded-xl overflow-hidden border border-white/10">
+                        {selectedFile.type === 'image' ? (
+                          <img 
+                            src={selectedFile.url} 
+                            alt="Preview" 
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <video 
+                            src={selectedFile.url} 
+                            controls 
+                            className="w-full h-full"
+                          />
+                        )}
                       </div>
-                    )}
+                    </div>
+                  </div>
+
+                  {/* AI Analysis Section */}
+                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden">
+                    <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 p-6 border-b border-white/10">
+                      <h3 className="text-xl font-semibold flex items-center gap-3">
+                        <div className="p-2 bg-white/10 rounded-lg">
+                          <Sparkles className="h-5 w-5 text-green-400" />
+                        </div>
+                        AI Analysis & Generation
+                      </h3>
+                      <p className="text-gray-300 text-sm mt-2">Powered by Google's Gemini AI</p>
+                    </div>
+                    
+                    <div className="p-6 space-y-6">
+                      {/* Custom Prompt */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-3">
+                          Custom Prompt (Optional)
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={customPrompt}
+                            onChange={(e) => setCustomPrompt(e.target.value)}
+                            placeholder="e.g., 'Create a motivational post about fitness'"
+                            className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                          />
+                          <Type className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        </div>
+                      </div>
+
+                      {/* Generate Button */}
+                      <button
+                        onClick={() => analyzeAndGenerate(selectedFile, customPrompt)}
+                        disabled={isAnalyzing || isGenerating}
+                        className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 px-6 rounded-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2 shadow-lg"
+                      >
+                        {isAnalyzing || isGenerating ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            {isAnalyzing ? 'Analyzing...' : 'Generating...'}
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="h-5 w-5" />
+                            Analyze & Generate Content
+                          </>
+                        )}
+                      </button>
+
+                      {/* Results */}
+                      {selectedFile.analysis && (
+                        <div className="space-y-4">
+                          {/* Analysis Results */}
+                          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+                            <h4 className="text-sm font-semibold text-blue-300 mb-2 flex items-center gap-2">
+                              <Eye className="h-4 w-4" />
+                              AI Analysis
+                            </h4>
+                            <p className="text-gray-300 text-sm leading-relaxed">{selectedFile.analysis}</p>
+                          </div>
+
+                          {/* Generated Caption */}
+                          {selectedFile.generatedCaption && (
+                            <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-sm font-semibold text-green-300 flex items-center gap-2">
+                                  <Edit3 className="h-4 w-4" />
+                                  Generated Content
+                                </h4>
+                                <button
+                                  onClick={() => downloadContent(selectedFile.generatedCaption!, 'caption.txt')}
+                                  className="text-green-400 hover:text-green-300 transition-colors"
+                                  title="Download content"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </button>
+                              </div>
+                              <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
+                                {selectedFile.generatedCaption}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-
-                {/* Demo Limitations Notice */}
-                <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-xl p-4">
-                  <h4 className="text-yellow-400 font-medium mb-2">Demo Limitations</h4>
-                  <ul className="text-sm text-yellow-200 space-y-1">
-                    <li>• Limited to 5 media files per session</li>
-                    <li>• Simulated AI responses (not connected to real AI)</li>
-                    <li>• No social media posting capabilities</li>
-                    <li>• No video editing or advanced features</li>
-                  </ul>
-                  <p className="text-xs text-yellow-300 mt-3">
-                    Download the full desktop app for complete functionality!
+              ) : (
+                /* No File Selected State */
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-12 text-center">
+                  <div className="w-20 h-20 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl mx-auto mb-6 flex items-center justify-center">
+                    <Sparkles className="h-10 w-10 text-purple-400" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-4">Ready to See AI in Action?</h3>
+                  <p className="text-gray-300 mb-8 max-w-md mx-auto leading-relaxed">
+                    Upload an image or video to experience how Crow's Eye AI analyzes your content and generates 
+                    engaging social media posts automatically.
                   </p>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300"
+                  >
+                    <Upload className="h-5 w-5" />
+                    Upload Your First File
+                  </button>
                 </div>
-              </div>
-            ) : (
-              <div className="bg-black/30 backdrop-blur-sm rounded-xl p-12 border border-primary-500/20 text-center">
-                <Edit3 className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-400 mb-2">
-                  Select Media to Get Started
-                </h3>
-                <p className="text-gray-500">
-                  Upload an image or video to experience AI-powered content generation
-                </p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
+      </section>
 
-        {/* CTA Section */}
-        <div className="mt-12 bg-gradient-to-r from-primary-600/20 to-primary-500/20 rounded-xl p-8 border border-primary-500/30 text-center">
-          <h3 className="text-2xl font-bold text-white mb-4">
-            Ready for the Full Experience?
-          </h3>
-          <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
-            This demo shows just a glimpse of Crow's Eye's capabilities. Download the full desktop application for advanced AI features, video editing, social media posting, and much more!
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href="/download"
-              className="bg-gradient-to-r from-primary-600 to-primary-500 text-white px-8 py-3 rounded-lg font-semibold hover-glow transition-all duration-300 inline-flex items-center justify-center gap-2"
-            >
-              <Download className="h-5 w-5" />
-              Download Full App
-            </a>
-            <a
-              href="/pricing"
-              className="border border-primary-500 text-primary-400 px-8 py-3 rounded-lg font-semibold hover:bg-primary-500/10 transition-all duration-300 inline-block"
-            >
-              View Pricing
-            </a>
+      {/* CTA Section */}
+      <section className="py-20 bg-black/20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm border border-white/20 rounded-3xl p-12">
+            <h2 className="text-4xl font-bold text-white mb-6">
+              Impressed? Get the Full Experience
+            </h2>
+            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+              This demo shows just a fraction of what Crow's Eye can do. Download the full application 
+              to unlock advanced features, multiple platform management, and unlimited processing power.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a 
+                href="/download" 
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-4 rounded-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 hover:scale-105"
+              >
+                <Download className="h-5 w-5" />
+                Download Full Version
+              </a>
+              <a 
+                href="/pricing" 
+                className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/20 transition-all duration-300"
+              >
+                <Sparkles className="h-5 w-5" />
+                View Pricing
+              </a>
+            </div>
           </div>
         </div>
-      </div>
-
-      <style jsx global>{`
-        .gradient-text {
-          background: -webkit-linear-gradient(45deg, var(--color-primary-500), var(--color-primary-400));
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-        .hover-glow:hover {
-          box-shadow: 0 0 20px rgba(var(--color-primary-500-rgb), 0.4);
-        }
-      `}</style>
+      </section>
     </div>
   )
 } 

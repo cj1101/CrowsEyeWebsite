@@ -272,8 +272,19 @@ export default function Home() {
       <section className="py-20 md:py-32 relative">
         <div className="absolute inset-0 bg-gradient-to-r from-vision-purple/10 via-transparent to-vision-blue/10"></div>
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-vision-gradient rounded-full mb-6 animate-glow">
-            <Eye className="h-8 w-8 text-white animate-eye-blink" />
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <div className="absolute inset-0 bg-vision-gradient rounded-full opacity-40 animate-glow blur-lg scale-110"></div>
+              <div className="relative p-2 rounded-full glass-effect border border-vision-purple/30">
+                <Image
+                  src="/crows_eye_logo_transparent.png"
+                  alt="Crow's Eye Logo"
+                  width={48}
+                  height={48}
+                  className="relative z-10 animate-eye-blink filter drop-shadow-lg"
+                />
+              </div>
+            </div>
           </div>
           <h2 className="text-4xl md:text-5xl font-bold gradient-text-animated mb-8">
             See Crow&apos;s Eye in Action
@@ -284,8 +295,19 @@ export default function Home() {
           <div className="aspect-video glass-card rounded-2xl flex items-center justify-center relative overflow-hidden group">
             <div className="absolute inset-0 bg-vision-gradient opacity-10 group-hover:opacity-20 transition-opacity duration-500"></div>
             <div className="relative z-10 text-center">
-              <div className="w-24 h-24 bg-vision-gradient rounded-full flex items-center justify-center mb-4 mx-auto animate-glow">
-                <Eye className="h-12 w-12 text-white animate-eye-blink" />
+              <div className="flex justify-center mb-6">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-vision-gradient rounded-full opacity-50 animate-glow blur-xl scale-125"></div>
+                  <div className="relative p-4 rounded-full glass-card border-2 border-vision-purple/40">
+                    <Image
+                      src="/crows_eye_logo_transparent.png"
+                      alt="Crow's Eye Logo"
+                      width={64}
+                      height={64}
+                      className="relative z-10 animate-eye-blink filter drop-shadow-xl"
+                    />
+                  </div>
+                </div>
               </div>
               <p className="text-gray-400 text-lg">Future Home of Teaser Video</p>
             </div>

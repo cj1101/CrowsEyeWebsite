@@ -57,35 +57,34 @@ const Navigation = () => {
 
   return (
     <nav className="sticky top-0 z-50 glass-effect border-b border-vision-purple/30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Enhanced Logo */}
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+        <div className="flex justify-between items-center h-12 sm:h-14 md:h-16">
+          {/* Clean Logo Only */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-3 hover-float group">
+            <Link href="/" className="hover-float group">
               <div className="relative">
                 <div className="absolute inset-0 bg-vision-gradient rounded-full opacity-20 group-hover:opacity-40 transition-opacity duration-300 animate-pulse-slow blur-sm scale-110"></div>
                 <div className="relative p-1 rounded-full glass-effect border border-vision-purple/30">
                   <Image
                     src="/crows_eye_logo_transparent.png"
                     alt="Crow's Eye Logo"
-                    width={36}
-                    height={36}
-                    className="relative z-10 group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg"
+                    width={32}
+                    height={32}
+                    className="relative z-10 group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg sm:w-8 sm:h-8 md:w-9 md:h-9"
                   />
                 </div>
               </div>
-              <span className="text-xl font-bold gradient-text-animated">Crow&apos;s Eye</span>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-8">
+            <div className="ml-4 lg:ml-10 flex items-baseline space-x-2 lg:space-x-8">
               {userNavigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="text-gray-300 hover:text-vision-purple-light px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:bg-vision-purple/10 relative group"
+                  className="text-gray-300 hover:text-vision-purple-light px-2 lg:px-3 py-2 rounded-md text-xs lg:text-sm font-medium transition-all duration-300 hover:bg-vision-purple/10 relative group"
                 >
                   <span className="relative z-10">{item.name}</span>
                   <div className="absolute inset-0 bg-vision-gradient opacity-0 group-hover:opacity-10 rounded-md transition-opacity duration-300"></div>
@@ -191,12 +190,12 @@ const Navigation = () => {
           <div className="md:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="text-gray-400 hover:text-white inline-flex items-center justify-center p-2 rounded-md focus:outline-none transition-colors duration-200"
+              className="text-gray-400 hover:text-white inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md focus:outline-none transition-colors duration-200"
             >
               {isOpen ? (
-                <XMarkIcon className="block h-6 w-6" />
+                <XMarkIcon className="block h-5 w-5 sm:h-6 sm:w-6" />
               ) : (
-                <Bars3Icon className="block h-6 w-6" />
+                <Bars3Icon className="block h-5 w-5 sm:h-6 sm:w-6" />
               )}
             </button>
           </div>

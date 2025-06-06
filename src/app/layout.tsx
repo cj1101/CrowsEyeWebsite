@@ -10,10 +10,16 @@ export const metadata: Metadata = {
   description: "Effortlessly organize, create, and publish stunning visual content for Instagram and Facebook. Let AI be your creative partner.",
   keywords: ["AI marketing", "social media automation", "Instagram", "Facebook", "content creation", "creators"],
   authors: [{ name: "Crow's Eye Team" }],
+  icons: {
+    icon: '/icon.png',
+    shortcut: '/icon.png',
+    apple: '/icon.png',
+  },
   openGraph: {
     title: "Crow's Eye - AI-Powered Marketing Automation",
     description: "Effortlessly organize, create, and publish stunning visual content for Instagram and Facebook.",
     type: "website",
+    images: ['/icon.png'],
   },
 };
 
