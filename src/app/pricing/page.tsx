@@ -1,191 +1,127 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Check, Eye, Zap, ArrowRight, Star, Shield, Headphones, Plus, Crown, Building } from 'lucide-react'
+import React from 'react'
+import { Check, X, Eye } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { TIERS } from '@/data/tiers'
 
-// Enhanced tier data with overage pricing
-const enhancedTiers = [
+const pricingPlans = [
   {
-    ...TIERS[0], // Spark (Free)
-    price: { monthly: 0, yearly: 0 },
-    features: [
-      "50 AI credits per month",
-      "5 AI edits per month", 
-      "1 social media set",
-      "Basic community support",
-      "Standard templates",
-      "Basic analytics",
-      "1 context file"
-    ],
+    name: "Free Plan",
+    price: "$0/month",
+    description: "Try us out!",
+    targetUser: "Individuals",
+    limits: {
+      linkedAccounts: 1,
+      users: 1,
+      aiCredits: "25/month",
+      scheduledPosts: "10/month",
+      mediaStorage: "500MB"
+    },
+    features: {
+      basicContentTools: true,
+      mediaLibrary: true,
+      smartGallery: false,
+      postFormatting: false,
+      basicVideoTools: false,
+      advancedContent: false,
+      analytics: "Basic Reports",
+      teamCollaboration: false,
+      support: "Community",
+      customBranding: false,
+      apiAccess: false
+    },
     buttonText: "Get Started Free",
-    buttonVariant: "outline" as const,
-    popular: false,
-    limits: {
-      aiCredits: 50,
-      aiEdits: 5,
-      socialSets: 1,
-      seats: 1,
-      storage: "500 MB",
-      contextFiles: 1
-    },
-    isEnterprise: false
+    buttonClass: "border-2 border-purple-500 text-purple-400 hover:bg-purple-500/10"
   },
   {
-    ...TIERS[1], // Creator
-    price: { monthly: 19, yearly: 190 },
-    features: [
-      "300 AI credits per month",
-      "30 AI edits per month",
-      "3 social media sets",
-      "Basic video editing suite",
-      "Email support",
-      "Custom templates & presets",
-      "Basic analytics",
-      "3 context files"
-    ],
+    name: "Creator Plan",
+    price: "$19/month", 
+    description: "Individuals & Creators",
+    targetUser: "Content Creators",
+    limits: {
+      linkedAccounts: 3,
+      users: 1,
+      aiCredits: "150/month",
+      scheduledPosts: "100/month",
+      mediaStorage: "5 GB"
+    },
+    features: {
+      basicContentTools: true,
+      mediaLibrary: true,
+      smartGallery: true,
+      postFormatting: true,
+      basicVideoTools: true,
+      advancedContent: false,
+      analytics: "Basic Reports",
+      teamCollaboration: false,
+      support: "Email Support",
+      customBranding: false,
+      apiAccess: false
+    },
     buttonText: "Start Creating",
-    buttonVariant: "primary" as const,
-    popular: true,
-    limits: {
-      aiCredits: 300,
-      aiEdits: 30,
-      socialSets: 3,
-      seats: 1,
-      storage: "5 GB",
-      contextFiles: 3
-    },
-    overage: {
-      aiCredits: "$0.12 per credit",
-      aiEdits: "$2 per edit",
-      storage: "$8 per GB"
-    },
-    isEnterprise: false
+    buttonClass: "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600",
+    popular: true
   },
   {
-    ...TIERS[2], // Growth
-    price: { monthly: 35, yearly: 350 },
-    features: [
-      "600 AI credits per month",
-      "60 AI edits per month",
-      "6 social media sets",
-      "Basic video editing suite",
-      "Up to 3 team members",
-      "Priority support",
-      "Advanced analytics & reporting",
-      "5 context files"
-    ],
-    buttonText: "Scale Your Growth",
-    buttonVariant: "primary" as const,
-    popular: false,
+    name: "Pro Plan",
+    price: "$59/month",
+    description: "Professionals & Small Teams", 
+    targetUser: "Professionals",
     limits: {
-      aiCredits: 600,
-      aiEdits: 60,
-      socialSets: 6,
-      seats: 3,
-      storage: "25 GB",
-      contextFiles: 5
+      linkedAccounts: 10,
+      users: "Up to 3",
+      aiCredits: "Over 750/month",
+      scheduledPosts: "Unlimited",
+      mediaStorage: "50 GB"
     },
-    overage: {
-      aiCredits: "$0.10 per credit",
-      aiEdits: "$1.75 per edit",
-      storage: "$6 per GB",
-      seats: "$18 per additional user"
+    features: {
+      basicContentTools: true,
+      mediaLibrary: true,
+      smartGallery: true,
+      postFormatting: true,
+      basicVideoTools: true,
+      advancedContent: "Full Video Suite",
+      analytics: "Advanced Analytics",
+      teamCollaboration: true,
+      support: "Priority Email Support",
+      customBranding: false,
+      apiAccess: false
     },
-    isEnterprise: false
+    buttonText: "Go Pro",
+    buttonClass: "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
   },
   {
-    ...TIERS[3], // Pro Agency
-    price: { monthly: 49, yearly: 490 },
-    features: [
-      "1000 AI credits per month",
-      "120 AI edits per month",
-      "15 social media sets",
-      "Full video editing suite",
-      "Up to 10 team members",
-      "Priority support",
-      "Advanced analytics & reporting",
-      "API access",
-      "10 context files"
-    ],
-    buttonText: "Go Professional",
-    buttonVariant: "primary" as const,
-    popular: false,
+    name: "Business Plan",
+    price: "Contact Us",
+    description: "Agencies & Larger Teams",
+    targetUser: "Enterprise",
     limits: {
-      aiCredits: 1000,
-      aiEdits: 120,
-      socialSets: 15,
-      seats: 10,
-      storage: "100 GB",
-      contextFiles: 10
+      linkedAccounts: "Custom / High Volume",
+      users: "Custom / More Users", 
+      aiCredits: "Custom / High Volume",
+      scheduledPosts: "Unlimited",
+      mediaStorage: "Custom / High Volume"
     },
-    overage: {
-      aiCredits: "$0.08 per credit",
-      aiEdits: "$1.50 per edit",
-      storage: "$4 per GB",
-      seats: "$15 per additional user"
+    features: {
+      basicContentTools: true,
+      mediaLibrary: true,
+      smartGallery: true,
+      postFormatting: true,
+      basicVideoTools: true,
+      advancedContent: "All Pro features +",
+      analytics: "Custom Analytics & Reporting",
+      teamCollaboration: "Advanced Collaboration",
+      support: "Dedicated Account Manager",
+      customBranding: true,
+      apiAccess: true
     },
-    isEnterprise: false
-  },
-  {
-    ...TIERS[4], // Enterprise
-    price: { monthly: 0, yearly: 0 }, // Custom pricing
-    features: [
-      "Custom AI credits",
-      "Custom AI edits",
-      "Unlimited social media sets",
-      "Full video editing suite",
-      "Unlimited team members",
-      "Dedicated account manager",
-      "Custom analytics & reporting",
-      "Priority API access",
-      "Custom integrations",
-      "Unlimited context files"
-    ],
     buttonText: "Contact Sales",
-    buttonVariant: "enterprise" as const,
-    popular: false,
-    limits: {
-      aiCredits: "Custom",
-      aiEdits: "Custom",
-      socialSets: "Unlimited",
-      seats: "Unlimited",
-      storage: "Custom",
-      contextFiles: "Custom"
-    },
-    isEnterprise: true
-  }
-];
-
-const benefits = [
-  {
-    icon: <Shield className="h-6 w-6 text-green-400" />,
-    title: "Secure & Private",
-    description: "Your data stays safe with enterprise-grade security"
-  },
-  {
-    icon: <Zap className="h-6 w-6 text-yellow-400" />,
-    title: "Lightning Fast",
-    description: "AI-powered processing that works at the speed of thought"
-  },
-  {
-    icon: <Headphones className="h-6 w-6 text-blue-400" />,
-    title: "Expert Support",
-    description: "Get help from our team of social media experts"
+    buttonClass: "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600"
   }
 ];
 
 export default function PricingPage() {
-  const [isYearly, setIsYearly] = useState(false);
   const router = useRouter();
-
-  const calculateSavings = (monthly: number, yearly: number) => {
-    if (monthly === 0) return 0;
-    const monthlyCost = monthly * 12;
-    const savings = monthlyCost - yearly;
-    return Math.round((savings / monthlyCost) * 100);
-  };
 
   const handlePerfectClick = () => {
     const passcode = prompt("What's the passcode?");
@@ -200,264 +136,244 @@ export default function PricingPage() {
       <section className="relative pt-32 pb-20 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5"></div>
         
-        {/* Logo Header */}
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-16">
-          <div className="flex items-center justify-center gap-4 mb-8">
-            <img 
-              src="/icon.png" 
-              alt="Crow's Eye Logo" 
-              className="h-16 w-16 md:h-20 md:w-20 opacity-90"
-            />
-            <div className="text-left">
-              <h1 className="text-2xl md:text-4xl font-bold tech-heading gradient-text-animated">
-                CROW'S EYE
-              </h1>
-              <p className="text-purple-300 text-sm md:text-base tech-subheading">
-                AI Marketing Suite
-              </p>
-            </div>
-          </div>
-        </div>
-        
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-5xl md:text-7xl font-bold mb-6 tech-heading">
-            <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-              Simple Pricing
-            </span>
-            <br />
-            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Powerful Results
-            </span>
-          </h2>
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <Eye className="h-12 w-12 text-purple-400" />
+            <h1 className="text-4xl md:text-6xl font-bold tech-heading">
+              <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Choose Your Plan
+              </span>
+            </h1>
+          </div>
           
           <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed tech-body">
             Choose the{' '}
             <span 
               onClick={handlePerfectClick}
-              className="cursor-pointer hover:text-purple-300 transition-colors"
-              style={{ textDecoration: 'none' }}
+              className="cursor-pointer hover:text-purple-300 transition-colors underline decoration-dotted"
+              style={{ textDecoration: 'underline', textDecorationStyle: 'dotted' }}
+              title="Click for special access"
             >
               perfect
             </span>{' '}
             plan for your content creation needs. All plans include our core AI features 
             and direct social media posting capabilities.
           </p>
-
-          {/* Billing Toggle */}
-          <div className="flex items-center justify-center gap-4 mb-12">
-            <span className={`text-base font-medium tech-body ${!isYearly ? 'text-white' : 'text-gray-400'}`}>
-              Monthly
-            </span>
-            <button
-              onClick={() => setIsYearly(!isYearly)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-                isYearly ? 'bg-purple-500' : 'bg-gray-600'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  isYearly ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-            <span className={`text-base font-medium tech-body ${isYearly ? 'text-white' : 'text-gray-400'}`}>
-              Yearly
-            </span>
-            <div className="vision-card rounded-full px-3 py-1">
-              <span className="text-sm text-purple-300 font-medium tech-body">Save up to 25%</span>
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* Pricing Cards */}
+      {/* Pricing Table */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-            {enhancedTiers.map((plan, index) => (
-              <div 
-                key={plan.name}
-                className={`relative vision-card rounded-2xl p-6 hover:bg-white/5 transition-all duration-500 hover:scale-105 ${
-                  plan.popular ? 'ring-2 ring-purple-500/50 scale-105' : ''
-                } ${(plan as any).isEnterprise ? 'ring-2 ring-gradient-to-r from-amber-500 to-orange-500' : ''}`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <div className="flex items-center gap-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-medium tech-subheading">
-                      <Star className="h-3 w-3" />
-                      Most Popular
-                    </div>
-                  </div>
-                )}
-
-                                 {(plan as any).isEnterprise && (
-                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                     <div className="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-medium tech-subheading">
-                       <Building className="h-3 w-3" />
-                       Enterprise
-                     </div>
-                   </div>
-                 )}
-                 
-                 <div className="text-center mb-6">
-                   <h3 className="text-xl font-bold text-white mb-2 tech-heading">{plan.name}</h3>
-                   <p className="text-gray-400 mb-4 text-sm tech-body">{plan.description}</p>
-                   
-                   <div className="mb-4">
-                     {(plan as any).isEnterprise ? (
-                      <div className="flex items-baseline justify-center gap-1">
-                        <span className="text-3xl font-bold text-white tech-heading">Custom</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-baseline justify-center gap-1">
-                        <span className="text-3xl font-bold text-white tech-heading">
-                          ${isYearly ? plan.price.yearly : plan.price.monthly}
-                        </span>
-                        {!isYearly && plan.price.monthly > 0 && (
-                          <span className="text-gray-400 text-sm tech-body">/mo</span>
-                        )}
-                        {isYearly && plan.price.yearly > 0 && (
-                          <span className="text-gray-400 text-sm tech-body">/yr</span>
-                        )}
-                      </div>
-                    )}
-                    
-                    {isYearly && plan.price.monthly > 0 && (
-                      <div className="mt-1">
-                        <span className="text-xs text-purple-300 font-medium tech-body">
-                          Save {calculateSavings(plan.price.monthly, plan.price.yearly)}%
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="space-y-3 mb-6">
-                  {plan.features.slice(0, 4).map((feature, featureIndex) => (
-                    <div key={featureIndex} className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-300 text-sm tech-body">{feature}</span>
-                    </div>
-                  ))}
-                  {plan.features.length > 4 && (
-                    <div className="text-center">
-                      <span className="text-purple-300 text-xs tech-body">
-                        +{plan.features.length - 4} more features
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Plan Limits */}
-                <div className="mb-6 p-3 bg-black/20 rounded-lg">
-                  <h4 className="text-xs font-semibold text-purple-300 mb-2 tech-subheading">Limits</h4>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">AI Credits</span>
-                      <span className="text-white">{plan.limits.aiCredits}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">AI Edits</span>
-                      <span className="text-white">{plan.limits.aiEdits}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Social Sets</span>
-                      <span className="text-white">{plan.limits.socialSets}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Team Size</span>
-                      <span className="text-white">{plan.limits.seats}</span>
-                    </div>
-                  </div>
-                </div>
-
-                                 {/* Overage Pricing */}
-                 {(plan as any).overage && (
-                   <div className="mb-6 p-3 bg-purple-900/20 rounded-lg">
-                     <h4 className="text-xs font-semibold text-purple-300 mb-2 tech-subheading">Overage</h4>
-                     <div className="space-y-1 text-xs">
-                       {Object.entries((plan as any).overage).map(([key, value]) => (
-                        <div key={key} className="flex justify-between">
-                          <span className="text-gray-400 capitalize">
-                            {key === 'aiCredits' ? 'Credits' : key === 'aiEdits' ? 'Edits' : key === 'seats' ? 'Users' : 'Storage'}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[800px] bg-black/20 rounded-2xl border border-purple-500/20">
+              <thead>
+                <tr className="border-b border-purple-500/20">
+                  <th className="text-left p-6 text-purple-300 font-semibold">Feature Category</th>
+                  {pricingPlans.map((plan, index) => (
+                    <th key={index} className="text-center p-6 relative">
+                      {plan.popular && (
+                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                          <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                            Most Popular
                           </span>
-                                                     <span className="text-purple-300">{value as string}</span>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <button 
-                  className={`w-full py-3 px-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105 text-sm tech-subheading ${
-                    plan.buttonVariant === 'primary' 
-                      ? 'vision-button text-white' 
-                      : plan.buttonVariant === 'enterprise'
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600'
-                      : 'vision-card text-white hover:bg-white/10'
-                  }`}
-                >
-                  {plan.buttonText}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+                      )}
+                      <div className="text-white font-bold text-lg mb-2">{plan.name}</div>
+                      <div className="text-2xl font-bold text-purple-300 mb-2">{plan.price}</div>
+                      <div className="text-gray-400 text-sm">{plan.targetUser}</div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {/* Price Row */}
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300 font-medium">Price</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center text-white font-semibold">{plan.price}</td>
+                  ))}
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300 font-medium">Target User</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center text-gray-300 text-sm">{plan.description}</td>
+                  ))}
+                </tr>
 
-      {/* Benefits Section */}
-      <section className="py-20 bg-black/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4 tech-heading">Why Choose Crow's Eye?</h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto tech-body">
-              More than just features—we deliver results
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {benefits.map((benefit, index) => (
-              <div 
-                key={benefit.title}
-                className="text-center vision-card rounded-xl p-8 hover:bg-white/5 transition-all duration-300"
-              >
-                <div className="inline-flex items-center justify-center w-16 h-16 vision-card rounded-full mb-6">
-                  {benefit.icon}
-                </div>
-                <h3 className="text-xl font-bold text-white mb-4 tech-subheading">{benefit.title}</h3>
-                <p className="text-gray-400 tech-body">{benefit.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+                {/* Core Usage Limits */}
+                <tr className="border-b border-purple-500/10">
+                  <td colSpan={5} className="p-4 bg-purple-900/20 font-semibold text-purple-300">
+                    Core Usage Limits
+                  </td>
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300">Linked Social Accounts</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center text-white">{plan.limits.linkedAccounts}</td>
+                  ))}
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300">Users</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center text-white">{plan.limits.users}</td>
+                  ))}
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300">AI Credits</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center text-white">{plan.limits.aiCredits}</td>
+                  ))}
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300">Scheduled Posts</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center text-white">{plan.limits.scheduledPosts}</td>
+                  ))}
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300">Media Storage</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center text-white">{plan.limits.mediaStorage}</td>
+                  ))}
+                </tr>
 
-      {/* CTA Section */}
-      <section className="py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 vision-card rounded-3xl p-12">
-            <h2 className="text-4xl font-bold text-white mb-6 tech-heading">
-              Ready to Transform Your Content Strategy?
-            </h2>
-            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto tech-body">
-              Join thousands of creators who are already using Crow's Eye to amplify their social media presence.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a 
-                href="/demo" 
-                className="inline-flex items-center gap-2 vision-button text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105 tech-subheading"
-              >
-                <Eye className="h-5 w-5" />
-                Try Free Demo
-              </a>
-              <a 
-                href="/contact" 
-                className="inline-flex items-center gap-2 vision-card text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/10 transition-all duration-300 tech-subheading"
-              >
-                <ArrowRight className="h-5 w-5" />
-                Contact Sales
-              </a>
-            </div>
+                {/* Key Features */}
+                <tr className="border-b border-purple-500/10">
+                  <td colSpan={5} className="p-4 bg-purple-900/20 font-semibold text-purple-300">
+                    Key Features
+                  </td>
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300">Basic Content Tools</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center">
+                      {plan.features.basicContentTools ? (
+                        <Check className="h-5 w-5 text-green-400 mx-auto" />
+                      ) : (
+                        <X className="h-5 w-5 text-red-400 mx-auto" />
+                      )}
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300">Smart Gallery</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center">
+                      {plan.features.smartGallery ? (
+                        <Check className="h-5 w-5 text-green-400 mx-auto" />
+                      ) : (
+                        <X className="h-5 w-5 text-red-400 mx-auto" />
+                      )}
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300">Post Formatting</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center">
+                      {plan.features.postFormatting ? (
+                        <Check className="h-5 w-5 text-green-400 mx-auto" />
+                      ) : (
+                        <X className="h-5 w-5 text-red-400 mx-auto" />
+                      )}
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300">Basic Video Tools</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center">
+                      {plan.features.basicVideoTools ? (
+                        <Check className="h-5 w-5 text-green-400 mx-auto" />
+                      ) : (
+                        <X className="h-5 w-5 text-red-400 mx-auto" />
+                      )}
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300">Advanced Content</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center text-white">
+                      {plan.features.advancedContent === false ? (
+                        <X className="h-5 w-5 text-red-400 mx-auto" />
+                      ) : typeof plan.features.advancedContent === 'string' ? (
+                        <span className="text-sm text-purple-300">{plan.features.advancedContent}</span>
+                      ) : (
+                        <Check className="h-5 w-5 text-green-400 mx-auto" />
+                      )}
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300">Analytics</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center text-white">
+                      <span className="text-sm text-purple-300">{plan.features.analytics}</span>
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300">Team Collaboration</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center">
+                      {plan.features.teamCollaboration === false ? (
+                        <X className="h-5 w-5 text-red-400 mx-auto" />
+                      ) : typeof plan.features.teamCollaboration === 'string' ? (
+                        <span className="text-sm text-purple-300">{plan.features.teamCollaboration}</span>
+                      ) : (
+                        <Check className="h-5 w-5 text-green-400 mx-auto" />
+                      )}
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300">Support</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center text-white">
+                      <span className="text-sm text-purple-300">{plan.features.support}</span>
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300">Custom Branding</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center">
+                      {plan.features.customBranding ? (
+                        <Check className="h-5 w-5 text-green-400 mx-auto" />
+                      ) : (
+                        <X className="h-5 w-5 text-red-400 mx-auto" />
+                      )}
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-gray-300">API Access</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center">
+                      {plan.features.apiAccess ? (
+                        <Check className="h-5 w-5 text-green-400 mx-auto" />
+                      ) : (
+                        <X className="h-5 w-5 text-red-400 mx-auto" />
+                      )}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* Action Buttons */}
+                <tr>
+                  <td className="p-4"></td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-6 text-center">
+                      <button className={`w-full py-3 px-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105 ${plan.buttonClass}`}>
+                        {plan.buttonText}
+                      </button>
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
