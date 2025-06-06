@@ -9,8 +9,7 @@ const features = [
     title: "Advanced AI Content Generation",
     subtitle: "Powered by Google's Gemini",
     description: "Deep analysis of images/videos for context-aware captions, posts, and narratives. Identifies subjects, settings, mood, and themes with unmatched precision.",
-    category: "AI & Content Creation",
-    highlight: true
+    category: "AI & Content Creation"
   },
   {
     icon: <Edit3 className="h-8 w-8 text-blue-400" />,
@@ -149,17 +148,9 @@ export default function FeaturesPage() {
             {features.map((feature, index) => (
               <div 
                 key={feature.title}
-                className={`group relative vision-card rounded-2xl p-8 hover:bg-white/5 transition-all duration-500 hover:scale-105 ${
-                  feature.highlight ? 'ring-2 ring-purple-500/50' : ''
-                }`}
+                className="group relative vision-card rounded-2xl p-8 hover:bg-white/5 transition-all duration-500 hover:scale-105"
               >
-                {feature.highlight && (
-                  <div className="absolute -top-3 left-6">
-                    <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-1 rounded-full text-sm font-medium tech-subheading">
-                      Featured
-                    </span>
-                  </div>
-                )}
+
                 
                 <div className="flex items-center gap-4 mb-6">
                   <div className="p-3 vision-card rounded-xl group-hover:bg-white/10 transition-colors">

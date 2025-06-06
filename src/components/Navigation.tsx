@@ -59,8 +59,8 @@ const Navigation = () => {
     <nav className="sticky top-0 z-50 glass-effect border-b border-vision-purple/30">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
         <div className="flex justify-between items-center h-12 sm:h-14 md:h-16">
-          {/* Clean Logo Only */}
-          <div className="flex items-center">
+          {/* Enhanced Logo with Brand Text */}
+          <div className="flex items-center space-x-3">
             <Link href="/" className="hover-float group">
               <div className="relative">
                 <div className="absolute inset-0 bg-vision-gradient rounded-full opacity-20 group-hover:opacity-40 transition-opacity duration-300 animate-pulse-slow blur-sm scale-110"></div>
@@ -68,11 +68,21 @@ const Navigation = () => {
                   <Image
                     src="/crows_eye_logo_transparent.png"
                     alt="Crow's Eye Logo"
-                    width={32}
-                    height={32}
-                    className="relative z-10 group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg sm:w-8 sm:h-8 md:w-9 md:h-9"
+                    width={40}
+                    height={40}
+                    className="relative z-10 group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg"
                   />
                 </div>
+              </div>
+            </Link>
+            <Link href="/" className="hidden sm:block">
+              <div className="text-left">
+                <h1 className="text-lg md:text-xl font-bold tech-heading gradient-text-animated">
+                  CROW'S EYE
+                </h1>
+                <p className="text-purple-300 text-xs md:text-sm tech-subheading">
+                  AI Marketing Suite
+                </p>
               </div>
             </Link>
           </div>
@@ -96,12 +106,6 @@ const Navigation = () => {
           {/* Enhanced CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
             <LanguageSelector />
-            <Link
-              href="/demo"
-              className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:bg-vision-purple/10"
-            >
-              {t('nav.try_demo')}
-            </Link>
             {!loading && (
               <>
                 {user ? (
@@ -124,7 +128,7 @@ const Navigation = () => {
                           <UserIcon className="h-4 w-4 text-white" />
                         </div>
                       )}
-                      <span>Account</span>
+                      <span>{user.displayName || user.email?.split('@')[0] || 'Account'}</span>
                       <ChevronDownIcon className="h-4 w-4" />
                     </button>
 
@@ -178,12 +182,6 @@ const Navigation = () => {
                 )}
               </>
             )}
-            <Link
-              href="/download"
-              className="vision-button text-white px-4 py-2 rounded-lg text-sm font-medium"
-            >
-              {t('nav.download_free')}
-            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -263,20 +261,6 @@ const Navigation = () => {
               )}
               <div className="mt-3 space-y-1">
                 <LanguageSelector />
-                <Link
-                  href="/demo"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-vision-purple/20 transition-all duration-300"
-                  onClick={() => setIsOpen(false)}
-                >
-                  {t('nav.try_demo')}
-                </Link>
-                <Link
-                  href="/download"
-                  className="block w-full text-center vision-button text-white px-3 py-2 rounded-lg text-base font-medium"
-                  onClick={() => setIsOpen(false)}
-                >
-                  {t('nav.download_free')}
-                </Link>
                 {user && (
                   <>
                     <Link
