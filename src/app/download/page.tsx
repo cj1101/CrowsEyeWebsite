@@ -53,11 +53,25 @@ const installSteps = [
 ];
 
 export default function DownloadPage() {
-  const handleDownload = () => {
+  const handleDownload = (platform: 'windows' | 'macos' | 'linux' = 'windows') => {
     // Create a download link for the application
     const link = document.createElement('a');
-    link.href = '/downloads/CrowsEye.exe';
-    link.download = 'CrowsEye.exe';
+    
+    switch (platform) {
+      case 'windows':
+        link.href = '/downloads/crow-eye-marketing-tool-windows-v5.0.0.exe';
+        link.download = 'crow-eye-install-windows.bat';
+        break;
+      case 'macos':
+        link.href = '/downloads/crow-eye-marketing-tool-macos-v5.0.0.dmg';
+        link.download = 'crow-eye-install-macos.sh';
+        break;
+      case 'linux':
+        link.href = '/downloads/crow-eye-marketing-tool-linux-v5.0.0.AppImage';
+        link.download = 'crow-eye-install-linux.sh';
+        break;
+    }
+    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -111,7 +125,7 @@ export default function DownloadPage() {
           {/* Download Button */}
           <div className="mb-8">
             <button 
-              onClick={handleDownload}
+              onClick={() => handleDownload('windows')}
               className="inline-flex items-center gap-2 vision-button text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105 tech-subheading"
             >
               <Download className="h-5 w-5" />
@@ -168,22 +182,28 @@ export default function DownloadPage() {
               <h3 className="text-2xl font-bold text-white mb-6 tech-heading">Download for Your Platform</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <button 
-                  onClick={handleDownload}
+                  onClick={() => handleDownload('windows')}
                   className="vision-card p-6 rounded-xl hover:bg-white/10 transition-all duration-300 group"
                 >
                   <Monitor className="h-8 w-8 text-blue-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                   <h4 className="font-semibold text-white mb-2 tech-subheading">Windows</h4>
                   <p className="text-sm text-gray-400 tech-body">Windows 10/11</p>
                 </button>
-                <button className="vision-card p-6 rounded-xl hover:bg-white/10 transition-all duration-300 group opacity-50 cursor-not-allowed">
-                  <Monitor className="h-8 w-8 text-gray-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                <button 
+                  onClick={() => handleDownload('macos')}
+                  className="vision-card p-6 rounded-xl hover:bg-white/10 transition-all duration-300 group"
+                >
+                  <Monitor className="h-8 w-8 text-green-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                   <h4 className="font-semibold text-white mb-2 tech-subheading">macOS</h4>
-                  <p className="text-sm text-gray-400 tech-body">Coming Soon</p>
+                  <p className="text-sm text-gray-400 tech-body">macOS 10.15+</p>
                 </button>
-                <button className="vision-card p-6 rounded-xl hover:bg-white/10 transition-all duration-300 group opacity-50 cursor-not-allowed">
-                  <Monitor className="h-8 w-8 text-gray-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                <button 
+                  onClick={() => handleDownload('linux')}
+                  className="vision-card p-6 rounded-xl hover:bg-white/10 transition-all duration-300 group"
+                >
+                  <Monitor className="h-8 w-8 text-orange-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                   <h4 className="font-semibold text-white mb-2 tech-subheading">Linux</h4>
-                  <p className="text-sm text-gray-400 tech-body">Coming Soon</p>
+                  <p className="text-sm text-gray-400 tech-body">Ubuntu 18.04+</p>
                 </button>
               </div>
             </div>

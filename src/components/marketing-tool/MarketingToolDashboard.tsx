@@ -252,10 +252,30 @@ export default function MarketingToolDashboard() {
 // Desktop App Download Component
 function DesktopApp() {
   const handleDownload = (platform: string) => {
-    // This would typically trigger a download
-    // downloadDesktopApp(platform);
+    // Create a download link for the application
+    const link = document.createElement('a');
     
-    alert(`Desktop app download for ${platform} will be available soon!`);
+    switch (platform) {
+      case 'windows':
+        link.href = '/downloads/crow-eye-marketing-tool-windows-v5.0.0.exe';
+        link.download = 'crow-eye-install-windows.bat';
+        break;
+      case 'macos':
+        link.href = '/downloads/crow-eye-marketing-tool-macos-v5.0.0.dmg';
+        link.download = 'crow-eye-install-macos.sh';
+        break;
+      case 'linux':
+        link.href = '/downloads/crow-eye-marketing-tool-linux-v5.0.0.AppImage';
+        link.download = 'crow-eye-install-linux.sh';
+        break;
+      default:
+        console.log(`Platform ${platform} not supported yet`);
+        return;
+    }
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (

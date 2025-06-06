@@ -132,6 +132,11 @@ desktop_app/compliance_log.json
 # Package files
 *.tgz
 *.tar.gz
+*.zip
+
+# Large source packages
+public/downloads/crows-eye-source.zip
+public/downloads/*-source.zip
 
 # Lock files (keep package-lock.json but ignore others)
 yarn.lock
