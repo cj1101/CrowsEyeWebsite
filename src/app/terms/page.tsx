@@ -66,10 +66,7 @@ export default function TermsPage() {
                   <li>Failed payments may result in service suspension</li>
                 </ul>
 
-                <h3 className="text-xl font-semibold text-white mt-6">4.3 BYOK (Bring Your Own Key) Pricing</h3>
-                <p>
-                  Users who provide their own API keys for third-party services (OpenAI, etc.) may be eligible for discounted pricing. BYOK users are responsible for their own API usage costs and compliance with third-party terms.
-                </p>
+
               </div>
             </section>
 

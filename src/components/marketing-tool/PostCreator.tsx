@@ -44,8 +44,6 @@ export default function PostCreator({ defaultPlatform }: PostCreatorProps) {
     { id: 'youtube', name: 'YouTube', enabled: false, maxLength: 5000 },
     { id: 'pinterest', name: 'Pinterest', enabled: false, maxLength: 500 },
     { id: 'snapchat', name: 'Snapchat', enabled: false, maxLength: 250 },
-    { id: 'discord', name: 'Discord', enabled: false, maxLength: 2000 },
-    { id: 'telegram', name: 'Telegram', enabled: false, maxLength: 4096 },
   ]);
 
   const [preferences] = useState({

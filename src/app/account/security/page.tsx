@@ -189,7 +189,7 @@ export default function SecurityPage() {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-white">API Key Management</h2>
-              <p className="text-gray-300">Manage your custom AI API keys for BYOK (Bring Your Own Key)</p>
+                              <p className="text-gray-300">Manage your custom AI API keys</p>
             </div>
           </div>
 
@@ -219,7 +219,7 @@ export default function SecurityPage() {
                 </button>
               </div>
               <p className="text-gray-400 text-xs mt-2">
-                Your API key is encrypted and stored securely. This enables BYOK pricing discounts.
+                                  Your API key is encrypted and stored securely.
               </p>
             </div>
 

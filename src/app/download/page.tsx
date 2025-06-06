@@ -53,6 +53,15 @@ const installSteps = [
 ];
 
 export default function DownloadPage() {
+  const handleDownload = () => {
+    // Create a download link for the application
+    const link = document.createElement('a');
+    link.href = '/downloads/CrowsEye.exe';
+    link.download = 'CrowsEye.exe';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   return (
     <div className="min-h-screen darker-gradient-bg logo-bg-overlay">
       {/* Hero Section */}
@@ -101,7 +110,10 @@ export default function DownloadPage() {
 
           {/* Download Button */}
           <div className="mb-8">
-            <button className="inline-flex items-center gap-2 vision-button text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105 tech-subheading">
+            <button 
+              onClick={handleDownload}
+              className="inline-flex items-center gap-2 vision-button text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105 tech-subheading"
+            >
               <Download className="h-5 w-5" />
               Download Now
             </button>
@@ -155,20 +167,23 @@ export default function DownloadPage() {
             <div className="text-center">
               <h3 className="text-2xl font-bold text-white mb-6 tech-heading">Download for Your Platform</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <button className="vision-card p-6 rounded-xl hover:bg-white/10 transition-all duration-300 group">
+                <button 
+                  onClick={handleDownload}
+                  className="vision-card p-6 rounded-xl hover:bg-white/10 transition-all duration-300 group"
+                >
                   <Monitor className="h-8 w-8 text-blue-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                   <h4 className="font-semibold text-white mb-2 tech-subheading">Windows</h4>
                   <p className="text-sm text-gray-400 tech-body">Windows 10/11</p>
                 </button>
-                <button className="vision-card p-6 rounded-xl hover:bg-white/10 transition-all duration-300 group">
+                <button className="vision-card p-6 rounded-xl hover:bg-white/10 transition-all duration-300 group opacity-50 cursor-not-allowed">
                   <Monitor className="h-8 w-8 text-gray-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                   <h4 className="font-semibold text-white mb-2 tech-subheading">macOS</h4>
-                  <p className="text-sm text-gray-400 tech-body">macOS 10.15+</p>
+                  <p className="text-sm text-gray-400 tech-body">Coming Soon</p>
                 </button>
-                <button className="vision-card p-6 rounded-xl hover:bg-white/10 transition-all duration-300 group">
-                  <Monitor className="h-8 w-8 text-green-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                <button className="vision-card p-6 rounded-xl hover:bg-white/10 transition-all duration-300 group opacity-50 cursor-not-allowed">
+                  <Monitor className="h-8 w-8 text-gray-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                   <h4 className="font-semibold text-white mb-2 tech-subheading">Linux</h4>
-                  <p className="text-sm text-gray-400 tech-body">Ubuntu 20.04+</p>
+                  <p className="text-sm text-gray-400 tech-body">Coming Soon</p>
                 </button>
               </div>
             </div>

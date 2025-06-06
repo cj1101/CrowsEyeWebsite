@@ -176,10 +176,9 @@ export default function FeaturesPage() {
                 </p>
                 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm px-3 py-1 vision-card rounded-full text-gray-300 tech-body">
+                  <span className="text-sm text-gray-300 tech-body">
                     {feature.category}
                   </span>
-                  <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
                 </div>
               </div>
             ))}

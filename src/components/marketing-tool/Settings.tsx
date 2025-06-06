@@ -55,7 +55,7 @@ export default function Settings() {
       <div className="bg-gray-700/50 rounded-lg p-6">
         <div className="flex items-center space-x-3 mb-4">
           <KeyIcon className="h-6 w-6 text-primary-500" />
-          <h3 className="text-lg font-semibold text-white">API Keys (BYOK)</h3>
+          <h3 className="text-lg font-semibold text-white">API Keys</h3>
         </div>
         
         <div className="space-y-4">
@@ -71,7 +71,7 @@ export default function Settings() {
               className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             <p className="text-xs text-gray-400 mt-1">
-              Save 30% on your subscription by bringing your own OpenAI key
+              Optional: Use your own OpenAI API key for AI features
             </p>
           </div>
           
@@ -149,14 +149,12 @@ export default function Settings() {
               Default Platform
             </label>
             <select className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
-                              <option value="instagram">Instagram</option>
-                <option value="facebook">Facebook</option>
-                <option value="tiktok">TikTok</option>
-                <option value="youtube">YouTube</option>
-                <option value="pinterest">Pinterest</option>
-                <option value="snapchat">Snapchat</option>
-                <option value="discord">Discord</option>
-                <option value="telegram">Telegram</option>
+              <option value="instagram">Instagram</option>
+              <option value="facebook">Facebook</option>
+              <option value="tiktok">TikTok</option>
+              <option value="youtube">YouTube</option>
+              <option value="pinterest">Pinterest</option>
+              <option value="snapchat">Snapchat</option>
             </select>
           </div>
           
