@@ -59,8 +59,36 @@ const pricingPlans = [
       apiAccess: false
     },
     buttonText: "Start Creating",
-    buttonClass: "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600",
-    popular: true
+    buttonClass: "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
+  },
+  {
+    name: "Growth Plan",
+    price: "$35/month",
+    yearlyPrice: "$350/year",
+    description: "Growing businesses & marketers",
+    targetUser: "Growing Businesses",
+    limits: {
+      linkedAccounts: 7,
+      users: "Up to 2",
+      aiCredits: "400/month",
+      scheduledPosts: "300/month",
+      mediaStorage: "25 GB"
+    },
+    features: {
+      basicContentTools: true,
+      mediaLibrary: true,
+      smartGallery: true,
+      postFormatting: true,
+      basicVideoTools: true,
+      advancedContent: "Basic Video Suite",
+      analytics: "Enhanced Analytics",
+      teamCollaboration: true,
+      support: "Priority Email Support",
+      customBranding: "Basic Branding",
+      apiAccess: false
+    },
+    buttonText: "Scale Your Growth",
+    buttonClass: "bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
   },
   {
     name: "Pro Plan",
@@ -82,10 +110,10 @@ const pricingPlans = [
       basicVideoTools: true,
       advancedContent: "Full Video Suite",
       analytics: "Advanced Analytics",
-      teamCollaboration: false,
+      teamCollaboration: true,
       support: "Priority Email Support",
-      customBranding: false,
-      apiAccess: false
+      customBranding: "Full Custom Branding",
+      apiAccess: true
     },
     buttonText: "Go Pro",
     buttonClass: "bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
@@ -110,9 +138,9 @@ const pricingPlans = [
       basicVideoTools: true,
       advancedContent: "All Pro features +",
       analytics: "Custom Analytics & Reporting",
-      teamCollaboration: false,
+      teamCollaboration: true,
       support: "Dedicated Account Manager",
-      customBranding: false,
+      customBranding: "Enterprise Branding",
       apiAccess: true
     },
     buttonText: "Contact Sales",
@@ -183,21 +211,17 @@ export default function PricingPage() {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px] bg-black/20 rounded-2xl border border-purple-500/20">
+            <table className="w-full min-w-[1000px] bg-black/20 rounded-2xl border border-purple-500/20">
               <thead>
                 <tr className="border-b border-purple-500/20">
                   <th className="text-left p-6 text-white font-semibold">Feature Category</th>
                   {pricingPlans.map((plan, index) => (
                     <th key={index} className="text-center p-6 relative pt-8 pb-12">
-                      {plan.popular && (
-                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-20">
-                          <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
-                            Most Popular
-                          </span>
-                        </div>
-                      )}
                       <div className="text-white font-bold text-lg mb-2 mt-2">{plan.name}</div>
                       <div className="text-2xl font-bold text-white mb-2">{plan.price}</div>
+                      {plan.yearlyPrice && (
+                        <div className="text-sm text-green-400 mb-2">{plan.yearlyPrice}</div>
+                      )}
                       <div className="text-gray-300 text-sm">{plan.targetUser}</div>
                     </th>
                   ))}
@@ -208,7 +232,12 @@ export default function PricingPage() {
                 <tr className="border-b border-purple-500/10">
                   <td className="p-4 text-white font-medium">Price</td>
                   {pricingPlans.map((plan, index) => (
-                    <td key={index} className="p-4 text-center text-white font-semibold">{plan.price}</td>
+                    <td key={index} className="p-4 text-center text-white font-semibold">
+                      <div>{plan.price}</div>
+                      {plan.yearlyPrice && (
+                        <div className="text-sm text-green-400 mt-1">{plan.yearlyPrice}</div>
+                      )}
+                    </td>
                   ))}
                 </tr>
                 <tr className="border-b border-purple-500/10">
@@ -220,7 +249,7 @@ export default function PricingPage() {
 
                 {/* Core Usage Limits */}
                 <tr className="border-b border-purple-500/10">
-                  <td colSpan={5} className="p-6 bg-purple-900/30 font-bold text-white text-lg">
+                  <td colSpan={6} className="p-6 bg-purple-900/30 font-bold text-white text-lg">
                     Core Usage Limits
                   </td>
                 </tr>
@@ -257,7 +286,7 @@ export default function PricingPage() {
 
                 {/* Key Features */}
                 <tr className="border-b border-purple-500/10">
-                  <td colSpan={5} className="p-6 bg-purple-900/30 font-bold text-white text-lg">
+                  <td colSpan={6} className="p-6 bg-purple-900/30 font-bold text-white text-lg">
                     Key Features
                   </td>
                 </tr>
@@ -332,10 +361,36 @@ export default function PricingPage() {
                   ))}
                 </tr>
                 <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-white font-medium">Team Collaboration</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center">
+                      {plan.features.teamCollaboration ? (
+                        <Check className="h-5 w-5 text-green-400 mx-auto" />
+                      ) : (
+                        <X className="h-5 w-5 text-red-400 mx-auto" />
+                      )}
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-b border-purple-500/10">
                   <td className="p-4 text-white font-medium">Support</td>
                   {pricingPlans.map((plan, index) => (
                     <td key={index} className="p-4 text-center text-white">
                       <span className="text-sm text-white font-medium">{plan.features.support}</span>
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-b border-purple-500/10">
+                  <td className="p-4 text-white font-medium">Custom Branding</td>
+                  {pricingPlans.map((plan, index) => (
+                    <td key={index} className="p-4 text-center text-white">
+                      {plan.features.customBranding === false ? (
+                        <X className="h-5 w-5 text-red-400 mx-auto" />
+                      ) : typeof plan.features.customBranding === 'string' ? (
+                        <span className="text-sm text-white font-medium">{plan.features.customBranding}</span>
+                      ) : (
+                        <Check className="h-5 w-5 text-green-400 mx-auto" />
+                      )}
                     </td>
                   ))}
                 </tr>
