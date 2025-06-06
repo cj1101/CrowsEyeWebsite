@@ -76,10 +76,12 @@ export default function AnalyticsDashboard() {
   const platformColors = {
     instagram: 'from-pink-600 to-purple-600',
     facebook: 'from-blue-600 to-blue-700',
-    twitter: 'from-sky-500 to-blue-600',
-    linkedin: 'from-blue-700 to-indigo-700',
     tiktok: 'from-black to-gray-800',
-    youtube: 'from-red-600 to-red-700'
+    youtube: 'from-red-600 to-red-700',
+    pinterest: 'from-red-500 to-pink-500',
+    snapchat: 'from-yellow-400 to-yellow-600',
+    discord: 'from-indigo-500 to-purple-600',
+    telegram: 'from-blue-400 to-cyan-500'
   };
 
   return (

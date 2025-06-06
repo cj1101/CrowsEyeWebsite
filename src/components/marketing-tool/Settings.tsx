@@ -149,10 +149,14 @@ export default function Settings() {
               Default Platform
             </label>
             <select className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
-              <option value="instagram">Instagram</option>
-              <option value="twitter">Twitter/X</option>
-              <option value="linkedin">LinkedIn</option>
-              <option value="facebook">Facebook</option>
+                              <option value="instagram">Instagram</option>
+                <option value="facebook">Facebook</option>
+                <option value="tiktok">TikTok</option>
+                <option value="youtube">YouTube</option>
+                <option value="pinterest">Pinterest</option>
+                <option value="snapchat">Snapchat</option>
+                <option value="discord">Discord</option>
+                <option value="telegram">Telegram</option>
             </select>
           </div>
           

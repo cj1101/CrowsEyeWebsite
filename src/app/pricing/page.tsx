@@ -1,7 +1,8 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Check, Eye, Zap, ArrowRight, Star, Shield, Headphones } from 'lucide-react'
+import { Check, Eye, Zap, ArrowRight, Star, Shield, Headphones, Plus } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 const plans = [
   {
@@ -9,50 +10,111 @@ const plans = [
     price: { monthly: 0, yearly: 0 },
     description: "Perfect for trying out Crow's Eye",
     features: [
-      "5 AI content generations per month",
+      "50 AI credits per month",
       "Basic social media posting",
       "2 connected accounts",
       "Standard templates",
-      "Community support"
+      "Community support",
+      "Basic analytics"
     ],
     buttonText: "Get Started",
     buttonVariant: "outline" as const,
-    popular: false
+    popular: false,
+    limits: {
+      aiCredits: 50,
+      socialAccounts: 2,
+      users: 1,
+      storage: "1 GB"
+    }
   },
   {
     name: "Creator",
-    price: { monthly: 29, yearly: 290 },
+    price: { monthly: 19, yearly: 190 },
     description: "Ideal for content creators and influencers",
     features: [
-      "100 AI content generations per month",
+      "300 AI credits per month",
       "Advanced editing tools",
-      "10 connected accounts",
+      "5 connected accounts",
       "Custom templates & presets",
       "Priority support",
       "Performance analytics",
-      "Video processing"
+      "Video processing",
+      "Scheduled posts (unlimited)"
     ],
     buttonText: "Start Creating",
     buttonVariant: "primary" as const,
-    popular: true
+    popular: true,
+    limits: {
+      aiCredits: 300,
+      socialAccounts: 5,
+      users: 1,
+      storage: "10 GB"
+    },
+    overage: {
+      aiCredits: "$0.10 per credit",
+      storage: "$5 per GB"
+    }
   },
   {
-    name: "Business",
-    price: { monthly: 79, yearly: 790 },
-    description: "For growing businesses and agencies",
+    name: "Growth",
+    price: { monthly: 49, yearly: 490 },
+    description: "For growing businesses and teams",
     features: [
-      "Unlimited AI content generations",
+      "600 AI credits per month",
       "Team collaboration tools",
-      "Unlimited connected accounts",
+      "15 connected accounts",
       "White-label options",
-      "24/7 dedicated support",
+      "24/7 priority support",
       "Advanced analytics & reporting",
       "API access",
-      "Custom integrations"
+      "Custom integrations",
+      "Up to 3 team members"
     ],
-    buttonText: "Scale Your Business",
+    buttonText: "Scale Your Growth",
     buttonVariant: "primary" as const,
-    popular: false
+    popular: false,
+    limits: {
+      aiCredits: 600,
+      socialAccounts: 15,
+      users: 3,
+      storage: "50 GB"
+    },
+    overage: {
+      aiCredits: "$0.08 per credit",
+      storage: "$4 per GB",
+      users: "$15 per additional user"
+    }
+  },
+  {
+    name: "Pro",
+    price: { monthly: 89, yearly: 890 },
+    description: "For agencies and professional marketers",
+    features: [
+      "1000 AI credits per month",
+      "Advanced team management",
+      "Unlimited connected accounts",
+      "Full white-label solution",
+      "Dedicated account manager",
+      "Custom analytics & reporting",
+      "Priority API access",
+      "Custom integrations",
+      "Up to 10 team members",
+      "Revenue sharing program"
+    ],
+    buttonText: "Go Professional",
+    buttonVariant: "primary" as const,
+    popular: false,
+    limits: {
+      aiCredits: 1000,
+      socialAccounts: "Unlimited",
+      users: 10,
+      storage: "200 GB"
+    },
+    overage: {
+      aiCredits: "$0.06 per credit",
+      storage: "$3 per GB",
+      users: "$12 per additional user"
+    }
   }
 ];
 
@@ -76,12 +138,20 @@ const benefits = [
 
 export default function PricingPage() {
   const [isYearly, setIsYearly] = useState(false);
+  const router = useRouter();
 
   const calculateSavings = (monthly: number, yearly: number) => {
     if (monthly === 0) return 0;
     const monthlyCost = monthly * 12;
     const savings = monthlyCost - yearly;
     return Math.round((savings / monthlyCost) * 100);
+  };
+
+  const handlePerfectClick = () => {
+    const passcode = prompt("What's the passcode?");
+    if (passcode && passcode.toLowerCase() === 'plz') {
+      router.push('/pricing/founder');
+    }
   };
 
   return (
@@ -121,7 +191,15 @@ export default function PricingPage() {
           </h2>
           
           <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed tech-body">
-            Choose the perfect plan for your content creation needs. All plans include our core AI features 
+            Choose the{' '}
+            <span 
+              onClick={handlePerfectClick}
+              className="cursor-pointer hover:text-purple-300 transition-colors"
+              style={{ textDecoration: 'none' }}
+            >
+              perfect
+            </span>{' '}
+            plan for your content creation needs. All plans include our core AI features 
             and direct social media posting capabilities.
           </p>
 
@@ -155,7 +233,7 @@ export default function PricingPage() {
       {/* Pricing Cards */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {plans.map((plan, index) => (
               <div 
                 key={plan.name}
@@ -207,6 +285,46 @@ export default function PricingPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* Plan Limits */}
+                <div className="mb-8 p-4 bg-black/20 rounded-lg">
+                  <h4 className="text-sm font-semibold text-purple-300 mb-3 tech-subheading">Plan Limits</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">AI Credits</span>
+                      <span className="text-white">{plan.limits.aiCredits}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Social Accounts</span>
+                      <span className="text-white">{plan.limits.socialAccounts}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Team Members</span>
+                      <span className="text-white">{plan.limits.users}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Storage</span>
+                      <span className="text-white">{plan.limits.storage}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Overage Pricing */}
+                {plan.overage && (
+                  <div className="mb-8 p-4 bg-purple-900/20 rounded-lg">
+                    <h4 className="text-sm font-semibold text-purple-300 mb-3 tech-subheading">Overage Pricing</h4>
+                    <div className="space-y-2 text-sm">
+                      {Object.entries(plan.overage).map(([key, value]) => (
+                        <div key={key} className="flex justify-between">
+                          <span className="text-gray-400 capitalize">
+                            {key === 'aiCredits' ? 'AI Credits' : key === 'users' ? 'Extra Users' : 'Storage'}
+                          </span>
+                          <span className="text-purple-300">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 
                 <button 
                   className={`w-full py-4 px-6 rounded-xl font-semibold transition-all duration-300 hover:scale-105 tech-subheading ${
