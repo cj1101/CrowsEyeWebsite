@@ -3,11 +3,11 @@ import { Platform, ToneType, ContentTemplate } from '@/types/marketing-tool';
 // Platform configurations
 export const PLATFORMS: Platform[] = [
   { id: 'instagram', name: 'Instagram', enabled: true, maxLength: 2200 },
-  { id: 'facebook', name: 'Facebook', enabled: false, maxLength: 63206 },
-  { id: 'twitter', name: 'Twitter/X', enabled: false, maxLength: 280 },
-  { id: 'linkedin', name: 'LinkedIn', enabled: false, maxLength: 3000 },
-  { id: 'tiktok', name: 'TikTok', enabled: false, maxLength: 2200 },
-  { id: 'youtube', name: 'YouTube', enabled: false, maxLength: 5000 },
+  { id: 'facebook', name: 'Facebook', enabled: true, maxLength: 63206 },
+  { id: 'twitter', name: 'Twitter/X', enabled: true, maxLength: 280 },
+  { id: 'linkedin', name: 'LinkedIn', enabled: true, maxLength: 3000 },
+  { id: 'tiktok', name: 'TikTok', enabled: true, maxLength: 2200 },
+  { id: 'youtube', name: 'YouTube', enabled: true, maxLength: 5000 },
 ];
 
 // Available tones for content generation

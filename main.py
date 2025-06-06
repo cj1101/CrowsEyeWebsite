@@ -58,8 +58,8 @@ APP_NAME = "Crow's Eye Marketing Suite"
 COMPANY_NAME = "Crow's Eye"
 WEBSITE_URL = "https://crowseye.tech"
 
-# Super users - users with these keywords in email/name get elevated privileges
-SUPER_USER_KEYWORDS = ['jamal', 'aperion']
+# Super user - specific email address for elevated privileges
+SUPER_USER_EMAIL = "charlie@suarezhouse.net"
 
 class DatabaseManager:
     """Handles SQLite database operations"""
@@ -132,8 +132,7 @@ class DatabaseManager:
         password_hash = hashlib.sha256(password.encode()).hexdigest()
         
         # Check if user should be super user
-        is_super_user = any(keyword.lower() in email.lower() or keyword.lower() in display_name.lower() 
-                          for keyword in SUPER_USER_KEYWORDS)
+        is_super_user = email == SUPER_USER_EMAIL
         
         cursor.execute('''
             INSERT INTO users (id, email, display_name, first_name, last_name, password_hash, is_super_user)

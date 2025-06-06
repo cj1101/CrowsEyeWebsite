@@ -1,7 +1,6 @@
 import { initializeApp, FirebaseApp, getApps } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { GoogleAuthProvider } from 'firebase/auth';
 
 // Firebase configuration interface for type safety
 interface FirebaseConfig {
@@ -94,8 +93,7 @@ const initializeFirebaseServices = (app: FirebaseApp | null) => {
     console.log('🎭 Running in demo mode - Firebase services not available');
     return {
       auth: null,
-      db: null,
-      googleProvider: new GoogleAuthProvider()
+      db: null
     };
   }
 
@@ -108,12 +106,6 @@ const initializeFirebaseServices = (app: FirebaseApp | null) => {
     const db = getFirestore(app);
     console.log('🗄️ Cloud Firestore initialized');
 
-    // Configure Google Auth Provider
-    const googleProvider = new GoogleAuthProvider();
-    googleProvider.addScope('email');
-    googleProvider.addScope('profile');
-    console.log('🔍 Google Auth Provider configured');
-
     // Connect to emulators in development if needed
     if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true') {
       try {
@@ -125,23 +117,22 @@ const initializeFirebaseServices = (app: FirebaseApp | null) => {
       }
     }
 
-    return { auth, db, googleProvider };
+    return { auth, db };
   } catch (error) {
     console.error('❌ Firebase services initialization failed:', error);
     return {
       auth: null,
-      db: null,
-      googleProvider: new GoogleAuthProvider()
+      db: null
     };
   }
 };
 
 // Initialize Firebase
 const firebaseApp = initializeFirebaseApp();
-const { auth, db, googleProvider } = initializeFirebaseServices(firebaseApp);
+const { auth, db } = initializeFirebaseServices(firebaseApp);
 
 // Export Firebase services
-export { auth, db, googleProvider };
+export { auth, db };
 
 // Export configuration status for debugging
 export const isFirebaseConfigured = (): boolean => {
