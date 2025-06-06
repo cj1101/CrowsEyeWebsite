@@ -61,21 +61,20 @@ const Navigation = () => {
         <div className="flex justify-between items-center h-16">
           {/* Enhanced Logo */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-3 hover-float">
-              <div className="relative group">
-                <div className="absolute inset-0 bg-vision-gradient rounded-full opacity-20 group-hover:opacity-40 transition-opacity duration-300 animate-pulse-slow"></div>
-                <Image
-                  src="/crows_eye_logo_transparent.png"
-                  alt="Crow's Eye Logo"
-                  width={40}
-                  height={40}
-                  className="relative z-10 group-hover:scale-110 transition-transform duration-300"
-                />
+            <Link href="/" className="flex items-center space-x-3 hover-float group">
+              <div className="relative">
+                <div className="absolute inset-0 bg-vision-gradient rounded-full opacity-20 group-hover:opacity-40 transition-opacity duration-300 animate-pulse-slow blur-sm scale-110"></div>
+                <div className="relative p-1 rounded-full glass-effect border border-vision-purple/30">
+                  <Image
+                    src="/crows_eye_logo_transparent.png"
+                    alt="Crow's Eye Logo"
+                    width={36}
+                    height={36}
+                    className="relative z-10 group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg"
+                  />
+                </div>
               </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold gradient-text-animated">Crow&apos;s Eye</span>
-                <span className="text-xs text-vision-blue-light opacity-80 -mt-1">Marketing Suite</span>
-              </div>
+              <span className="text-xl font-bold gradient-text-animated">Crow&apos;s Eye</span>
             </Link>
           </div>
 
