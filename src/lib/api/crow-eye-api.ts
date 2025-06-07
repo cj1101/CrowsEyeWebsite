@@ -193,8 +193,14 @@ class CrowEyeAPI {
   }
 
   async getMediaFiles(): Promise<MediaFile[]> {
-    const response = await this.request<{ items: MediaFile[] }>('/media/');
-    return response.items || [];
+    const response = await this.request<{ items?: MediaFile[], media?: MediaFile[] }>('/media/');
+    if (response && Array.isArray(response.items)) {
+      return response.items;
+    }
+    if (response && Array.isArray(response.media)) {
+      return response.media;
+    }
+    return [];
   }
 
   async deleteMedia(id: string): Promise<void> {
