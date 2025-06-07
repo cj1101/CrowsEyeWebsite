@@ -81,7 +81,10 @@ export function useMediaLibrary() {
     try {
       const uploadedFile = await crowEyeAPI.uploadMedia(file);
       if (uploadedFile) {
-        setMedia(prev => Array.isArray(prev) ? [uploadedFile, ...prev] : [uploadedFile]);
+        setMedia(prev => {
+          const currentMedia = Array.isArray(prev) ? prev : [];
+          return [uploadedFile, ...currentMedia];
+        });
         return uploadedFile;
       } else {
         throw new Error('Upload returned no data');
@@ -106,7 +109,10 @@ export function useMediaLibrary() {
     try {
       setError(null);
       await crowEyeAPI.deleteMedia(id);
-      setMedia(prev => Array.isArray(prev) ? prev.filter(file => file?.id !== id) : []);
+      setMedia(prev => {
+        const currentMedia = Array.isArray(prev) ? prev : [];
+        return currentMedia.filter(file => file?.id !== id);
+      });
     } catch (err) {
       console.error('Delete error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Delete failed';
@@ -125,7 +131,7 @@ export function useMediaLibrary() {
   }, [fetchMedia]);
 
   return {
-    media: Array.isArray(media) ? media : [], // Ensure media is always an array
+    media: Array.isArray(media) ? media : [], // Triple ensure media is always an array
     loading,
     uploading,
     error,
