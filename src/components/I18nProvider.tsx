@@ -10,6 +10,24 @@ interface I18nProviderProps {
 // Cache for loaded translations
 const translationCache = new Map<LanguageCode, Record<string, string>>()
 
+// Fallback translations to prevent errors
+const fallbackTranslations: Record<string, string> = {
+  'hero.title': "Crow's Eye",
+  'hero.subtitle': 'AI-Powered Marketing Automation',
+  'hero.description': 'Effortlessly organize, create, and publish stunning visual content for Instagram and Facebook.',
+  'hero.try_demo': 'Try Demo',
+  'hero.download_app': 'Download App',
+  'hero.view_pricing': 'View Pricing',
+  'features.ai_content.title': 'AI Content Creation',
+  'features.ai_content.description': 'Generate compelling content with advanced AI',
+  'features.multi_platform.title': 'Multi-Platform Publishing',
+  'features.multi_platform.description': 'Publish to all major social media platforms',
+  'features.media_editing.title': 'Advanced Media Editing',
+  'features.media_editing.description': 'Professional editing tools at your fingertips',
+  'features.productivity.title': 'Boost Productivity',
+  'features.productivity.description': 'Streamline your content creation workflow'
+}
+
 // Google Translate integration for real-time translation
 class RealTimeTranslator {
   private cache = new Map<string, string>()
@@ -32,8 +50,8 @@ const realTimeTranslator = new RealTimeTranslator()
 
 export default function I18nProvider({ children }: I18nProviderProps) {
   const [language, setLanguageState] = useState<LanguageCode>('en')
-  const [translations, setTranslations] = useState<Record<string, string>>({})
-  const [isLoading, setIsLoading] = useState(true)
+  const [translations, setTranslations] = useState<Record<string, string>>(fallbackTranslations)
+  const [isLoading, setIsLoading] = useState(false)
 
   // Load translations for a specific language
   const loadTranslations = useCallback(async (lang: LanguageCode): Promise<Record<string, string>> => {
@@ -42,11 +60,22 @@ export default function I18nProvider({ children }: I18nProviderProps) {
       return translationCache.get(lang)!
     }
 
+    // For static exports, we need to handle this differently
     try {
-      // Ensure we're in a browser environment
+      // Only attempt to fetch if we're in a browser environment
       if (typeof window === 'undefined') {
         console.warn('Translation loading attempted on server side')
-        return {}
+        return fallbackTranslations
+      }
+
+      // Check if we're running in a static export environment
+      const isStaticExport = window.location.protocol === 'file:' || 
+                           (window.location.hostname === 'localhost' && window.location.pathname.includes('.html'))
+
+      if (isStaticExport) {
+        console.info(`Running in static export mode, using fallback translations for ${lang}`)
+        translationCache.set(lang, fallbackTranslations)
+        return fallbackTranslations
       }
 
       const response = await fetch(`/translations/${lang}.json`)
@@ -56,16 +85,14 @@ export default function I18nProvider({ children }: I18nProviderProps) {
         return translations
       } else {
         console.warn(`Failed to fetch translations for ${lang}: ${response.status}`)
+        throw new Error(`HTTP ${response.status}`)
       }
     } catch (error) {
       console.warn(`Failed to load translations for ${lang}:`, error)
-      // Don't try to import as module - this prevents the './en' module error
+      // Use fallback translations to prevent errors
+      translationCache.set(lang, fallbackTranslations)
+      return fallbackTranslations
     }
-
-    // Fallback to empty object
-    const fallback = {}
-    translationCache.set(lang, fallback)
-    return fallback
   }, [])
 
   // Change language and load new translations
@@ -76,9 +103,17 @@ export default function I18nProvider({ children }: I18nProviderProps) {
       const newTranslations = await loadTranslations(newLang)
       setTranslations(newTranslations)
       setLanguageState(newLang)
-      saveLanguagePreference(newLang)
+      
+      // Safely save language preference
+      try {
+        saveLanguagePreference(newLang)
+      } catch (err) {
+        console.warn('Could not save language preference:', err)
+      }
     } catch (error) {
       console.error('Error changing language:', error)
+      // Don't leave the user in a broken state
+      setTranslations(fallbackTranslations)
     } finally {
       setIsLoading(false)
     }
@@ -93,19 +128,29 @@ export default function I18nProvider({ children }: I18nProviderProps) {
       const englishTranslations = translationCache.get('en')
       if (englishTranslations && englishTranslations[key]) {
         translation = englishTranslations[key]
-        
-        // In a real implementation, you could trigger automatic translation here
-        // For now, we'll just use the English text as fallback
       }
+    }
+    
+    // Try fallback translations
+    if (!translation && fallbackTranslations[key]) {
+      translation = fallbackTranslations[key]
     }
     
     // Final fallback to the key itself if no translation found
     if (!translation) {
       translation = key
-      console.warn(`Missing translation for key: ${key} (language: ${language})`)
+      // Only log warning in development to avoid console spam
+      if (process.env.NODE_ENV === 'development') {
+        console.warn(`Missing translation for key: ${key} (language: ${language})`)
+      }
     }
     
-    return translateWithParams(translation, params)
+    try {
+      return translateWithParams(translation, params)
+    } catch (error) {
+      console.warn('Error in translation parameter substitution:', error)
+      return translation
+    }
   }, [translations, language])
 
   // Auto-translate missing content
@@ -126,16 +171,24 @@ export default function I18nProvider({ children }: I18nProviderProps) {
       setIsLoading(true)
       
       try {
-        const savedLang = loadLanguagePreference()
+        let savedLang: LanguageCode = 'en'
+        
+        // Safely load language preference
+        try {
+          savedLang = loadLanguagePreference()
+        } catch (err) {
+          console.warn('Could not load language preference:', err)
+        }
+        
         const initialTranslations = await loadTranslations(savedLang)
         
         setLanguageState(savedLang)
         setTranslations(initialTranslations)
       } catch (error) {
         console.error('Error initializing language:', error)
-        // Fallback to English
+        // Fallback to English with fallback translations
         setLanguageState('en')
-        setTranslations({})
+        setTranslations(fallbackTranslations)
       } finally {
         setIsLoading(false)
       }
@@ -152,14 +205,7 @@ export default function I18nProvider({ children }: I18nProviderProps) {
     autoTranslate
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-crowseye-dark via-crowseye-dark-light to-black flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    )
-  }
-
+  // Don't show loading screen to prevent flash
   return (
     <I18nContext.Provider value={contextValue}>
       {children}

@@ -4,6 +4,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import I18nProvider from "@/components/I18nProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 export const metadata: Metadata = {
   title: "Crow's Eye - AI-Powered Marketing Automation for Visionary Creators",
@@ -31,13 +32,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased" suppressHydrationWarning={true}>
-        <AuthProvider>
-          <I18nProvider>
-            <Navigation />
-            <main>{children}</main>
-            <Footer />
-          </I18nProvider>
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <I18nProvider>
+              <Navigation />
+              <main>{children}</main>
+              <Footer />
+            </I18nProvider>
+          </AuthProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

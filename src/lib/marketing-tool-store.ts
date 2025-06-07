@@ -11,10 +11,14 @@ const STORAGE_KEYS = {
 // In-memory storage for the session
 let sessionPosts: Post[] = [];
 let sessionSettings: UserSettings | null = null;
+let isInitialized = false;
+
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined';
 
 // Local storage helpers
 function getFromStorage<T>(key: string, defaultValue: T): T {
-  if (typeof window === 'undefined') return defaultValue;
+  if (!isBrowser) return defaultValue;
   
   try {
     const item = localStorage.getItem(key);
@@ -25,7 +29,7 @@ function getFromStorage<T>(key: string, defaultValue: T): T {
 }
 
 function saveToStorage<T>(key: string, value: T): void {
-  if (typeof window === 'undefined') return;
+  if (!isBrowser) return;
   
   try {
     localStorage.setItem(key, JSON.stringify(value));
@@ -34,57 +38,101 @@ function saveToStorage<T>(key: string, value: T): void {
   }
 }
 
+// Initialize data only on client side
+function initializeIfNeeded() {
+  if (!isBrowser || isInitialized) return;
+  
+  try {
+    // Load posts from localStorage
+    sessionPosts = getFromStorage(STORAGE_KEYS.POSTS, []);
+    
+    // Load settings from localStorage
+    sessionSettings = getFromStorage(STORAGE_KEYS.SETTINGS, {
+      userId: 'anonymous',
+      apiKeys: {},
+      preferences: {
+        defaultPlatform: 'instagram',
+        defaultTone: 'professional'
+      }
+    });
+    
+    isInitialized = true;
+  } catch (error) {
+    console.error('Failed to initialize marketing tool store:', error);
+    // Use safe defaults
+    sessionPosts = [];
+    sessionSettings = {
+      userId: 'anonymous',
+      apiKeys: {},
+      preferences: {
+        defaultPlatform: 'instagram',
+        defaultTone: 'professional'
+      }
+    };
+    isInitialized = true;
+  }
+}
+
 // Posts management
 export const postsStore = {
   // Get all posts
   getPosts(): Post[] {
-    if (sessionPosts.length === 0) {
-      sessionPosts = getFromStorage(STORAGE_KEYS.POSTS, []);
-    }
+    initializeIfNeeded();
     return sessionPosts;
   },
 
   // Add a new post
   addPost(post: Omit<Post, 'id' | 'createdAt'>): Post {
+    initializeIfNeeded();
     const newPost: Post = {
       ...post,
       id: generateId(),
       createdAt: new Date().toISOString()
     };
     
-    sessionPosts = [...this.getPosts(), newPost];
+    sessionPosts = [newPost, ...sessionPosts];
     saveToStorage(STORAGE_KEYS.POSTS, sessionPosts);
     return newPost;
   },
 
   // Update a post
   updatePost(id: string, updates: Partial<Post>): Post | null {
-    const posts = this.getPosts();
-    const index = posts.findIndex(p => p.id === id);
-    
+    initializeIfNeeded();
+    const index = sessionPosts.findIndex(post => post.id === id);
     if (index === -1) return null;
+
+    sessionPosts[index] = {
+      ...sessionPosts[index],
+      ...updates
+    };
     
-    const updatedPost = { ...posts[index], ...updates };
-    sessionPosts = [...posts.slice(0, index), updatedPost, ...posts.slice(index + 1)];
     saveToStorage(STORAGE_KEYS.POSTS, sessionPosts);
-    return updatedPost;
+    return sessionPosts[index];
   },
 
   // Delete a post
   deletePost(id: string): boolean {
-    const posts = this.getPosts();
-    const filteredPosts = posts.filter(p => p.id !== id);
+    initializeIfNeeded();
+    const initialLength = sessionPosts.length;
+    sessionPosts = sessionPosts.filter(post => post.id !== id);
     
-    if (filteredPosts.length === posts.length) return false;
-    
-    sessionPosts = filteredPosts;
-    saveToStorage(STORAGE_KEYS.POSTS, sessionPosts);
-    return true;
+    if (sessionPosts.length < initialLength) {
+      saveToStorage(STORAGE_KEYS.POSTS, sessionPosts);
+      return true;
+    }
+    return false;
+  },
+
+  // Get post by ID
+  getPost(id: string): Post | null {
+    initializeIfNeeded();
+    return sessionPosts.find(post => post.id === id) || null;
   },
 
   // Get posts by status
   getPostsByStatus(status: Post['status']): Post[] {
-    return this.getPosts().filter(p => p.status === status);
+    initializeIfNeeded();
+    return sessionPosts.filter(post => post.status === status);
   }
 };
 
@@ -92,21 +140,23 @@ export const postsStore = {
 export const settingsStore = {
   // Get user settings
   getSettings(): UserSettings {
+    initializeIfNeeded();
     if (!sessionSettings) {
-      sessionSettings = getFromStorage(STORAGE_KEYS.SETTINGS, {
+      sessionSettings = {
         userId: 'anonymous',
         apiKeys: {},
         preferences: {
           defaultPlatform: 'instagram',
           defaultTone: 'professional'
         }
-      });
+      };
     }
     return sessionSettings;
   },
 
   // Update settings
   updateSettings(updates: Partial<UserSettings>): UserSettings {
+    initializeIfNeeded();
     const currentSettings = this.getSettings();
     sessionSettings = { ...currentSettings, ...updates };
     saveToStorage(STORAGE_KEYS.SETTINGS, sessionSettings);
@@ -115,6 +165,7 @@ export const settingsStore = {
 
   // Update API keys
   updateApiKeys(apiKeys: Partial<UserSettings['apiKeys']>): UserSettings {
+    initializeIfNeeded();
     const currentSettings = this.getSettings();
     sessionSettings = {
       ...currentSettings,
@@ -125,25 +176,49 @@ export const settingsStore = {
   }
 };
 
-// Analytics data generation
+// Analytics management
 export const analyticsStore = {
-  // Generate analytics data based on posts
+  // Get analytics data
   getAnalytics(): AnalyticsData {
+    initializeIfNeeded();
+    return getFromStorage(STORAGE_KEYS.ANALYTICS, {
+      totalPosts: 0,
+      thisMonth: 0,
+      platformBreakdown: {},
+      engagementMetrics: {
+        averageImpressions: 0,
+        averageEngagementRate: 0,
+        topPerformingPlatform: 'instagram'
+      },
+      recentActivity: []
+    });
+  },
+
+  // Update analytics
+  updateAnalytics(data: AnalyticsData): void {
+    initializeIfNeeded();
+    saveToStorage(STORAGE_KEYS.ANALYTICS, data);
+  },
+
+  // Calculate analytics from posts
+  calculateAnalytics(): AnalyticsData {
+    initializeIfNeeded();
     const posts = postsStore.getPosts();
+    const publishedPosts = posts.filter(post => post.status === 'published');
     const now = new Date();
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     
-    // Calculate platform breakdown
+    const totalPosts = posts.length;
+    const thisMonthPosts = posts.filter(post => 
+      new Date(post.createdAt) >= thisMonth
+    ).length;
+    
+    // Platform breakdown
     const platformBreakdown: Record<string, number> = {};
     posts.forEach(post => {
       platformBreakdown[post.platform] = (platformBreakdown[post.platform] || 0) + 1;
     });
-
-    // Posts this month
-    const thisMonthPosts = posts.filter(post => 
-      new Date(post.createdAt) >= thisMonth
-    ).length;
-
+    
     // Generate recent activity (last 7 days)
     const recentActivity = [];
     for (let i = 6; i >= 0; i--) {
@@ -161,13 +236,13 @@ export const analyticsStore = {
         engagement: Math.floor(Math.random() * 100) + dayPosts * 10 // Mock engagement
       });
     }
-
+    
     // Find top performing platform
     const topPlatform = Object.entries(platformBreakdown)
       .sort(([,a], [,b]) => b - a)[0]?.[0] || 'instagram';
-
-    return {
-      totalPosts: posts.length,
+    
+    const analyticsData: AnalyticsData = {
+      totalPosts,
       thisMonth: thisMonthPosts,
       platformBreakdown,
       engagementMetrics: {
@@ -177,6 +252,9 @@ export const analyticsStore = {
       },
       recentActivity
     };
+    
+    this.updateAnalytics(analyticsData);
+    return analyticsData;
   }
 };
 

@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'export',
+  // Disable static export temporarily to debug the issue
+  // output: 'export',
   trailingSlash: true,
   images: {
     unoptimized: true
@@ -15,10 +16,14 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://crow-eye-api-605899951231.us-central1.run.app'
   },
-  // Exclude desktop_app and crow_eye_api from the build
+  // Improved webpack configuration
   webpack: (config, { isServer }) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
+    // Ensure proper module resolution
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      net: false,
+      tls: false,
     };
     
     // Exclude desktop_app and crow_eye_api directories
@@ -27,11 +32,21 @@ const nextConfig: NextConfig = {
       exclude: [
         /node_modules/,
         /desktop_app/,
-        /crow_eye_api/
+        /crow_eye_api/,
+        /\.git/
       ]
     });
     
     return config;
+  },
+  // Add experimental features for better error handling
+  experimental: {
+    esmExternals: true,
+  },
+  // Ensure proper handling of client-side errors
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
   }
 };
 

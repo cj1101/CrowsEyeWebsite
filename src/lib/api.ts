@@ -3,7 +3,11 @@
  * Comprehensive client library for connecting to the crow_eye_api backend
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (
+  process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:8001' 
+    : 'https://crow-eye-api-605899951231.us-central1.run.app'
+);
 
 export interface ApiResponse<T = any> {
   data?: T;
@@ -107,13 +111,27 @@ class CrowsEyeAPI {
     }
 
     try {
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       const response = await fetch(url, {
         ...options,
         headers,
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        let errorData: any = {};
+        try {
+          errorData = await response.json();
+        } catch {
+          // If JSON parsing fails, use status text
+          errorData = { detail: response.statusText };
+        }
+        
         return {
           error: errorData.detail || `HTTP ${response.status}: ${response.statusText}`,
         };
@@ -122,9 +140,13 @@ class CrowsEyeAPI {
       const data = await response.json();
       return { data };
     } catch (error) {
-      return {
-        error: error instanceof Error ? error.message : 'Network error',
-      };
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          return { error: 'Request timeout - please try again' };
+        }
+        return { error: error.message };
+      }
+      return { error: 'Network error - please check your connection' };
     }
   }
 
@@ -164,7 +186,29 @@ class CrowsEyeAPI {
   }
 
   async listMedia(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ media: MediaItem[]; total: number }>> {
-    return this.request(`/api/media/?limit=${limit}&skip=${offset}`);
+    try {
+      const response = await this.request<{ items: MediaItem[]; total: number }>(`/api/media/?limit=${limit}&skip=${offset}`);
+      
+      // Transform the response to match expected format
+      if (response.data) {
+        return {
+          data: {
+            media: Array.isArray(response.data.items) ? response.data.items : [],
+            total: response.data.total || 0
+          }
+        };
+      }
+      
+      // Return error response if no data
+      return {
+        error: response.error || 'No data received'
+      };
+    } catch (error) {
+      console.error('Error in listMedia:', error);
+      return {
+        error: error instanceof Error ? error.message : 'Failed to fetch media'
+      };
+    }
   }
 
   async deleteMedia(mediaId: string): Promise<ApiResponse<{ message: string }>> {
@@ -218,7 +262,7 @@ class CrowsEyeAPI {
     operations: any[],
     outputFormat: string = 'mp3'
   ): Promise<ApiResponse<AudioItem>> {
-    return this.request('/audio/edit', {
+    return this.request('/api/audio/edit', {
       method: 'POST',
       body: JSON.stringify({
         audio_id: audioId,
@@ -229,17 +273,17 @@ class CrowsEyeAPI {
   }
 
   async deleteAudio(audioId: string): Promise<ApiResponse<{ message: string }>> {
-    return this.request(`/audio/${audioId}`, {
+    return this.request(`/api/audio/${audioId}`, {
       method: 'DELETE',
     });
   }
 
   async listAudioEffects(): Promise<ApiResponse<any[]>> {
-    return this.request('/audio/effects/');
+    return this.request('/api/audio/effects/');
   }
 
   async analyzeAudio(audioId: string): Promise<ApiResponse<any>> {
-    return this.request(`/audio/${audioId}/analyze`);
+    return this.request(`/api/audio/${audioId}/analyze`);
   }
 
   // Analytics endpoints
@@ -260,22 +304,22 @@ class CrowsEyeAPI {
     metrics?: string[];
     format?: string;
   }): Promise<ApiResponse<any>> {
-    return this.request('/analytics/export', {
+    return this.request('/api/analytics/export', {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
   async getInsights(): Promise<ApiResponse<any>> {
-    return this.request('/analytics/insights');
+    return this.request('/api/analytics/insights');
   }
 
   async getCompetitorAnalysis(): Promise<ApiResponse<any>> {
-    return this.request('/analytics/competitors');
+    return this.request('/api/analytics/competitors');
   }
 
   async getSummaryReport(period: string = '30d'): Promise<ApiResponse<any>> {
-    return this.request(`/analytics/reports/summary?period=${period}`);
+    return this.request(`/api/analytics/reports/summary?period=${period}`);
   }
 
   // Stories endpoints
@@ -307,14 +351,14 @@ class CrowsEyeAPI {
     storyId: string,
     updates: Partial<StoryData>
   ): Promise<ApiResponse<StoryData>> {
-    return this.request(`/stories/${storyId}`, {
+    return this.request(`/api/stories/${storyId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
   }
 
   async deleteStory(storyId: string): Promise<ApiResponse<{ message: string }>> {
-    return this.request(`/stories/${storyId}`, {
+    return this.request(`/api/stories/${storyId}`, {
       method: 'DELETE',
     });
   }
@@ -348,14 +392,14 @@ class CrowsEyeAPI {
     highlightId: string,
     updates: Partial<HighlightReel>
   ): Promise<ApiResponse<HighlightReel>> {
-    return this.request(`/highlights/${highlightId}`, {
+    return this.request(`/api/highlights/${highlightId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
   }
 
   async deleteHighlightReel(highlightId: string): Promise<ApiResponse<{ message: string }>> {
-    return this.request(`/highlights/${highlightId}`, {
+    return this.request(`/api/highlights/${highlightId}`, {
       method: 'DELETE',
     });
   }
@@ -364,14 +408,14 @@ class CrowsEyeAPI {
     highlightId: string,
     options: any = {}
   ): Promise<ApiResponse<{ render_job_id: string }>> {
-    return this.request(`/highlights/${highlightId}/render`, {
+    return this.request(`/api/highlights/${highlightId}/render`, {
       method: 'POST',
       body: JSON.stringify(options),
     });
   }
 
   async getHighlightRenderStatus(jobId: string): Promise<ApiResponse<any>> {
-    return this.request(`/highlights/render-status/${jobId}`);
+    return this.request(`/api/highlights/render-status/${jobId}`);
   }
 
   // Gallery endpoints
@@ -395,21 +439,24 @@ class CrowsEyeAPI {
     limit: number = 50,
     offset: number = 0
   ): Promise<ApiResponse<{ galleries: GalleryItem[]; total: number }>> {
-    return this.request(`/api/gallery/?limit=${limit}&skip=${offset}`);
+    const response = await this.request<{ galleries: GalleryItem[]; total: number }>(`/api/gallery/?limit=${limit}&skip=${offset}`);
+    
+    // The local API already returns the correct format
+    return response;
   }
 
   async updateGallery(
     galleryId: string,
     updates: Partial<GalleryItem>
   ): Promise<ApiResponse<GalleryItem>> {
-    return this.request(`/gallery/${galleryId}`, {
+    return this.request(`/api/gallery/${galleryId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
   }
 
   async deleteGallery(galleryId: string): Promise<ApiResponse<{ message: string }>> {
-    return this.request(`/gallery/${galleryId}`, {
+    return this.request(`/api/gallery/${galleryId}`, {
       method: 'DELETE',
     });
   }
@@ -434,7 +481,7 @@ class CrowsEyeAPI {
     userId: string,
     subscriptionData: any
   ): Promise<ApiResponse<any>> {
-    return this.request(`/admin/users/${userId}/subscription`, {
+    return this.request(`/api/admin/users/${userId}/subscription`, {
       method: 'PUT',
       body: JSON.stringify(subscriptionData),
     });
@@ -447,7 +494,7 @@ class CrowsEyeAPI {
     const params = new URLSearchParams({ limit: limit.toString() });
     if (level) params.append('level', level);
 
-    return this.request(`/admin/logs?${params}`);
+    return this.request(`/api/admin/logs?${params}`);
   }
 
   // Health check

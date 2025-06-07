@@ -13,18 +13,32 @@ export interface MediaItem {
 }
 
 function mapApiMediaToMediaItem(apiMedia: ApiMediaItem): MediaItem {
-  const type = apiMedia.content_type.startsWith('image/') ? 'image' : 
-               apiMedia.content_type.startsWith('video/') ? 'video' : 'audio';
-  
-  return {
-    id: apiMedia.id,
-    name: apiMedia.filename,
-    type,
-    url: apiMedia.url,
-    size: apiMedia.size,
-    createdAt: apiMedia.upload_date,
-    tags: [] // Tags would need to be added to the API response
-  };
+  try {
+    const type = apiMedia.content_type?.startsWith('image/') ? 'image' : 
+                 apiMedia.content_type?.startsWith('video/') ? 'video' : 'audio';
+    
+    return {
+      id: apiMedia.id || Date.now().toString(),
+      name: apiMedia.filename || 'Unknown',
+      type,
+      url: apiMedia.url || '',
+      size: apiMedia.size || 0,
+      createdAt: apiMedia.upload_date || new Date().toISOString(),
+      tags: [] // Tags would need to be added to the API response
+    };
+  } catch (error) {
+    console.warn('Error mapping API media item:', error);
+    // Return a safe fallback
+    return {
+      id: Date.now().toString(),
+      name: 'Unknown',
+      type: 'image',
+      url: '',
+      size: 0,
+      createdAt: new Date().toISOString(),
+      tags: []
+    };
+  }
 }
 
 export function useMediaLibrary() {
@@ -73,23 +87,46 @@ export function useMediaLibrary() {
           }
         ];
         setMedia(mockMedia);
-      } else if (response.data) {
-        const mappedMedia = response.data.media.map(mapApiMediaToMediaItem);
-        setMedia(mappedMedia);
+      } else if (response.data && Array.isArray(response.data.media)) {
+        try {
+          const mappedMedia = response.data.media
+            .filter((item): item is ApiMediaItem => item != null) // Filter out null/undefined items
+            .map(mapApiMediaToMediaItem);
+          setMedia(mappedMedia);
+        } catch (mappingError) {
+          console.error('Error mapping media items:', mappingError);
+          setMedia([]);
+          setError('Failed to process media data');
+        }
+      } else {
+        console.warn('Unexpected API response format:', response);
+        setMedia([]);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch media');
+      console.error('Error fetching media:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch media';
+      setError(errorMessage);
+      setMedia([]); // Ensure we don't leave media in an undefined state
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMedia();
+    fetchMedia().catch((err) => {
+      console.error('Error in fetchMedia useEffect:', err);
+      setLoading(false);
+      setError('Failed to initialize media library');
+      setMedia([]);
+    });
   }, []);
 
   const uploadMedia = async (file: File): Promise<MediaItem> => {
     try {
+      if (!file || !file.name) {
+        throw new Error('Invalid file provided');
+      }
+
       const response = await api.uploadMedia(file);
       
       if (response.error) {
@@ -98,46 +135,57 @@ export function useMediaLibrary() {
       
       if (response.data) {
         const newItem = mapApiMediaToMediaItem(response.data);
-        setMedia(prev => [newItem, ...prev]);
+        setMedia(prev => Array.isArray(prev) ? [newItem, ...prev] : [newItem]);
         return newItem;
       }
       
       throw new Error('No data returned from upload');
     } catch (err) {
+      console.error('Upload error:', err);
       // Fallback to mock upload if API fails
-      const newItem: MediaItem = {
-        id: Date.now().toString(),
-        name: file.name,
-        type: file.type.startsWith('image/') ? 'image' : 
-              file.type.startsWith('video/') ? 'video' : 'audio',
-        url: URL.createObjectURL(file),
-        size: file.size,
-        createdAt: new Date().toISOString(),
-        tags: []
-      };
-      setMedia(prev => [newItem, ...prev]);
-      return newItem;
+      try {
+        const newItem: MediaItem = {
+          id: Date.now().toString(),
+          name: file.name || 'uploaded-file',
+          type: file.type?.startsWith('image/') ? 'image' : 
+                file.type?.startsWith('video/') ? 'video' : 'audio',
+          url: URL.createObjectURL(file),
+          size: file.size || 0,
+          createdAt: new Date().toISOString(),
+          tags: []
+        };
+        setMedia(prev => Array.isArray(prev) ? [newItem, ...prev] : [newItem]);
+        return newItem;
+      } catch (fallbackError) {
+        console.error('Fallback upload also failed:', fallbackError);
+        throw err;
+      }
     }
   };
 
   const deleteMedia = async (id: string): Promise<void> => {
     try {
+      if (!id) {
+        throw new Error('Invalid media ID provided');
+      }
+
       const response = await api.deleteMedia(id);
       
       if (response.error) {
         throw new Error(response.error);
       }
       
-      setMedia(prev => prev.filter(item => item.id !== id));
+      setMedia(prev => Array.isArray(prev) ? prev.filter(item => item?.id !== id) : []);
     } catch (err) {
+      console.error('Delete error:', err);
       // Fallback to local deletion if API fails
-      setMedia(prev => prev.filter(item => item.id !== id));
+      setMedia(prev => Array.isArray(prev) ? prev.filter(item => item?.id !== id) : []);
       throw err;
     }
   };
 
   return { 
-    media, 
+    media: Array.isArray(media) ? media : [], // Ensure media is always an array
     loading, 
     error,
     uploadMedia, 

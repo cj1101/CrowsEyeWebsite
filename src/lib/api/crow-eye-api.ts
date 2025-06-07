@@ -68,23 +68,51 @@ interface AudioFile {
 class CrowEyeAPI {
   private config: ApiConfig;
   private token: string | null = null;
+  private isInitialized = false;
 
   constructor() {
-    // Get config from localStorage or use defaults
-    const savedConfig = localStorage.getItem('crow-eye-api-config');
-    this.config = savedConfig 
-      ? JSON.parse(savedConfig)
-      : { baseUrl: 'http://localhost:8000' };
+    // Initialize with default config, will load from localStorage on first use
+    this.config = { 
+      baseUrl: process.env.NODE_ENV === 'development' 
+        ? 'http://localhost:8001' 
+        : 'https://crow-eye-api-605899951231.us-central1.run.app' 
+    };
+    this.token = null;
+  }
+
+  private initializeIfNeeded() {
+    if (this.isInitialized || typeof window === 'undefined') return;
     
-    this.token = localStorage.getItem('crow-eye-api-token');
+    try {
+      // Get config from localStorage or use defaults
+      const savedConfig = localStorage.getItem('crow-eye-api-config');
+      if (savedConfig) {
+        this.config = JSON.parse(savedConfig);
+      }
+      
+      this.token = localStorage.getItem('crow-eye-api-token');
+      this.isInitialized = true;
+    } catch (error) {
+      console.warn('Failed to initialize API config from localStorage:', error);
+      this.isInitialized = true;
+    }
   }
 
   updateConfig(config: Partial<ApiConfig>) {
+    this.initializeIfNeeded();
     this.config = { ...this.config, ...config };
-    localStorage.setItem('crow-eye-api-config', JSON.stringify(this.config));
+    
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('crow-eye-api-config', JSON.stringify(this.config));
+      } catch (error) {
+        console.warn('Failed to save API config to localStorage:', error);
+      }
+    }
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    this.initializeIfNeeded();
     const url = `${this.config.baseUrl}${endpoint}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -127,7 +155,13 @@ class CrowEyeAPI {
     });
     
     this.token = response.access_token;
-    localStorage.setItem('crow-eye-api-token', this.token);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('crow-eye-api-token', this.token);
+      } catch (error) {
+        console.warn('Failed to save token to localStorage:', error);
+      }
+    }
     return response;
   }
 
@@ -137,7 +171,13 @@ class CrowEyeAPI {
 
   logout() {
     this.token = null;
-    localStorage.removeItem('crow-eye-api-token');
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('crow-eye-api-token');
+      } catch (error) {
+        console.warn('Failed to remove token from localStorage:', error);
+      }
+    }
   }
 
   // Media Management
@@ -153,7 +193,8 @@ class CrowEyeAPI {
   }
 
   async getMediaFiles(): Promise<MediaFile[]> {
-    return this.request<MediaFile[]>('/media/');
+    const response = await this.request<{ items: MediaFile[] }>('/media/');
+    return response.items || [];
   }
 
   async deleteMedia(id: string): Promise<void> {
@@ -173,7 +214,8 @@ class CrowEyeAPI {
   }
 
   async getGalleries(): Promise<Gallery[]> {
-    return this.request<Gallery[]>('/gallery/');
+    const response = await this.request<{ galleries: Gallery[] }>('/gallery/');
+    return response.galleries || [];
   }
 
   async updateGallery(id: string, data: Partial<Gallery>): Promise<Gallery> {

@@ -726,7 +726,7 @@ function DesktopApp() {
 // Settings Component
 function Settings() {
   const { isConnected, isChecking, error, checkConnection, updateConfig } = useAPIConfig();
-  const [baseUrl, setBaseUrl] = useState('http://localhost:8000');
+  const [baseUrl, setBaseUrl] = useState('https://crow-eye-api-605899951231.us-central1.run.app');
   const [apiKey, setApiKey] = useState('');
   const [notifications, setNotifications] = useState(true);
   const [autoSave, setAutoSave] = useState(true);
@@ -735,30 +735,43 @@ function Settings() {
     e.preventDefault();
     updateConfig(baseUrl, apiKey || undefined);
     
-    // Save preferences to localStorage
-    localStorage.setItem('crow-eye-preferences', JSON.stringify({
-      notifications,
-      autoSave,
-    }));
+    // Save preferences to localStorage (only on client side)
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('crow-eye-preferences', JSON.stringify({
+          notifications,
+          autoSave,
+        }));
+      } catch (error) {
+        console.warn('Failed to save preferences:', error);
+      }
+    }
 
     alert('Settings saved successfully!');
   };
 
   useEffect(() => {
-    // Load saved preferences
-    const savedPreferences = localStorage.getItem('crow-eye-preferences');
-    if (savedPreferences) {
-      const prefs = JSON.parse(savedPreferences);
-      setNotifications(prefs.notifications ?? true);
-      setAutoSave(prefs.autoSave ?? true);
-    }
+    // Only run on client side
+    if (typeof window === 'undefined') return;
 
-    // Load saved API config
-    const savedConfig = localStorage.getItem('crow-eye-api-config');
-    if (savedConfig) {
-      const config = JSON.parse(savedConfig);
-      setBaseUrl(config.baseUrl || 'http://localhost:8000');
-      setApiKey(config.apiKey || '');
+    try {
+      // Load saved preferences
+      const savedPreferences = localStorage.getItem('crow-eye-preferences');
+      if (savedPreferences) {
+        const prefs = JSON.parse(savedPreferences);
+        setNotifications(prefs.notifications ?? true);
+        setAutoSave(prefs.autoSave ?? true);
+      }
+
+      // Load saved API config
+      const savedConfig = localStorage.getItem('crow-eye-api-config');
+      if (savedConfig) {
+        const config = JSON.parse(savedConfig);
+        setBaseUrl(config.baseUrl || 'https://crow-eye-api-605899951231.us-central1.run.app');
+        setApiKey(config.apiKey || '');
+      }
+    } catch (error) {
+      console.warn('Failed to load saved settings:', error);
     }
   }, []);
 
@@ -807,7 +820,7 @@ function Settings() {
                   value={baseUrl}
                   onChange={(e) => setBaseUrl(e.target.value)}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:outline-none"
-                  placeholder="http://localhost:8000"
+                  placeholder="https://crow-eye-api-605899951231.us-central1.run.app"
                   required
                 />
                 <p className="text-gray-500 text-xs mt-1">

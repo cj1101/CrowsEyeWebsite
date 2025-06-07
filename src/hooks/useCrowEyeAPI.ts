@@ -51,23 +51,45 @@ export function useMediaLibrary() {
     setError(null);
     try {
       const mediaFiles = await crowEyeAPI.getMediaFiles();
-      setMedia(mediaFiles);
+      // Ensure we always set an array, even if the API returns something unexpected
+      if (Array.isArray(mediaFiles)) {
+        setMedia(mediaFiles);
+      } else {
+        console.warn('API returned non-array media files:', mediaFiles);
+        setMedia([]);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch media');
+      console.error('Error fetching media:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch media';
+      setError(errorMessage);
+      // Set fallback empty array to prevent map errors
+      setMedia([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
   const uploadFile = useCallback(async (file: File) => {
+    if (!file) {
+      const error = new Error('No file provided');
+      setError(error.message);
+      throw error;
+    }
+
     setUploading(true);
     setError(null);
     try {
       const uploadedFile = await crowEyeAPI.uploadMedia(file);
-      setMedia(prev => [uploadedFile, ...prev]);
-      return uploadedFile;
+      if (uploadedFile) {
+        setMedia(prev => Array.isArray(prev) ? [uploadedFile, ...prev] : [uploadedFile]);
+        return uploadedFile;
+      } else {
+        throw new Error('Upload returned no data');
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      console.error('Upload error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed';
+      setError(errorMessage);
       throw err;
     } finally {
       setUploading(false);
@@ -75,21 +97,35 @@ export function useMediaLibrary() {
   }, []);
 
   const deleteFile = useCallback(async (id: string) => {
+    if (!id) {
+      const error = new Error('No file ID provided');
+      setError(error.message);
+      throw error;
+    }
+
     try {
+      setError(null);
       await crowEyeAPI.deleteMedia(id);
-      setMedia(prev => prev.filter(file => file.id !== id));
+      setMedia(prev => Array.isArray(prev) ? prev.filter(file => file?.id !== id) : []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed');
+      console.error('Delete error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Delete failed';
+      setError(errorMessage);
       throw err;
     }
   }, []);
 
   useEffect(() => {
-    fetchMedia();
+    fetchMedia().catch((err) => {
+      console.error('Error in fetchMedia useEffect:', err);
+      setLoading(false);
+      setError('Failed to initialize media library');
+      setMedia([]);
+    });
   }, [fetchMedia]);
 
   return {
-    media,
+    media: Array.isArray(media) ? media : [], // Ensure media is always an array
     loading,
     uploading,
     error,
@@ -111,9 +147,11 @@ export function useSmartGalleries() {
     setError(null);
     try {
       const galleryList = await crowEyeAPI.getGalleries();
-      setGalleries(galleryList);
+      setGalleries(Array.isArray(galleryList) ? galleryList : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch galleries');
+      // Set fallback empty array to prevent map errors
+      setGalleries([]);
     } finally {
       setLoading(false);
     }
