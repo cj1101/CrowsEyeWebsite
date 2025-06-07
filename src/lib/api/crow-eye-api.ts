@@ -149,7 +149,7 @@ class CrowEyeAPI {
 
   // Authentication
   async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>('/auth/login', {
+    const response = await this.request<AuthResponse>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -166,7 +166,7 @@ class CrowEyeAPI {
   }
 
   async getCurrentUser() {
-    return this.request('/auth/me');
+    return this.request('/api/auth/me');
   }
 
   logout() {
@@ -185,7 +185,7 @@ class CrowEyeAPI {
     const formData = new FormData();
     formData.append('file', file);
 
-    return this.request<MediaFile>('/media/', {
+    return this.request<MediaFile>('/api/media/', {
       method: 'POST',
       headers: {}, // Remove Content-Type to let browser set it for FormData
       body: formData,
@@ -193,7 +193,7 @@ class CrowEyeAPI {
   }
 
   async getMediaFiles(): Promise<MediaFile[]> {
-    const response = await this.request<{ items?: MediaFile[], media?: MediaFile[] }>('/media/');
+    const response = await this.request<{ items?: MediaFile[], media?: MediaFile[] }>('/api/media/');
     if (response && Array.isArray(response.items)) {
       return response.items;
     }
@@ -204,12 +204,12 @@ class CrowEyeAPI {
   }
 
   async deleteMedia(id: string): Promise<void> {
-    await this.request(`/media/${id}`, { method: 'DELETE' });
+    await this.request(`/api/media/${id}`, { method: 'DELETE' });
   }
 
   // Smart Galleries
   async createGallery(prompt: string, maxItems: number = 5, generateCaption: boolean = true): Promise<Gallery> {
-    return this.request<Gallery>('/gallery/', {
+    return this.request<Gallery>('/api/gallery/', {
       method: 'POST',
       body: JSON.stringify({
         prompt,
@@ -220,24 +220,24 @@ class CrowEyeAPI {
   }
 
   async getGalleries(): Promise<Gallery[]> {
-    const response = await this.request<{ galleries: Gallery[] }>('/gallery/');
+    const response = await this.request<{ galleries: Gallery[] }>('/api/gallery/');
     return response.galleries || [];
   }
 
   async updateGallery(id: string, data: Partial<Gallery>): Promise<Gallery> {
-    return this.request<Gallery>(`/gallery/${id}`, {
+    return this.request<Gallery>(`/api/gallery/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deleteGallery(id: string): Promise<void> {
-    await this.request(`/gallery/${id}`, { method: 'DELETE' });
+    await this.request(`/api/gallery/${id}`, { method: 'DELETE' });
   }
 
   // Story Formatting
   async createStory(title: string, content: string, platform: string, templateId?: string): Promise<Story> {
-    return this.request<Story>('/stories/', {
+    return this.request<Story>('/api/stories/', {
       method: 'POST',
       body: JSON.stringify({
         title,
@@ -249,15 +249,15 @@ class CrowEyeAPI {
   }
 
   async getStories(): Promise<Story[]> {
-    return this.request<Story[]>('/stories/');
+    return this.request<Story[]>('/api/stories/');
   }
 
   async getStoryTemplates(): Promise<any[]> {
-    return this.request<any[]>('/stories/templates/');
+    return this.request<any[]>('/api/stories/templates/');
   }
 
   async deleteStory(id: string): Promise<void> {
-    await this.request(`/stories/${id}`, { method: 'DELETE' });
+    await this.request(`/api/stories/${id}`, { method: 'DELETE' });
   }
 
   // Highlight Reels (Creator+ feature)
@@ -267,7 +267,7 @@ class CrowEyeAPI {
     style: string = 'dynamic',
     musicStyle: string = 'upbeat'
   ): Promise<HighlightReel> {
-    return this.request<HighlightReel>('/highlights/', {
+    return this.request<HighlightReel>('/api/highlights/', {
       method: 'POST',
       body: JSON.stringify({
         media_ids: mediaIds,
@@ -279,15 +279,15 @@ class CrowEyeAPI {
   }
 
   async getHighlightReels(): Promise<HighlightReel[]> {
-    return this.request<HighlightReel[]>('/highlights/');
+    return this.request<HighlightReel[]>('/api/highlights/');
   }
 
   async getHighlightReelStatus(id: string): Promise<{ status: string; progress?: number }> {
-    return this.request(`/highlights/${id}/status`);
+    return this.request(`/api/highlights/${id}/status`);
   }
 
   async getHighlightStyles(): Promise<string[]> {
-    return this.request<string[]>('/highlights/styles/');
+    return this.request<string[]>('/api/highlights/styles/');
   }
 
   // Audio Import (Creator+ feature)
@@ -295,7 +295,7 @@ class CrowEyeAPI {
     const formData = new FormData();
     formData.append('file', file);
 
-    return this.request<AudioFile>('/audio/import', {
+    return this.request<AudioFile>('/api/audio/', {
       method: 'POST',
       headers: {},
       body: formData,
@@ -303,77 +303,74 @@ class CrowEyeAPI {
   }
 
   async getAudioFiles(): Promise<AudioFile[]> {
-    return this.request<AudioFile[]>('/audio/');
+    return this.request<AudioFile[]>('/api/audio/');
   }
 
   async editAudio(id: string, command: string): Promise<AudioFile> {
-    return this.request<AudioFile>('/audio/edit', {
+    return this.request<AudioFile>(`/api/audio/${id}/edit`, {
       method: 'POST',
-      body: JSON.stringify({
-        audio_id: id,
-        command,
-      }),
+      body: JSON.stringify({ command }),
     });
   }
 
   async getAudioEffects(): Promise<string[]> {
-    return this.request<string[]>('/audio/effects/');
+    return this.request<string[]>('/api/audio/effects/');
   }
 
   async analyzeAudio(id: string): Promise<any> {
-    return this.request(`/audio/${id}/analyze`);
+    return this.request(`/api/audio/${id}/analyze`);
   }
 
   // Analytics (Pro+ feature)
   async getAnalytics(): Promise<any> {
-    return this.request('/analytics/');
+    return this.request('/api/analytics/');
   }
 
   async exportAnalytics(format: 'csv' | 'json' = 'json'): Promise<Blob> {
-    return this.request<Blob>('/analytics/export', {
-      method: 'POST',
-      body: JSON.stringify({ format }),
+    const response = await this.request(`/api/analytics/export?format=${format}`, {
+      method: 'GET',
     });
+    return response as unknown as Blob;
   }
 
   async getInsights(): Promise<any> {
-    return this.request('/analytics/insights');
+    return this.request('/api/analytics/insights/');
   }
 
   async getCompetitorAnalysis(): Promise<any> {
-    return this.request('/analytics/competitors');
+    return this.request('/api/analytics/competitors/');
   }
 
   async getExecutiveSummary(): Promise<any> {
-    return this.request('/analytics/reports/summary');
+    return this.request('/api/analytics/summary/');
   }
 
   // Admin (Enterprise feature)
   async getAccounts(): Promise<any[]> {
-    return this.request<any[]>('/admin/accounts');
+    return this.request<any[]>('/api/admin/accounts/');
   }
 
   async createAccount(data: any): Promise<any> {
-    return this.request('/admin/accounts', {
+    return this.request('/api/admin/accounts/', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async updateAccount(id: string, data: any): Promise<any> {
-    return this.request(`/admin/accounts/${id}`, {
+    return this.request(`/api/admin/accounts/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
   }
 
   async deleteAccount(id: string): Promise<void> {
-    await this.request(`/admin/accounts/${id}`, { method: 'DELETE' });
+    await this.request(`/api/admin/accounts/${id}`, { method: 'DELETE' });
   }
 
   // Health check
   async healthCheck(): Promise<{ status: string }> {
-    return this.request<{ status: string }>('/health');
+    return this.request('/health');
   }
 }
 
