@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+.git/
+.firebase/
+desktop_app/
+temp_*/
+*.md
+*.log
+.env*
+crow_eye_api/
+crow_eye_api_fresh/ 

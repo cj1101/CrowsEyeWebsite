@@ -5,7 +5,7 @@ import json
 from datetime import datetime, timedelta
 import uuid
 import jwt
-from globals import db_manager
+from dependencies_simple import db_manager
 
 router = APIRouter()
 

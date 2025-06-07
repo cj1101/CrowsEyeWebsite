@@ -1,82 +1,36 @@
-// Crow's Eye Marketing Platform API Client
-// Connects to the Python FastAPI backend
+/**
+ * Crow's Eye Marketing Platform API Client
+ * Clean, refactored version using centralized configuration
+ */
 
-interface ApiConfig {
-  baseUrl: string;
-  apiKey?: string;
-}
+// Import types and config from centralized locations
+import type {
+  MediaFile,
+  AuthResponse,
+  MediaSearchResponse,
+  MediaUploadResponse,
+  Gallery,
+  Story,
+  HighlightReel,
+  AudioFile,
+  ApiResponse,
+  RequestOptions,
+} from '../../types/api';
 
-interface AuthResponse {
-  access_token: string;
-  token_type: string;
-  user: {
-    user_id: string;
-    email: string;
-    subscription: {
-      tier: string;
-    };
-  };
-}
-
-interface MediaFile {
-  id: string;
-  filename: string;
-  url: string;
-  type: 'image' | 'video';
-  size: number;
-  uploaded_at: string;
-}
-
-interface Gallery {
-  id: string;
-  name: string;
-  prompt: string;
-  media_ids: string[];
-  created_at: string;
-  updated_at: string;
-}
-
-interface Story {
-  id: string;
-  title: string;
-  content: string;
-  platform: string;
-  template_id?: string;
-  created_at: string;
-}
-
-interface HighlightReel {
-  id: string;
-  name: string;
-  duration: number;
-  style: string;
-  media_ids: string[];
-  status: 'processing' | 'completed' | 'failed';
-  url?: string;
-  created_at: string;
-}
-
-interface AudioFile {
-  id: string;
-  filename: string;
-  url: string;
-  duration: number;
-  effects: string[];
-  created_at: string;
-}
+import { 
+  API_CONFIG, 
+  buildApiUrl, 
+  getAuthToken, 
+  setAuthToken, 
+  clearAuthToken, 
+  ApiError 
+} from './config';
 
 class CrowEyeAPI {
-  private config: ApiConfig;
   private token: string | null = null;
   private isInitialized = false;
 
   constructor() {
-    // Initialize with default config, will load from localStorage on first use
-    this.config = { 
-      baseUrl: process.env.NODE_ENV === 'development' 
-        ? 'http://localhost:8001' 
-        : 'https://crow-eye-api-605899951231.us-central1.run.app' 
-    };
     this.token = null;
   }
 
@@ -84,55 +38,47 @@ class CrowEyeAPI {
     if (this.isInitialized || typeof window === 'undefined') return;
     
     try {
-      // Get config from localStorage or use defaults
-      const savedConfig = localStorage.getItem('crow-eye-api-config');
-      if (savedConfig) {
-        this.config = JSON.parse(savedConfig);
-      }
-      
-      this.token = localStorage.getItem('crow-eye-api-token');
+      this.token = getAuthToken();
       this.isInitialized = true;
     } catch (error) {
-      console.warn('Failed to initialize API config from localStorage:', error);
+      console.warn('Failed to initialize API client:', error);
       this.isInitialized = true;
     }
   }
 
-  updateConfig(config: Partial<ApiConfig>) {
+  private async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     this.initializeIfNeeded();
-    this.config = { ...this.config, ...config };
     
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('crow-eye-api-config', JSON.stringify(this.config));
-      } catch (error) {
-        console.warn('Failed to save API config to localStorage:', error);
-      }
-    }
-  }
-
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    this.initializeIfNeeded();
-    const url = `${this.config.baseUrl}${endpoint}`;
+    const url = buildApiUrl(endpoint);
+    const timeout = options.timeout || API_CONFIG.TIMEOUT.DEFAULT;
+    
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...((options.headers as Record<string, string>) || {}),
+      ...API_CONFIG.DEFAULT_HEADERS,
+      ...options.headers,
     };
 
+    // Add authentication if available
     if (this.token) {
       headers.Authorization = `Bearer ${this.token}`;
-    } else if (this.config.apiKey) {
-      headers['X-USER-API-KEY'] = this.config.apiKey;
     }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
       const response = await fetch(url, {
-        ...options,
+        method: options.method || 'GET',
         headers,
+        body: typeof options.body === 'string' ? options.body : JSON.stringify(options.body),
+        signal: controller.signal,
+        ...options,
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new ApiError(response.status, errorData.message || response.statusText, errorData);
       }
 
       const contentType = response.headers.get('content-type');
@@ -142,248 +88,235 @@ class CrowEyeAPI {
       
       return response as unknown as T;
     } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof ApiError) throw error;
+      
       console.error('API Request failed:', error);
-      throw error;
+      throw new ApiError(0, error instanceof Error ? error.message : 'Network error');
     }
   }
 
-  // Authentication
+  // Authentication Methods
   async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>('/api/auth/login', {
+    const response = await this.request<AuthResponse>(API_CONFIG.ENDPOINTS.AUTH.LOGIN, {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: { email, password },
     });
     
     this.token = response.access_token;
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('crow-eye-api-token', this.token);
-      } catch (error) {
-        console.warn('Failed to save token to localStorage:', error);
-      }
-    }
+    setAuthToken(this.token);
     return response;
   }
 
   async getCurrentUser() {
-    return this.request('/api/auth/me');
+    return this.request(API_CONFIG.ENDPOINTS.AUTH.ME);
   }
 
   logout() {
     this.token = null;
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem('crow-eye-api-token');
-      } catch (error) {
-        console.warn('Failed to remove token from localStorage:', error);
-      }
-    }
+    clearAuthToken();
   }
 
-  // Media Management
+  // Media Management Methods
   async uploadMedia(file: File): Promise<MediaFile> {
     const formData = new FormData();
     formData.append('file', file);
 
-    return this.request<MediaFile>('/api/media/', {
+    return this.request<MediaFile>(API_CONFIG.ENDPOINTS.MEDIA.UPLOAD, {
       method: 'POST',
-      headers: {}, // Remove Content-Type to let browser set it for FormData
+      headers: {}, // Remove Content-Type for FormData
       body: formData,
+      timeout: API_CONFIG.TIMEOUT.UPLOAD,
     });
   }
 
   async getMediaFiles(): Promise<MediaFile[]> {
-    const response = await this.request<{ items?: MediaFile[], media?: MediaFile[] }>('/api/media/');
-    if (response && Array.isArray(response.items)) {
-      return response.items;
-    }
-    if (response && Array.isArray(response.media)) {
-      return response.media;
-    }
-    return [];
+    const response = await this.request<MediaSearchResponse>(API_CONFIG.ENDPOINTS.MEDIA.BASE);
+    return Array.isArray(response.items) ? response.items : [];
   }
 
   async deleteMedia(id: string): Promise<void> {
-    await this.request(`/api/media/${id}`, { method: 'DELETE' });
+    await this.request(API_CONFIG.ENDPOINTS.MEDIA.DELETE(id), {
+      method: 'DELETE',
+    });
   }
 
-  // Smart Galleries
+  // Gallery Methods
   async createGallery(prompt: string, maxItems: number = 5, generateCaption: boolean = true): Promise<Gallery> {
-    return this.request<Gallery>('/api/gallery/', {
+    return this.request<Gallery>(API_CONFIG.ENDPOINTS.GALLERY.CREATE, {
       method: 'POST',
-      body: JSON.stringify({
-        prompt,
-        max_items: maxItems,
-        generate_caption: generateCaption,
-      }),
+      body: { prompt, maxItems, generateCaption },
     });
   }
 
   async getGalleries(): Promise<Gallery[]> {
-    const response = await this.request<{ galleries: Gallery[] }>('/api/gallery/');
-    return response.galleries || [];
+    const response = await this.request<{ items: Gallery[] }>(API_CONFIG.ENDPOINTS.GALLERY.BASE);
+    return Array.isArray(response.items) ? response.items : [];
   }
 
   async updateGallery(id: string, data: Partial<Gallery>): Promise<Gallery> {
-    return this.request<Gallery>(`/api/gallery/${id}`, {
+    return this.request<Gallery>(API_CONFIG.ENDPOINTS.GALLERY.UPDATE(id), {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: data,
     });
   }
 
   async deleteGallery(id: string): Promise<void> {
-    await this.request(`/api/gallery/${id}`, { method: 'DELETE' });
+    await this.request(API_CONFIG.ENDPOINTS.GALLERY.DELETE(id), {
+      method: 'DELETE',
+    });
   }
 
-  // Story Formatting
+  // Story Methods
   async createStory(title: string, content: string, platform: string, templateId?: string): Promise<Story> {
-    return this.request<Story>('/api/stories/', {
+    return this.request<Story>(API_CONFIG.ENDPOINTS.STORIES.CREATE, {
       method: 'POST',
-      body: JSON.stringify({
-        title,
-        content,
-        platform,
-        template_id: templateId,
-      }),
+      body: { title, content, platform, template_id: templateId },
     });
   }
 
   async getStories(): Promise<Story[]> {
-    return this.request<Story[]>('/api/stories/');
+    const response = await this.request<{ items: Story[] }>(API_CONFIG.ENDPOINTS.STORIES.BASE);
+    return Array.isArray(response.items) ? response.items : [];
   }
 
   async getStoryTemplates(): Promise<any[]> {
-    return this.request<any[]>('/api/stories/templates/');
+    const response = await this.request<{ templates: any[] }>(API_CONFIG.ENDPOINTS.STORIES.TEMPLATES);
+    return Array.isArray(response.templates) ? response.templates : [];
   }
 
   async deleteStory(id: string): Promise<void> {
-    await this.request(`/api/stories/${id}`, { method: 'DELETE' });
+    await this.request(API_CONFIG.ENDPOINTS.STORIES.DELETE(id), {
+      method: 'DELETE',
+    });
   }
 
-  // Highlight Reels (Creator+ feature)
+  // Highlight Reel Methods
   async createHighlightReel(
     mediaIds: string[],
     duration: number = 30,
     style: string = 'dynamic',
     musicStyle: string = 'upbeat'
   ): Promise<HighlightReel> {
-    return this.request<HighlightReel>('/api/highlights/', {
+    return this.request<HighlightReel>(API_CONFIG.ENDPOINTS.HIGHLIGHTS.CREATE, {
       method: 'POST',
-      body: JSON.stringify({
-        media_ids: mediaIds,
-        duration,
-        style,
-        music_style: musicStyle,
-      }),
+      body: { media_ids: mediaIds, duration, style, music_style: musicStyle },
     });
   }
 
   async getHighlightReels(): Promise<HighlightReel[]> {
-    return this.request<HighlightReel[]>('/api/highlights/');
+    const response = await this.request<{ items: HighlightReel[] }>(API_CONFIG.ENDPOINTS.HIGHLIGHTS.BASE);
+    return Array.isArray(response.items) ? response.items : [];
   }
 
   async getHighlightReelStatus(id: string): Promise<{ status: string; progress?: number }> {
-    return this.request(`/api/highlights/${id}/status`);
+    return this.request(API_CONFIG.ENDPOINTS.HIGHLIGHTS.STATUS(id));
   }
 
   async getHighlightStyles(): Promise<string[]> {
-    return this.request<string[]>('/api/highlights/styles/');
+    const response = await this.request<{ styles: string[] }>(API_CONFIG.ENDPOINTS.HIGHLIGHTS.STYLES);
+    return Array.isArray(response.styles) ? response.styles : [];
   }
 
-  // Audio Import (Creator+ feature)
+  // Audio Methods
   async importAudio(file: File): Promise<AudioFile> {
     const formData = new FormData();
     formData.append('file', file);
 
-    return this.request<AudioFile>('/api/audio/', {
+    return this.request<AudioFile>(API_CONFIG.ENDPOINTS.AUDIO.IMPORT, {
       method: 'POST',
       headers: {},
       body: formData,
+      timeout: API_CONFIG.TIMEOUT.UPLOAD,
     });
   }
 
   async getAudioFiles(): Promise<AudioFile[]> {
-    return this.request<AudioFile[]>('/api/audio/');
+    const response = await this.request<{ items: AudioFile[] }>(API_CONFIG.ENDPOINTS.AUDIO.BASE);
+    return Array.isArray(response.items) ? response.items : [];
   }
 
   async editAudio(id: string, command: string): Promise<AudioFile> {
-    return this.request<AudioFile>(`/api/audio/${id}/edit`, {
+    return this.request<AudioFile>(API_CONFIG.ENDPOINTS.AUDIO.EDIT(id), {
       method: 'POST',
-      body: JSON.stringify({ command }),
+      body: { command },
     });
   }
 
   async getAudioEffects(): Promise<string[]> {
-    return this.request<string[]>('/api/audio/effects/');
+    const response = await this.request<{ effects: string[] }>(API_CONFIG.ENDPOINTS.AUDIO.EFFECTS);
+    return Array.isArray(response.effects) ? response.effects : [];
   }
 
   async analyzeAudio(id: string): Promise<any> {
-    return this.request(`/api/audio/${id}/analyze`);
+    return this.request(API_CONFIG.ENDPOINTS.AUDIO.ANALYZE(id));
   }
 
-  // Analytics (Pro+ feature)
+  // Analytics Methods
   async getAnalytics(): Promise<any> {
-    return this.request('/api/analytics/');
+    return this.request(API_CONFIG.ENDPOINTS.ANALYTICS.BASE);
   }
 
   async exportAnalytics(format: 'csv' | 'json' = 'json'): Promise<Blob> {
-    const response = await this.request(`/api/analytics/export?format=${format}`, {
-      method: 'GET',
+    return this.request<Blob>(`${API_CONFIG.ENDPOINTS.ANALYTICS.EXPORT}?format=${format}`, {
+      timeout: API_CONFIG.TIMEOUT.DOWNLOAD,
     });
-    return response as unknown as Blob;
   }
 
   async getInsights(): Promise<any> {
-    return this.request('/api/analytics/insights/');
+    return this.request(API_CONFIG.ENDPOINTS.ANALYTICS.INSIGHTS);
   }
 
   async getCompetitorAnalysis(): Promise<any> {
-    return this.request('/api/analytics/competitors/');
+    return this.request(API_CONFIG.ENDPOINTS.ANALYTICS.COMPETITORS);
   }
 
   async getExecutiveSummary(): Promise<any> {
-    return this.request('/api/analytics/summary/');
+    return this.request(API_CONFIG.ENDPOINTS.ANALYTICS.SUMMARY);
   }
 
-  // Admin (Enterprise feature)
+  // Admin Methods
   async getAccounts(): Promise<any[]> {
-    return this.request<any[]>('/api/admin/accounts/');
+    const response = await this.request<{ accounts: any[] }>(API_CONFIG.ENDPOINTS.ADMIN.ACCOUNTS);
+    return Array.isArray(response.accounts) ? response.accounts : [];
   }
 
   async createAccount(data: any): Promise<any> {
-    return this.request('/api/admin/accounts/', {
+    return this.request(API_CONFIG.ENDPOINTS.ADMIN.ACCOUNTS, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: data,
     });
   }
 
   async updateAccount(id: string, data: any): Promise<any> {
-    return this.request(`/api/admin/accounts/${id}`, {
+    return this.request(API_CONFIG.ENDPOINTS.ADMIN.ACCOUNT(id), {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: data,
     });
   }
 
   async deleteAccount(id: string): Promise<void> {
-    await this.request(`/api/admin/accounts/${id}`, { method: 'DELETE' });
+    await this.request(API_CONFIG.ENDPOINTS.ADMIN.ACCOUNT(id), {
+      method: 'DELETE',
+    });
   }
 
-  // Health check
+  // Health Check
   async healthCheck(): Promise<{ status: string }> {
-    return this.request('/health');
+    return this.request(API_CONFIG.ENDPOINTS.HEALTH);
+  }
+
+  // Utility Methods
+  isAuthenticated(): boolean {
+    this.initializeIfNeeded();
+    return !!this.token;
+  }
+
+  getAuthToken(): string | null {
+    this.initializeIfNeeded();
+    return this.token;
   }
 }
 
 // Export singleton instance
-export const crowEyeAPI = new CrowEyeAPI();
-
-// Export types
-export type {
-  ApiConfig,
-  AuthResponse,
-  MediaFile,
-  Gallery,
-  Story,
-  HighlightReel,
-  AudioFile,
-}; 
+export const crowEyeAPI = new CrowEyeAPI(); 

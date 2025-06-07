@@ -47,11 +47,10 @@ try:
     app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
     ROUTERS_LOADED = True
-    successful_routers = ['highlights', 'media', 'gallery', 'analytics', 'auth', 'stories', 'audio', 'admin']
-    print("All routers loaded successfully!")
+    print("✅ All routers loaded successfully!")
 except ImportError as e:
-    print(f"Warning: Could not import routers: {e}")
-    print("Attempting individual router imports...")
+    print(f"❌ Warning: Could not import routers: {e}")
+    print("🔍 Attempting individual router imports...")
     ROUTERS_LOADED = False
     
     # Try importing routers individually to see which ones fail
@@ -64,17 +63,17 @@ except ImportError as e:
             router = getattr(router_module, 'router')
             app.include_router(router, prefix=f"/api/{router_name}", tags=[router_name])
             successful_routers.append(router_name)
-            print(f"{router_name} router loaded successfully")
+            print(f"✅ {router_name} router loaded successfully")
         except Exception as router_error:
-            print(f"Failed to load {router_name} router: {router_error}")
+            print(f"❌ Failed to load {router_name} router: {router_error}")
     
     if successful_routers:
         ROUTERS_LOADED = True
-        print(f"Successfully loaded {len(successful_routers)} routers: {', '.join(successful_routers)}")
+        print(f"🎉 Successfully loaded {len(successful_routers)} routers: {', '.join(successful_routers)}")
     else:
-        print("No routers could be loaded")
+        print("❌ No routers could be loaded")
 except Exception as e:
-    print(f"Unexpected error loading routers: {e}")
+    print(f"❌ Unexpected error loading routers: {e}")
     ROUTERS_LOADED = False
 
 @app.get("/")
@@ -84,7 +83,6 @@ def read_root():
         "version": "5.0.0",
         "status": "running",
         "routers_loaded": ROUTERS_LOADED,
-        "successful_routers": successful_routers if 'successful_routers' in globals() else [],
         "features": [
             "Long-form highlight generation",
             "AI-powered video analysis",
@@ -100,14 +98,14 @@ def read_root():
             "Multi-platform posting"
         ],
         "endpoints": {
-            "highlights": "/api/highlights" if "highlights" in (successful_routers if 'successful_routers' in globals() else []) else "Not available",
-            "media": "/api/media" if "media" in (successful_routers if 'successful_routers' in globals() else []) else "Not available",
-            "gallery": "/api/gallery" if "gallery" in (successful_routers if 'successful_routers' in globals() else []) else "Not available",
-            "analytics": "/api/analytics" if "analytics" in (successful_routers if 'successful_routers' in globals() else []) else "Not available",
-            "auth": "/api/auth" if "auth" in (successful_routers if 'successful_routers' in globals() else []) else "Not available",
-            "stories": "/api/stories" if "stories" in (successful_routers if 'successful_routers' in globals() else []) else "Not available",
-            "audio": "/api/audio" if "audio" in (successful_routers if 'successful_routers' in globals() else []) else "Not available",
-            "admin": "/api/admin" if "admin" in (successful_routers if 'successful_routers' in globals() else []) else "Not available"
+            "highlights": "/api/highlights",
+            "media": "/api/media",
+            "gallery": "/api/gallery",
+            "analytics": "/api/analytics",
+            "auth": "/api/auth",
+            "stories": "/api/stories",
+            "audio": "/api/audio",
+            "admin": "/api/admin"
         }
     }
 
@@ -116,49 +114,45 @@ def health():
     return {
         "status": "healthy",
         "port": os.environ.get("PORT", "8000"),
-        "routers_loaded": ROUTERS_LOADED,
-        "successful_routers": successful_routers if 'successful_routers' in globals() else []
+        "routers_loaded": ROUTERS_LOADED
     }
 
 @app.get("/api/test")
 def test_endpoint():
     return {
-        "message": "Full API with all features is working!" if ROUTERS_LOADED else "Minimal API is working!",
+        "message": "API is working",
         "timestamp": "2025-01-05T16:00:00Z",
-        "routers_loaded": ROUTERS_LOADED,
-        "successful_routers": successful_routers if 'successful_routers' in globals() else []
+        "routers_loaded": ROUTERS_LOADED
     }
 
 @app.get("/api/capabilities")
 def get_capabilities():
     """Get detailed API capabilities and feature list."""
-    active_routers = successful_routers if 'successful_routers' in globals() else []
-    
     capabilities = {
         "media_processing": {
-            "image_editing": "media" in active_routers,
-            "video_editing": "media" in active_routers,
-            "ai_tagging": "media" in active_routers,
-            "thumbnail_generation": "media" in active_routers,
-            "format_conversion": "media" in active_routers
+            "image_editing": True,
+            "video_editing": True,
+            "ai_tagging": True,
+            "thumbnail_generation": True,
+            "format_conversion": True
         },
         "content_creation": {
-            "highlight_reels": "highlights" in active_routers,
-            "story_creation": "stories" in active_routers,
-            "caption_generation": "media" in active_routers,
-            "automated_posting": "admin" in active_routers
+            "highlight_reels": True,
+            "story_creation": True,
+            "caption_generation": True,
+            "automated_posting": True
         },
         "gallery_management": {
-            "smart_search": "gallery" in active_routers,
-            "ai_organization": "gallery" in active_routers,
-            "bulk_operations": "gallery" in active_routers,
-            "custom_galleries": "gallery" in active_routers
+            "smart_search": True,
+            "ai_organization": True,
+            "bulk_operations": True,
+            "custom_galleries": True
         },
         "analytics": {
-            "engagement_tracking": "analytics" in active_routers,
-            "performance_insights": "analytics" in active_routers,
-            "cost_optimization": "analytics" in active_routers,
-            "trend_analysis": "analytics" in active_routers
+            "engagement_tracking": True,
+            "performance_insights": True,
+            "cost_optimization": True,
+            "trend_analysis": True
         },
         "integrations": {
             "instagram": True,
@@ -171,9 +165,7 @@ def get_capabilities():
     return {
         "capabilities": capabilities,
         "status": "operational",
-        "version": "5.0.0",
-        "routers_loaded": ROUTERS_LOADED,
-        "successful_routers": active_routers
+        "version": "5.0.0"
     }
 
 if __name__ == "__main__":

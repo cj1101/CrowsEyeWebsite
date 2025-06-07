@@ -270,4 +270,220 @@ If the troubleshooting guide doesn't resolve your issue:
    - Does it happen consistently?
    - Are other users affected?
 
-Remember: Answer each question with a simple **YES** or **NO** when reporting issues for fastest resolution. 
+Remember: Answer each question with a simple **YES** or **NO** when reporting issues for fastest resolution.
+
+## Current Issues Identified (January 2025)
+
+### 🚨 CRITICAL: Frontend buttons not working
+**Status**: None of the website buttons are functional except dashboard menu items
+**Root Cause**: API connection issues and deployment configuration problems
+
+### 📊 Diagnosed Problems
+
+1. **API URL Configuration Mismatch**
+   - Frontend API base URL: `https://crow-eye-api-605899951231.us-central1.run.app`
+   - Deployed service URL: Same (✅ This is correct)
+   - Local fallback was: `http://127.0.0.1:8001` (❌ Wrong port)
+
+2. **Deployment Issues**
+   - API Docker container failing to build properly
+   - Dockerfile CMD configuration was overly complex
+   - Environment variable handling for Cloud Run PORT
+
+3. **Working Reference Available**
+   - Original working version exists at: `C:\Users\charl\CodingProjets\breadsmith_marketing\social_media_tool_v5_noMeta_final`
+   - This version has working API configuration
+
+## 🛠️ Quick Fix Steps
+
+### Step 1: Test Current API Status
+```bash
+# Check if API is responding
+Invoke-WebRequest -Uri "https://crow-eye-api-605899951231.us-central1.run.app/health" -UseBasicParsing
+
+# Expected response: HTTP 200 with health status
+```
+
+### Step 2: Fix API Deployment
+```bash
+# Navigate to project directory
+cd "C:\Users\charl\CodingProjets\Crow's Eye Website"
+
+# Deploy API with fixed configuration
+gcloud run deploy crow-eye-api --source ./crow_eye_api --region us-central1 --allow-unauthenticated
+```
+
+### Step 3: Update Frontend Environment
+```bash
+# Set environment variable for production
+$env:NEXT_PUBLIC_API_URL = "https://crow-eye-api-605899951231.us-central1.run.app"
+
+# Rebuild and deploy frontend
+npm run build
+```
+
+### Step 4: Deploy Frontend
+```bash
+# Deploy to Firebase hosting
+firebase deploy --only hosting
+```
+
+## 🔍 Debugging Commands
+
+### Check Google Cloud Status
+```bash
+# Check authentication
+gcloud auth list
+
+# Check active project
+gcloud config get-value project
+
+# List all Cloud Run services
+gcloud run services list
+
+# Get specific service details
+gcloud run services describe crow-eye-api --region=us-central1
+```
+
+### Test API Endpoints
+```bash
+# Health check
+curl https://crow-eye-api-605899951231.us-central1.run.app/health
+
+# Test with PowerShell
+Invoke-WebRequest -Uri "https://crow-eye-api-605899951231.us-central1.run.app/health"
+```
+
+### Frontend Development Testing
+```bash
+# Run frontend locally with correct API
+$env:NEXT_PUBLIC_API_URL = "https://crow-eye-api-605899951231.us-central1.run.app"
+npm run dev
+```
+
+## 📋 Information I Need to Help You
+
+When asking for help, please provide:
+
+### 1. Current Error Messages
+- Copy exact error messages from browser console (F12 → Console)
+- Copy any terminal error outputs
+- Screenshot of any error pages
+
+### 2. Environment Status
+```bash
+# Run these commands and share output:
+gcloud config get-value project
+gcloud run services list
+gcloud auth list
+```
+
+### 3. API Testing Results
+```bash
+# Test API and share results:
+Invoke-WebRequest -Uri "https://crow-eye-api-605899951231.us-central1.run.app/health" -UseBasicParsing
+```
+
+### 4. Browser Network Tab
+- Open F12 → Network tab
+- Try clicking a button that doesn't work
+- Share screenshot of failed network requests
+
+### 5. Frontend Console Errors
+- Open F12 → Console tab
+- Share any red error messages
+- Look specifically for CORS or fetch errors
+
+## 🚀 Complete Rebuild Process
+
+If quick fixes don't work, here's the complete rebuild process:
+
+### 1. Copy Working Configuration
+```bash
+# Copy working API from original project
+xcopy "C:\Users\charl\CodingProjets\breadsmith_marketing\social_media_tool_v5_noMeta_final\crow_eye_api\*" ".\crow_eye_api\" /E /Y
+```
+
+### 2. Update Dependencies
+```bash
+# Update API dependencies
+cd crow_eye_api
+pip install -r requirements.txt
+
+# Update frontend dependencies
+cd ..
+npm install
+```
+
+### 3. Fix Environment Configuration
+```bash
+# Create .env.local file with:
+NEXT_PUBLIC_API_URL=https://crow-eye-api-605899951231.us-central1.run.app
+```
+
+### 4. Deploy Everything
+```bash
+# Deploy API
+python deploy.py api --platform gcp
+
+# Deploy frontend
+python deploy.py web --platform firebase
+```
+
+## 🔧 Common Issues & Solutions
+
+### Issue: "Build failed" during API deployment
+**Solution**: Check Dockerfile CMD line format
+```dockerfile
+# Wrong (complex):
+CMD ["python", "-c", "import os; import uvicorn; uvicorn.run('main:app', host='0.0.0.0', port=int(os.environ.get('PORT', 8000)))"]
+
+# Correct (simple):
+CMD uvicorn main:app --host 0.0.0.0 --port $PORT
+```
+
+### Issue: CORS errors in browser
+**Solution**: Ensure API allows frontend domain
+```python
+# In main.py, add CORS middleware:
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://your-frontend-domain.com"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
+
+### Issue: API returns 404 for all endpoints
+**Solution**: Check API routing configuration and deployment
+
+### Issue: Frontend builds but buttons don't work
+**Solution**: Check browser console for JavaScript errors and API connection issues
+
+## 📞 Getting Help Checklist
+
+Before asking for help, please:
+- [ ] Run the debugging commands above
+- [ ] Check browser console for errors
+- [ ] Test API endpoints manually
+- [ ] Verify environment variables
+- [ ] Check both local and deployed versions
+
+## 🎯 Expected Working State
+
+When everything is working correctly:
+- ✅ API health endpoint returns HTTP 200
+- ✅ Frontend loads without console errors
+- ✅ All buttons trigger network requests
+- ✅ Dashboard shows real data
+- ✅ File uploads work
+- ✅ Authentication functions properly
+
+---
+
+**Last Updated**: January 2025
+**Current Status**: 🔴 API connection issues, buttons not functional
+**Priority**: 🚨 CRITICAL - Core functionality broken 

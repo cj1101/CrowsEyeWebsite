@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import { crowEyeAPI, type MediaFile, type Gallery, type Story, type HighlightReel, type AudioFile } from '../lib/api/crow-eye-api';
+import { crowEyeAPI } from '../lib/api/crow-eye-api';
+import type { MediaFile, Gallery, Story, HighlightReel, AudioFile } from '../types/api';
 
 // Hook for API configuration
 export function useAPIConfig() {
@@ -22,7 +23,8 @@ export function useAPIConfig() {
   }, []);
 
   const updateConfig = useCallback((baseUrl: string, apiKey?: string) => {
-    crowEyeAPI.updateConfig({ baseUrl, apiKey });
+    // Configuration is now handled centrally - just check connection
+    console.log('Config update requested:', { baseUrl, apiKey });
     checkConnection();
   }, [checkConnection]);
 

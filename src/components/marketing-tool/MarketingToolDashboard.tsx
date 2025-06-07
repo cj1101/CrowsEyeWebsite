@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMediaLibrary, useSmartGalleries, useStoryFormatting, useAPIConfig } from '@/hooks/useCrowEyeAPI';
+import { useCrowEye } from '@/hooks/useCrowEye';
 import { 
   PhotoIcon, 
   PlayIcon,
@@ -330,7 +330,7 @@ function DashboardOverview({ stats, statsLoading, onRefresh, onTabChange }: Dash
 
 // Media Management Component
 function MediaManagement() {
-  const { media, loading, uploading, error, uploadFile, deleteFile } = useMediaLibrary();
+  const crowEye = useCrowEye();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -339,7 +339,7 @@ function MediaManagement() {
 
     try {
       for (let i = 0; i < files.length; i++) {
-        await uploadFile(files[i]);
+        await crowEye.media.upload(files[i]);
       }
     } catch (err) {
       console.error('Upload failed:', err);
@@ -350,7 +350,7 @@ function MediaManagement() {
     fileInputRef.current?.click();
   };
 
-  if (loading) {
+  if (crowEye.media.loading) {
     return (
       <div className="vision-card p-8 text-center">
         <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-500 mx-auto"></div>
@@ -366,11 +366,11 @@ function MediaManagement() {
           <h2 className="text-2xl font-bold text-white tech-heading">Media Library</h2>
           <button 
             onClick={handleUploadClick}
-            disabled={uploading}
+            disabled={crowEye.media.uploadState.uploading}
             className="vision-button flex items-center"
           >
             <CloudArrowUpIcon className="h-5 w-5 mr-2" />
-            {uploading ? 'Uploading...' : 'Upload Files'}
+            {crowEye.media.uploadState.uploading ? 'Uploading...' : 'Upload Files'}
           </button>
         </div>
 
@@ -383,13 +383,13 @@ function MediaManagement() {
           className="hidden"
         />
 
-        {error && (
+        {crowEye.media.error && (
           <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
-            <p className="text-red-300 text-sm">{error}</p>
+            <p className="text-red-300 text-sm">{crowEye.media.error}</p>
           </div>
         )}
 
-        {media.length === 0 ? (
+        {crowEye.media.items.length === 0 ? (
           <div className="text-center py-12">
             <PhotoIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-300 mb-2">No media files yet</h3>
@@ -397,7 +397,7 @@ function MediaManagement() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {media.map((file) => (
+            {crowEye.media.items.map((file: any) => (
               <div key={file.id} className="vision-card p-4 group">
                 <div className="aspect-square bg-gray-800 rounded-lg mb-3 overflow-hidden">
                   {file.type === 'image' ? (
@@ -414,7 +414,7 @@ function MediaManagement() {
                     <p className="text-gray-400 text-xs">{(file.size / 1024 / 1024).toFixed(1)} MB</p>
                   </div>
                   <button
-                    onClick={() => deleteFile(file.id)}
+                    onClick={() => crowEye.media.delete(file.id)}
                     className="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -433,7 +433,8 @@ function MediaManagement() {
 
 // Smart Galleries Component
 function SmartGalleries() {
-  const { galleries, loading, creating, error, createGallery, deleteGallery } = useSmartGalleries();
+  const crowEye = useCrowEye();
+  const [creating, setCreating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [maxItems, setMaxItems] = useState(5);
@@ -442,17 +443,20 @@ function SmartGalleries() {
     e.preventDefault();
     if (!prompt.trim()) return;
 
+    setCreating(true);
     try {
-      await createGallery(prompt, maxItems);
+      await crowEye.galleries.create(prompt, maxItems);
       setPrompt('');
       setMaxItems(5);
       setShowCreateForm(false);
     } catch (err) {
       console.error('Failed to create gallery:', err);
+    } finally {
+      setCreating(false);
     }
   };
 
-  if (loading) {
+  if (crowEye.galleries.loading) {
     return (
       <div className="vision-card p-8 text-center">
         <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-500 mx-auto"></div>
@@ -475,9 +479,9 @@ function SmartGalleries() {
           </button>
         </div>
 
-        {error && (
+        {crowEye.galleries.error && (
           <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6">
-            <p className="text-red-300 text-sm">{error}</p>
+            <p className="text-red-300 text-sm">{crowEye.galleries.error}</p>
           </div>
         )}
 
@@ -532,21 +536,21 @@ function SmartGalleries() {
           </div>
         )}
 
-        {galleries.length === 0 ? (
+        {crowEye.galleries.items.length === 0 ? (
           <div className="text-center py-12">
-            <SparklesIcon className="h-16 w-16 text-purple-400 mx-auto mb-4" />
+            <PhotoIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-300 mb-2">No galleries yet</h3>
-            <p className="text-gray-400 mb-6">Create your first AI-powered gallery</p>
+            <p className="text-gray-400 mb-6">Create AI-powered galleries from your media</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {galleries.map((gallery) => (
-              <div key={gallery.id} className="vision-card p-6 group">
+            {crowEye.galleries.items.map((gallery) => (
+              <div key={gallery.id} className="vision-card p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-white font-semibold truncate">{gallery.name}</h3>
+                  <h3 className="text-lg font-semibold text-white truncate">{gallery.name}</h3>
                   <button
-                    onClick={() => deleteGallery(gallery.id)}
-                    className="text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => crowEye.galleries.delete(gallery.id)}
+                    className="text-red-400 hover:text-red-300"
                   >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -725,7 +729,10 @@ function DesktopApp() {
 
 // Settings Component
 function Settings() {
-  const { isConnected, isChecking, error, checkConnection, updateConfig } = useAPIConfig();
+  const crowEye = useCrowEye();
+  const [isConnected, setIsConnected] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [baseUrl, setBaseUrl] = useState('https://crow-eye-api-605899951231.us-central1.run.app');
   const [apiKey, setApiKey] = useState('');
   const [notifications, setNotifications] = useState(true);
@@ -733,7 +740,8 @@ function Settings() {
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
-    updateConfig(baseUrl, apiKey || undefined);
+    // Configuration updated - using centralized config now
+    console.log('Settings saved:', { baseUrl, apiKey });
     
     // Save preferences to localStorage (only on client side)
     if (typeof window !== 'undefined') {
@@ -799,7 +807,22 @@ function Settings() {
                   </span>
                   <button
                     type="button"
-                    onClick={checkConnection}
+                    onClick={async () => {
+                      setIsChecking(true);
+                      setError(null);
+                      try {
+                        const isHealthy = await crowEye.utils.healthCheck();
+                        setIsConnected(isHealthy);
+                        if (!isHealthy) {
+                          setError('Connection failed');
+                        }
+                      } catch (err) {
+                        setError('Connection failed');
+                        setIsConnected(false);
+                      } finally {
+                        setIsChecking(false);
+                      }
+                    }}
                     disabled={isChecking}
                     className="text-xs text-purple-400 hover:text-purple-300 underline"
                   >

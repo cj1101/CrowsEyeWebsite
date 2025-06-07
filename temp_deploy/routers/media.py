@@ -3,7 +3,7 @@ from typing import List, Optional
 import json
 from datetime import datetime
 import uuid
-from globals import db_manager
+from dependencies_simple import db_manager
 
 router = APIRouter()
 
