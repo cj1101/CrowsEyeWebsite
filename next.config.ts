@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Disable static export temporarily to debug the issue
-  // output: 'export',
+  // Enable static export for Firebase hosting
+  output: 'export',
   trailingSlash: true,
   images: {
     unoptimized: true
