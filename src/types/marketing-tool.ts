@@ -66,6 +66,6 @@ export interface AIGenerationResponse {
 }
 
 export type ToneType = 'professional' | 'casual' | 'friendly' | 'formal' | 'humorous' | 'inspiring';
-export type PlatformType = 'instagram' | 'facebook' | 'twitter' | 'linkedin' | 'tiktok' | 'youtube';
+export type PlatformType = 'instagram' | 'facebook' | 'bluesky' | 'snapchat' | 'pinterest' | 'tiktok' | 'youtube';
 export type PostStatus = 'draft' | 'scheduled' | 'published' | 'failed';
-export type TabType = 'dashboard' | 'library' | 'create' | 'schedule' | 'analytics' | 'ai-tools' | 'desktop' | 'settings'; 
+export type TabType = 'dashboard' | 'library' | 'create' | 'posts' | 'schedule' | 'analytics' | 'ai-tools' | 'desktop' | 'settings'; 

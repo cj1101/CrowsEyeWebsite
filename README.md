@@ -21,7 +21,7 @@ Crow's Eye Marketing Suite is a comprehensive AI-powered marketing automation pl
 - 📊 **Advanced Analytics** - Track performance across all platforms with detailed insights
 - 🎨 **Media Processing** - Automatic image and video optimization
 - 👥 **Team Collaboration** - Multi-user workspace management
-- 🔗 **Platform Integration** - Support for Instagram, Facebook, Twitter, LinkedIn, TikTok, and YouTube
+- 🔗 **Platform Integration** - Support for Instagram, Facebook, BlueSky, Snapchat, Pinterest, TikTok, and YouTube
 - 🔐 **BYOK Support** - Bring Your Own API Keys for cost optimization
 - 💳 **Subscription Management** - Flexible pricing with Stripe integration
 - 🌍 **Multi-language Support** - Available in multiple languages
@@ -144,8 +144,9 @@ npm run build
 ### 🔧 Platform Integrations
 - **Instagram**: Posts, Stories, Reels, IGTV
 - **Facebook**: Pages, Groups, Events, Marketplace
-- **Twitter/X**: Tweets, Threads, Spaces
-- **LinkedIn**: Posts, Articles, Company Pages, Events
+- **BlueSky**: Posts, Threads, Custom Feeds
+- **Snapchat**: Snaps, Stories, Spotlight
+- **Pinterest**: Pins, Boards, Story Pins
 - **TikTok**: Videos, Trends, Live streams
 - **YouTube**: Videos, Shorts, Community Posts, Premieres
 
@@ -326,8 +327,9 @@ ANTHROPIC_API_KEY=sk-ant-...
 # Social Media API Keys (Optional)
 INSTAGRAM_CLIENT_ID=your_client_id
 FACEBOOK_APP_ID=your_app_id
-TWITTER_API_KEY=your_api_key
-LINKEDIN_CLIENT_ID=your_client_id
+BLUESKY_API_KEY=your_api_key
+SNAPCHAT_CLIENT_ID=your_client_id
+PINTEREST_CLIENT_ID=your_client_id
 ```
 
 ## 🤝 Contributing

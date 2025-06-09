@@ -4,8 +4,9 @@ import { Platform, ToneType, ContentTemplate } from '@/types/marketing-tool';
 export const PLATFORMS: Platform[] = [
   { id: 'instagram', name: 'Instagram', enabled: true, maxLength: 2200 },
   { id: 'facebook', name: 'Facebook', enabled: true, maxLength: 63206 },
-  { id: 'twitter', name: 'Twitter/X', enabled: true, maxLength: 280 },
-  { id: 'linkedin', name: 'LinkedIn', enabled: true, maxLength: 3000 },
+  { id: 'bluesky', name: 'BlueSky', enabled: true, maxLength: 300 },
+  { id: 'snapchat', name: 'Snapchat', enabled: true, maxLength: 80 },
+  { id: 'pinterest', name: 'Pinterest', enabled: true, maxLength: 500 },
   { id: 'tiktok', name: 'TikTok', enabled: true, maxLength: 2200 },
   { id: 'youtube', name: 'YouTube', enabled: true, maxLength: 5000 },
 ];
@@ -22,12 +23,13 @@ export const TONES: ToneType[] = [
 
 // Platform-specific instructions for AI generation
 export const PLATFORM_INSTRUCTIONS = {
-  instagram: "Create an engaging Instagram post with relevant hashtags. Keep it visual and inspiring.",
-  facebook: "Create a Facebook post that encourages engagement and community interaction.",
-  twitter: "Create a concise Twitter/X post that's under 280 characters and includes relevant hashtags.",
-  linkedin: "Create a professional LinkedIn post that adds value and demonstrates expertise.",
-  tiktok: "Create a TikTok caption that's trendy, engaging, and includes popular hashtags.",
-  youtube: "Create a compelling YouTube video description with SEO-friendly keywords."
+  instagram: "Create an engaging Instagram post with relevant hashtags and visual appeal.",
+  facebook: "Create a Facebook post that encourages discussion and engagement.",
+  bluesky: "Create a concise BlueSky post that's under 300 characters and includes relevant hashtags.",
+  snapchat: "Create a short, catchy Snapchat caption that's under 80 characters.",
+  pinterest: "Create a Pinterest description that's SEO-friendly and includes relevant keywords.",
+  tiktok: "Create a fun TikTok caption with trending hashtags and call-to-action.",
+  youtube: "Create a detailed YouTube description with timestamps and relevant keywords.",
 };
 
 // Content templates
@@ -56,12 +58,13 @@ export const CONTENT_TEMPLATES: ContentTemplate[] = [
 
 // Platform colors for UI
 export const PLATFORM_COLORS = {
-  instagram: 'from-pink-600 to-purple-600',
-  facebook: 'from-blue-600 to-blue-700',
-  twitter: 'from-sky-500 to-blue-600',
-  linkedin: 'from-blue-700 to-indigo-700',
-  tiktok: 'from-black to-gray-800',
-  youtube: 'from-red-600 to-red-700'
+  instagram: 'from-purple-500 to-pink-500',
+  facebook: 'from-blue-600 to-blue-800',
+  bluesky: 'from-sky-400 to-blue-500',
+  snapchat: 'from-yellow-400 to-yellow-600',
+  pinterest: 'from-red-600 to-pink-600',
+  tiktok: 'from-black to-red-600',
+  youtube: 'from-red-500 to-red-700',
 };
 
 // Default hashtags for different topics

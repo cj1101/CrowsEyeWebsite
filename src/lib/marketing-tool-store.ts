@@ -272,14 +272,20 @@ export const aiStore = {
         `We're excited to share some thoughts about ${prompt}!\n\nThis topic has been on our minds lately, and we'd love to hear your perspective. What are your thoughts?\n\n#discussion #community #${platform}`,
         `Today we want to talk about ${prompt}.\n\nIt's incredible how this connects to so many aspects of our daily lives. Have you experienced something similar?\n\n#connection #life #sharing`
       ],
-      twitter: [
-        `Quick thought on ${prompt}: It's fascinating how this impacts our daily lives! 🤔 #${platform} #thoughts`,
-        `${prompt} - anyone else thinking about this today? 💭 #discussion #community`,
-        `Just realized something about ${prompt}... 🧠✨ #insight #${platform}`
+      bluesky: [
+        'How to make the most of decentralized social media #BlueSky #SocialMedia #Tech',
+        'Building authentic connections in the new social landscape #Community #Engagement',
+        'Quick tips for better online presence #DigitalMarketing #PersonalBrand'
       ],
-      linkedin: [
-        `Professional insight on ${prompt}:\n\nIn today's rapidly evolving landscape, understanding this concept is crucial for success. Here are my key takeaways:\n\n• Key point 1\n• Key point 2\n• Key point 3\n\nWhat's your experience with this? #professional #insight #${platform}`,
-        `Reflecting on ${prompt} and its impact on our industry.\n\nThis topic deserves more attention in professional circles. The implications for future growth are significant.\n\n#industry #growth #professional`
+      snapchat: [
+        'Behind the scenes! 📸 #Snap #BehindTheScenes #Content',
+        'Quick tutorial coming up! 🎯 #Tutorial #Learn #Tips',
+        'What do you think? 🤔 #Poll #Feedback #Community'
+      ],
+      pinterest: [
+        'DIY home decor ideas that will transform your space | Save for later!',
+        '10 productivity tips for entrepreneurs | Business inspiration board',
+        'Healthy meal prep recipes | Easy weeknight dinners collection'
       ]
     };
 

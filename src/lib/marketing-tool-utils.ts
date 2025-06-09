@@ -38,12 +38,13 @@ export function getPlatformInstructions(platform: PlatformType): string {
  */
 export function formatContentForPlatform(content: string, platform: PlatformType, maxLength?: number): string {
   const platformLimits = {
-    twitter: 280,
     instagram: 2200,
     facebook: 63206,
-    linkedin: 3000,
+    bluesky: 300,
+    snapchat: 80,
+    pinterest: 500,
     tiktok: 2200,
-    youtube: 5000
+    youtube: 5000,
   };
 
   const limit = maxLength || platformLimits[platform] || 2200;
@@ -136,16 +137,17 @@ export function getStatusColor(status: string): string {
  * Get platform color class
  */
 export function getPlatformColor(platform: string): string {
-  const colors = {
-    instagram: 'from-pink-600 to-purple-600',
-    facebook: 'from-blue-600 to-blue-700',
-    twitter: 'from-sky-500 to-blue-600',
-    linkedin: 'from-blue-700 to-indigo-700',
-    tiktok: 'from-black to-gray-800',
-    youtube: 'from-red-600 to-red-700'
+  const platformGradients = {
+    instagram: 'from-purple-500 to-pink-500',
+    facebook: 'from-blue-600 to-blue-800',
+    tiktok: 'from-black to-red-600',
+    youtube: 'from-red-500 to-red-700',
+    bluesky: 'from-sky-400 to-blue-500',
+    snapchat: 'from-yellow-400 to-yellow-600',
+    pinterest: 'from-red-600 to-pink-600',
   };
   
-  return colors[platform as keyof typeof colors] || 'from-gray-500 to-gray-600';
+  return platformGradients[platform as keyof typeof platformGradients] || 'from-gray-500 to-gray-600';
 }
 
 /**

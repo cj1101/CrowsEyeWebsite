@@ -16,12 +16,12 @@ const Navigation = () => {
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const navigation = [
-    { name: t('nav.home'), href: '/' },
-    { name: t('nav.demo'), href: '/demo' },
-    { name: t('nav.features'), href: '/features' },
-    { name: t('nav.pricing'), href: '/pricing' },
-    { name: t('nav.download'), href: '/download' },
-    { name: t('nav.contact'), href: '/contact' },
+    { name: t('nav.home') || 'Home', href: '/' },
+    { name: t('nav.demo') || 'Demo', href: '/demo' },
+    { name: t('nav.features') || 'Features', href: '/features' },
+    { name: t('nav.pricing') || 'Pricing', href: '/pricing' },
+    { name: t('nav.download') || 'Download', href: '/download' },
+    { name: t('nav.contact') || 'Contact', href: '/contact' },
   ]
 
   // Add Web Application for all users (always visible)

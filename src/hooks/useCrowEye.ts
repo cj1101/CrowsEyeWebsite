@@ -1,40 +1,16 @@
 /**
  * Unified Crow's Eye API Hook
- * Combines all API functionality in one comprehensive hook
+ * Simplified version that works with the mock API
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { crowEyeAPI } from '../lib/api/crow-eye-api';
-import type {
-  MediaFile,
-  Gallery,
-  Story,
-  HighlightReel,
-  AudioFile,
-  AnalyticsData,
-  AuthResponse,
-  User,
-  UploadProgress,
-} from '../types/api';
+import { useState, useCallback, useEffect } from 'react';
+import { crowsEyeAPI } from '../lib/api';
 
-// Hook state interfaces
-interface ApiState<T> {
-  data: T | null;
-  loading: boolean;
-  error: string | null;
-}
-
-interface UploadState {
-  uploading: boolean;
-  progress: UploadProgress | null;
-  error: string | null;
-}
-
-// Main hook interface
+// Simplified hook interface
 interface UseCrowEyeReturn {
   // Authentication
   auth: {
-    user: User | null;
+    user: any | null;
     loading: boolean;
     error: string | null;
     login: (email: string, password: string) => Promise<boolean>;
@@ -44,22 +20,21 @@ interface UseCrowEyeReturn {
   
   // Media Management
   media: {
-    items: MediaFile[];
+    items: any[];
     loading: boolean;
     error: string | null;
-    upload: (file: File) => Promise<MediaFile | null>;
+    upload: (file: File) => Promise<any | null>;
     delete: (id: string) => Promise<boolean>;
     refresh: () => Promise<void>;
-    uploadState: UploadState;
+    uploading: boolean;
   };
   
   // Galleries
   galleries: {
-    items: Gallery[];
+    items: any[];
     loading: boolean;
     error: string | null;
-    create: (prompt: string, maxItems?: number, generateCaption?: boolean) => Promise<Gallery | null>;
-    update: (id: string, data: Partial<Gallery>) => Promise<Gallery | null>;
+    create: (request: any) => Promise<any | null>;
     delete: (id: string) => Promise<boolean>;
     refresh: () => Promise<void>;
   };
@@ -73,177 +48,158 @@ interface UseCrowEyeReturn {
 
 export function useCrowEye(): UseCrowEyeReturn {
   // Authentication State
-  const [authState, setAuthState] = useState<ApiState<User>>({
-    data: null,
-    loading: false,
-    error: null,
-  });
+  const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   
   // Media State
-  const [mediaState, setMediaState] = useState<ApiState<MediaFile[]>>({
-    data: [],
-    loading: false,
-    error: null,
-  });
-  const [uploadState, setUploadState] = useState<UploadState>({
-    uploading: false,
-    progress: null,
-    error: null,
-  });
+  const [mediaItems, setMediaItems] = useState<any[]>([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
+  const [mediaError, setMediaError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   
   // Gallery State
-  const [galleryState, setGalleryState] = useState<ApiState<Gallery[]>>({
-    data: [],
-    loading: false,
-    error: null,
-  });
+  const [galleryItems, setGalleryItems] = useState<any[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [galleryError, setGalleryError] = useState<string | null>(null);
   
   // Utility State
   const [isOnline, setIsOnline] = useState(true);
   
-  // Generic error handler
-  const handleError = useCallback((error: any, setter: React.Dispatch<React.SetStateAction<any>>) => {
-    const errorMessage = error?.message || 'An unexpected error occurred';
-    setter((prev: any) => ({
-      ...prev,
-      loading: false,
-      error: errorMessage,
-    }));
-  }, []);
-  
   // Authentication Methods
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    setAuthState(prev => ({ ...prev, loading: true, error: null }));
+    setAuthLoading(true);
+    setAuthError(null);
     try {
-      const response = await crowEyeAPI.login(email, password);
-      const user = response.user as User;
-      setAuthState({ data: user, loading: false, error: null });
-      return true;
+      const response = await crowsEyeAPI.login(email, password);
+      if (response.data) {
+        setUser(response.data.user);
+        return true;
+      } else {
+        setAuthError(response.error || 'Login failed');
+        return false;
+      }
     } catch (error) {
-      handleError(error, setAuthState);
+      setAuthError(error instanceof Error ? error.message : 'Login failed');
       return false;
+    } finally {
+      setAuthLoading(false);
     }
-  }, [handleError]);
+  }, []);
   
   const logout = useCallback(() => {
-    crowEyeAPI.logout();
-    setAuthState({ data: null, loading: false, error: null });
+    setUser(null);
+    setAuthError(null);
   }, []);
   
   // Media Methods
   const refreshMedia = useCallback(async () => {
-    setMediaState(prev => ({ ...prev, loading: true, error: null }));
+    setMediaLoading(true);
+    setMediaError(null);
     try {
-      const items = await crowEyeAPI.getMediaFiles();
-      setMediaState({ data: items, loading: false, error: null });
+      const response = await crowsEyeAPI.listMedia();
+      if (response.data) {
+        setMediaItems(response.data.media || []);
+      } else {
+        setMediaError(response.error || 'Failed to fetch media');
+      }
     } catch (error) {
-      handleError(error, setMediaState);
+      setMediaError(error instanceof Error ? error.message : 'Failed to fetch media');
+    } finally {
+      setMediaLoading(false);
     }
-  }, [handleError]);
+  }, []);
   
-  const uploadMedia = useCallback(async (file: File): Promise<MediaFile | null> => {
-    setUploadState({ uploading: true, progress: null, error: null });
-    
+  const uploadMedia = useCallback(async (file: File): Promise<any | null> => {
+    setUploading(true);
     try {
-      const mediaFile = await crowEyeAPI.uploadMedia(file);
-      
-      // Update media list
-      setMediaState(prev => ({
-        ...prev,
-        data: prev.data ? [mediaFile, ...prev.data] : [mediaFile],
-      }));
-      
-      setUploadState({ uploading: false, progress: null, error: null });
-      return mediaFile;
+      const response = await crowsEyeAPI.uploadMedia(file);
+      if (response.data) {
+        setMediaItems(prev => [response.data, ...prev]);
+        return response.data;
+      } else {
+        setMediaError(response.error || 'Upload failed');
+        return null;
+      }
     } catch (error) {
-      setUploadState({ 
-        uploading: false, 
-        progress: null, 
-        error: error instanceof Error ? error.message : 'Upload failed' 
-      });
+      setMediaError(error instanceof Error ? error.message : 'Upload failed');
       return null;
+    } finally {
+      setUploading(false);
     }
   }, []);
   
   const deleteMedia = useCallback(async (id: string): Promise<boolean> => {
     try {
-      await crowEyeAPI.deleteMedia(id);
-      setMediaState(prev => ({
-        ...prev,
-        data: prev.data?.filter(item => item.id !== id) || [],
-      }));
-      return true;
+      const response = await crowsEyeAPI.deleteMedia(id);
+      if (response.data) {
+        setMediaItems(prev => prev.filter(item => item.id !== id));
+        return true;
+      } else {
+        setMediaError(response.error || 'Delete failed');
+        return false;
+      }
     } catch (error) {
-      handleError(error, setMediaState);
+      setMediaError(error instanceof Error ? error.message : 'Delete failed');
       return false;
     }
-  }, [handleError]);
+  }, []);
   
   // Gallery Methods
   const refreshGalleries = useCallback(async () => {
-    setGalleryState(prev => ({ ...prev, loading: true, error: null }));
+    setGalleryLoading(true);
+    setGalleryError(null);
     try {
-      const items = await crowEyeAPI.getGalleries();
-      setGalleryState({ data: items, loading: false, error: null });
+      const response = await crowsEyeAPI.listGalleries();
+      if (response.data) {
+        setGalleryItems(response.data.galleries || []);
+      } else {
+        setGalleryError(response.error || 'Failed to fetch galleries');
+      }
     } catch (error) {
-      handleError(error, setGalleryState);
+      setGalleryError(error instanceof Error ? error.message : 'Failed to fetch galleries');
+    } finally {
+      setGalleryLoading(false);
     }
-  }, [handleError]);
+  }, []);
   
-  const createGallery = useCallback(async (
-    prompt: string, 
-    maxItems = 5, 
-    generateCaption = true
-  ): Promise<Gallery | null> => {
+  const createGallery = useCallback(async (request: any): Promise<any | null> => {
     try {
-      const gallery = await crowEyeAPI.createGallery(prompt, maxItems, generateCaption);
-      setGalleryState(prev => ({
-        ...prev,
-        data: prev.data ? [gallery, ...prev.data] : [gallery],
-      }));
-      return gallery;
+      const response = await crowsEyeAPI.createGallery(request);
+      if (response.data) {
+        setGalleryItems(prev => [response.data, ...prev]);
+        return response.data;
+      } else {
+        setGalleryError(response.error || 'Failed to create gallery');
+        return null;
+      }
     } catch (error) {
-      handleError(error, setGalleryState);
+      setGalleryError(error instanceof Error ? error.message : 'Failed to create gallery');
       return null;
     }
-  }, [handleError]);
-  
-  const updateGallery = useCallback(async (
-    id: string, 
-    data: Partial<Gallery>
-  ): Promise<Gallery | null> => {
-    try {
-      const updatedGallery = await crowEyeAPI.updateGallery(id, data);
-      setGalleryState(prev => ({
-        ...prev,
-        data: prev.data?.map(item => item.id === id ? updatedGallery : item) || [],
-      }));
-      return updatedGallery;
-    } catch (error) {
-      handleError(error, setGalleryState);
-      return null;
-    }
-  }, [handleError]);
+  }, []);
   
   const deleteGallery = useCallback(async (id: string): Promise<boolean> => {
     try {
-      await crowEyeAPI.deleteGallery(id);
-      setGalleryState(prev => ({
-        ...prev,
-        data: prev.data?.filter(item => item.id !== id) || [],
-      }));
-      return true;
+      const response = await crowsEyeAPI.deleteGallery(id);
+      if (response.data) {
+        setGalleryItems(prev => prev.filter(item => item.id !== id));
+        return true;
+      } else {
+        setGalleryError(response.error || 'Delete failed');
+        return false;
+      }
     } catch (error) {
-      handleError(error, setGalleryState);
+      setGalleryError(error instanceof Error ? error.message : 'Delete failed');
       return false;
     }
-  }, [handleError]);
+  }, []);
   
   // Utility Methods
   const healthCheck = useCallback(async (): Promise<boolean> => {
     try {
-      const result = await crowEyeAPI.healthCheck();
-      const online = result.status === 'healthy';
+      const response = await crowsEyeAPI.healthCheck();
+      const online = !!response.data;
       setIsOnline(online);
       return online;
     } catch (error) {
@@ -254,40 +210,36 @@ export function useCrowEye(): UseCrowEyeReturn {
   
   // Initialize on mount
   useEffect(() => {
-    if (crowEyeAPI.isAuthenticated()) {
-      // Load initial data if authenticated
-      refreshMedia();
-      refreshGalleries();
-    }
-  }, [refreshMedia, refreshGalleries]);
+    healthCheck();
+    refreshMedia();
+    refreshGalleries();
+  }, [healthCheck, refreshMedia, refreshGalleries]);
   
-  // Return unified interface
   return {
     auth: {
-      user: authState.data,
-      loading: authState.loading,
-      error: authState.error,
+      user,
+      loading: authLoading,
+      error: authError,
       login,
       logout,
-      isAuthenticated: crowEyeAPI.isAuthenticated(),
+      isAuthenticated: !!user,
     },
     
     media: {
-      items: mediaState.data || [],
-      loading: mediaState.loading,
-      error: mediaState.error,
+      items: mediaItems,
+      loading: mediaLoading,
+      error: mediaError,
       upload: uploadMedia,
       delete: deleteMedia,
       refresh: refreshMedia,
-      uploadState,
+      uploading,
     },
     
     galleries: {
-      items: galleryState.data || [],
-      loading: galleryState.loading,
-      error: galleryState.error,
+      items: galleryItems,
+      loading: galleryLoading,
+      error: galleryError,
       create: createGallery,
-      update: updateGallery,
       delete: deleteGallery,
       refresh: refreshGalleries,
     },

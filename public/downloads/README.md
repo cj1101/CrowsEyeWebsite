@@ -1,45 +1,37 @@
-# Crow's Eye Marketing Tool Downloads
+# Downloads Directory
 
-This directory contains the installers for the Crow's Eye Marketing Tool desktop application.
+This directory contains the downloadable files for the Breadsmith Marketing Tool.
 
-## Available Downloads
+## Required Files
 
-### Windows
-- **File**: `crow-eye-marketing-tool-windows-v5.0.0.exe`
-- **Requirements**: Windows 10/11, Python 3.8+
-- **Installation**: Download and run the executable, follow the prompts
+Place the following files in this directory:
 
-### macOS  
-- **File**: `crow-eye-marketing-tool-macos-v5.0.0.dmg`
-- **Requirements**: macOS 10.15+, Python 3.8+
-- **Installation**: Download and run the shell script, follow the prompts
+1. **breadsmith-marketing-tool-portable.zip** - Portable version (ZIP archive)
+2. **breadsmith-marketing-tool-source.zip** - Python source code (ZIP archive)  
+3. **breadsmith-marketing-tool.exe** - Windows executable
 
-### Linux
-- **File**: `crow-eye-marketing-tool-linux-v5.0.0.AppImage`
-- **Requirements**: Ubuntu 18.04+, Python 3.8+
-- **Installation**: Download and run the shell script, follow the prompts
+## File Descriptions
 
-## How the Installers Work
+### Portable Version (breadsmith-marketing-tool-portable.zip)
+- Contains the complete application in a portable format
+- No installation required
+- Extract and run
+- Best for users with strict antivirus settings
 
-Each installer will:
-1. Check for Python 3.8+ installation
-2. Create a virtual environment
-3. Install required dependencies
-4. Attempt to download the latest source code from GitHub releases
-5. Create desktop shortcuts and app bundles
-6. Set up the application for immediate use
+### Source Code (breadsmith-marketing-tool-source.zip)
+- Complete Python source code
+- Requires Python 3.8+ to run
+- No antivirus issues
+- For developers and advanced users
 
-## Source Code
+### Executable (breadsmith-marketing-tool.exe)
+- Traditional Windows installer/executable
+- May trigger antivirus warnings (false positives)
+- Easiest installation for most users
 
-The complete source code for the marketing tool is available in a separate repository. The installers will automatically download the latest version during installation.
+## Notes
 
-## System Requirements
-
-- **Python**: 3.8 or higher
-- **RAM**: 4GB minimum, 8GB recommended
-- **Storage**: 2GB free space
-- **Internet**: Required for initial setup and AI features
-
-## Support
-
-For installation issues or questions, please visit our support page or contact us directly. 
+- Files are served via Next.js API routes in `/src/app/api/download/`
+- Download analytics are logged to console
+- Fallback URLs are provided if files are missing
+- All downloads are tracked for analytics purposes 

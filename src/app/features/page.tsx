@@ -29,7 +29,7 @@ const features = [
     icon: <Layers className="h-8 w-8 text-orange-400" />,
     title: "Multi-Platform Management",
     subtitle: "Unified Dashboard",
-    description: "Direct posting and management for Instagram & Facebook. Foundational support for LinkedIn & X, with seamless expansion capabilities.",
+          description: "Direct posting and management for Instagram & Facebook. Full support for BlueSky, Snapchat & Pinterest, with seamless expansion capabilities.",
     category: "Platform Management"
   },
   {

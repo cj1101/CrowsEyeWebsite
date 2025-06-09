@@ -10,12 +10,9 @@ export default function MarketingToolPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/auth/signin?redirect=/marketing-tool');
-    }
-  }, [user, loading, router]);
-
+  // Remove authentication requirement - allow demo access
+  // Users can access the marketing tool without signing in for demo purposes
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
@@ -25,10 +22,6 @@ export default function MarketingToolPage() {
         </div>
       </div>
     );
-  }
-
-  if (!user) {
-    return null; // Will redirect to signin
   }
 
   return (

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api, HighlightReel as ApiHighlightReel } from '@/lib/api';
+import { crowsEyeAPI, HighlightReel as ApiHighlightReel } from '@/lib/api';
 
 export interface HighlightReel {
   id: string;
@@ -33,7 +33,7 @@ export function useHighlightReel() {
       setLoading(true);
       setError(null);
       
-      const response = await api.listHighlightReels(100, 0);
+      const response = await crowsEyeAPI.listHighlightReels(100, 0);
       
       if (response.error) {
         setError(response.error);
@@ -72,7 +72,7 @@ export function useHighlightReel() {
     stylePreferences?: any
   ): Promise<HighlightReel> => {
     try {
-      const response = await api.createHighlightReel({
+      const response = await crowsEyeAPI.createHighlightReel({
         title,
         description,
         media_selection_criteria: mediaSelectionCriteria,
@@ -108,7 +108,7 @@ export function useHighlightReel() {
 
   const updateHighlightReel = async (highlightId: string, updates: Partial<HighlightReel>): Promise<HighlightReel> => {
     try {
-      const response = await api.updateHighlightReel(highlightId, {
+      const response = await crowsEyeAPI.updateHighlightReel(highlightId, {
         title: updates.title,
         description: updates.description,
         media_items: updates.clips,
@@ -140,7 +140,7 @@ export function useHighlightReel() {
 
   const deleteHighlightReel = async (highlightId: string): Promise<void> => {
     try {
-      const response = await api.deleteHighlightReel(highlightId);
+      const response = await crowsEyeAPI.deleteHighlightReel(highlightId);
       
       if (response.error) {
         throw new Error(response.error);
@@ -156,7 +156,7 @@ export function useHighlightReel() {
 
   const renderHighlightReel = async (highlightId: string, options: any = {}): Promise<string> => {
     try {
-      const response = await api.renderHighlightReel(highlightId, options);
+      const response = await crowsEyeAPI.renderHighlightReel(highlightId, options);
       
       if (response.error) {
         throw new Error(response.error);
@@ -174,7 +174,7 @@ export function useHighlightReel() {
 
   const getRenderStatus = async (jobId: string) => {
     try {
-      const response = await api.getHighlightRenderStatus(jobId);
+      const response = await crowsEyeAPI.getHighlightRenderStatus(jobId);
       
       if (response.error) {
         throw new Error(response.error);

@@ -18,7 +18,7 @@ export default function LanguageSelector() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-2 text-gray-300 hover:text-white transition-colors duration-200 rounded-md hover:bg-gray-800"
-        aria-label={t('language.selector')}
+        aria-label={t('language.selector') || 'Language Selector'}
       >
         <GlobeAltIcon className="h-5 w-5" />
         <span className="hidden sm:inline">
@@ -42,7 +42,7 @@ export default function LanguageSelector() {
           <div className="absolute right-0 mt-2 w-64 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-20 max-h-80 overflow-y-auto">
             <div className="p-2">
               <div className="text-xs text-gray-400 px-3 py-2 border-b border-gray-700 mb-2">
-                {t('language.selector')}
+                {t('language.selector') || 'Select Language'}
               </div>
               
               {Object.entries(AVAILABLE_LANGUAGES).map(([code, info]) => (

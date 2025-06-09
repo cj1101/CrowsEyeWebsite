@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api, AudioItem as ApiAudioItem } from '@/lib/api';
+import { crowsEyeAPI, AudioItem as ApiAudioItem } from '@/lib/api';
 
 export interface AudioTrack {
   id: string;
@@ -41,7 +41,7 @@ export function useAudioImport() {
       setLoading(true);
       setError(null);
       
-      const response = await api.listAudio(100, 0);
+      const response = await crowsEyeAPI.listAudio(100, 0);
       
       if (response.error) {
         setError(response.error);
@@ -77,7 +77,7 @@ export function useAudioImport() {
     setError(null);
 
     try {
-      const response = await api.importAudio(file, {
+      const response = await crowsEyeAPI.importAudio(file, {
         name: options.name,
         description: options.description,
         tags: options.tags,
@@ -119,7 +119,7 @@ export function useAudioImport() {
 
   const deleteAudio = async (id: string): Promise<void> => {
     try {
-      const response = await api.deleteAudio(id);
+      const response = await crowsEyeAPI.deleteAudio(id);
       
       if (response.error) {
         throw new Error(response.error);
@@ -135,7 +135,7 @@ export function useAudioImport() {
 
   const editAudio = async (id: string, operations: any[], outputFormat: string = 'mp3'): Promise<AudioTrack> => {
     try {
-      const response = await api.editAudio(id, operations, outputFormat);
+      const response = await crowsEyeAPI.editAudio(id, operations, outputFormat);
       
       if (response.error) {
         throw new Error(response.error);
@@ -162,7 +162,7 @@ export function useAudioImport() {
 
   const getAudioEffects = async () => {
     try {
-      const response = await api.listAudioEffects();
+      const response = await crowsEyeAPI.listAudioEffects();
       
       if (response.error) {
         throw new Error(response.error);
@@ -199,7 +199,7 @@ export function useAudioImport() {
 
   const analyzeAudio = async (id: string) => {
     try {
-      const response = await api.analyzeAudio(id);
+      const response = await crowsEyeAPI.analyzeAudio(id);
       
       if (response.error) {
         throw new Error(response.error);

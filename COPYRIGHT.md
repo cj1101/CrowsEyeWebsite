@@ -18,8 +18,9 @@ The following trademarks and service marks are owned by their respective compani
 - OpenAI and GPT are trademarks of OpenAI, Inc.
 - Google and Gemini are trademarks of Google LLC
 - Facebook, Instagram, and Meta are trademarks of Meta Platforms, Inc.
-- Twitter/X is a trademark of X Corp.
-- LinkedIn is a trademark of LinkedIn Corporation
+- BlueSky is a trademark of Bluesky PBLLC
+- Snapchat is a trademark of Snap Inc.
+- Pinterest is a trademark of Pinterest, Inc.
 - TikTok is a trademark of ByteDance Ltd.
 - YouTube is a trademark of Google LLC
 - Stripe is a trademark of Stripe, Inc.
@@ -72,8 +73,9 @@ This software integrates with various third-party APIs. Users are responsible fo
 - OpenAI (GPT models)
 - Google (Gemini AI, Analytics)
 - Meta (Facebook, Instagram APIs)
-- Twitter/X API
-- LinkedIn API
+- BlueSky AT Protocol
+- Snapchat API
+- Pinterest API
 - TikTok API
 - YouTube API
 

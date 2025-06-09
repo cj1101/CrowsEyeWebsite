@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { api } from '@/lib/api';
+import { useState, useEffect } from 'react';
+import { crowsEyeAPI } from '@/lib/api';
 
 export interface MediaSearchResult {
   raw_photos: string[];
@@ -37,7 +37,7 @@ export function useCrowsEye() {
       
       // For now, we'll use the gallery API to search for media
       // In the future, this could be a dedicated search endpoint
-      const response = await api.listGalleries(100, 0);
+      const response = await crowsEyeAPI.listGalleries(100, 0);
       
       if (response.error) {
         throw new Error(response.error);
@@ -85,7 +85,7 @@ export function useCrowsEye() {
       setError(null);
       
       // Use the gallery creation API
-      const response = await api.createGallery({
+      const response = await crowsEyeAPI.createGallery({
         name: `Gallery for: ${request.prompt}`,
         description: `AI-generated gallery based on prompt: ${request.prompt}`,
         media_selection_criteria: {
@@ -127,7 +127,7 @@ export function useCrowsEye() {
       setError(null);
       
       // Use the story creation API to generate captions
-      const response = await api.createStory({
+      const response = await crowsEyeAPI.createStory({
         title: 'Caption Generation',
         content_brief: `Generate a caption for media files: ${request.media_paths.join(', ')}`,
         target_platforms: ['instagram', 'facebook'],
@@ -173,7 +173,7 @@ export function useCrowsEye() {
       setLoading(true);
       setError(null);
       
-      const response = await api.createGallery({
+      const response = await crowsEyeAPI.createGallery({
         name,
         description: caption,
         media_selection_criteria: {
@@ -217,7 +217,7 @@ export function useCrowsEye() {
       setLoading(true);
       setError(null);
       
-      const response = await api.listGalleries(100, 0);
+      const response = await crowsEyeAPI.listGalleries(100, 0);
       
       if (response.error) {
         throw new Error(response.error);
@@ -249,8 +249,8 @@ export function useCrowsEye() {
       
       // Get all media from different sources
       const [mediaResponse, galleryResponse] = await Promise.all([
-        api.listMedia(100, 0),
-        api.listGalleries(100, 0)
+        crowsEyeAPI.listMedia(100, 0),
+        crowsEyeAPI.listGalleries(100, 0)
       ]);
       
       const rawPhotos: string[] = [];
@@ -319,7 +319,7 @@ export function useCrowsEye() {
       
       // Extract media ID from path and delete
       const mediaId = mediaPath.split('/').pop()?.split('.')[0] || '';
-      const response = await api.deleteMedia(mediaId);
+      const response = await crowsEyeAPI.deleteMedia(mediaId);
       
       if (response.error) {
         throw new Error(response.error);

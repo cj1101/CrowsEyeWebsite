@@ -168,30 +168,29 @@ export function getInstallationInstructions(platform: string): string[] {
   switch (platformKey) {
     case 'windows':
       return [
-        '1. Download the .exe installer file',
-        '2. Right-click and select "Run as administrator"',
-        '3. Follow the installation wizard',
-        '4. Launch from Start Menu or Desktop shortcut',
-        '5. Enter your API keys in Settings for full functionality'
+        '1. Download the Installer ZIP file.',
+        '2. Unzip the file (Right-click → "Extract All...").',
+        '3. Open the new folder and double-click "Run Installer".',
+        '4. The installation will start automatically!',
+        '5. Safe, simple, and no scary warnings.'
       ];
     
     case 'macos':
       return [
-        '1. Download the .dmg file',
-        '2. Double-click to mount the disk image',
-        '3. Drag the app to your Applications folder',
-        '4. Launch from Applications or Spotlight',
-        '5. Allow permissions if prompted by macOS Gatekeeper',
-        '6. Enter your API keys in Settings for full functionality'
+        '1. Download the Installer ZIP file.',
+        '2. Double-click the ZIP to automatically unzip it.',
+        '3. In the new folder, double-click "Run Installer".',
+        '4. A terminal window will open and run the installer.',
+        '5. Safe, simple, and guided by your OS.'
       ];
     
     case 'linux':
       return [
-        '1. Download the .AppImage file',
-        '2. Make it executable: chmod +x crow-eye-marketing-tool-*.AppImage',
-        '3. Run directly: ./crow-eye-marketing-tool-*.AppImage',
-        '4. Optional: Integrate with desktop using AppImageLauncher',
-        '5. Enter your API keys in Settings for full functionality'
+        '1. Download the Installer ZIP file.',
+        '2. Unzip the file in your favorite location.',
+        '3. Open a terminal in the new folder.',
+        '4. Run the installer with: sh run_installer.sh',
+        '5. Quick, clean, and respects the command line.'
       ];
     
     default:

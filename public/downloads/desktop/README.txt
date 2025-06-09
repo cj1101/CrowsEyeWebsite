@@ -18,8 +18,9 @@ Features:
 Platform Support:
 ✓ Instagram
 ✓ Facebook
-✓ BlueSky (replaces Twitter/X)
-✓ Google My Business (replaces LinkedIn)
+✓ BlueSky (decentralized social media)
+✓ Snapchat (multimedia messaging)
+✓ Pinterest (visual discovery)
 ✓ TikTok
 ✓ YouTube
 

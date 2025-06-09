@@ -1,13 +1,11 @@
 /**
- * Crow's Eye API Client
- * Comprehensive client library for connecting to the crow_eye_api backend
+ * Crow's Eye API Client - FastAPI Backend Implementation
+ * Connects to the FastAPI backend running on localhost:8000
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (
-  process.env.NODE_ENV === 'development' 
-    ? 'http://localhost:8001' 
-    : 'https://crow-eye-api-605899951231.us-central1.run.app'
-);
+const API_BASE_URL = process.env.NODE_ENV === 'development' 
+  ? 'http://localhost:8000' 
+  : 'http://localhost:8000'; // Update this for production
 
 export interface ApiResponse<T = any> {
   data?: T;
@@ -84,16 +82,67 @@ export interface GalleryItem {
   thumbnail_url?: string;
 }
 
+// Authentication token storage
+const TOKEN_STORAGE_KEY = 'crow-eye-auth-token';
+
+// Utility functions
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem(TOKEN_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setAuthToken(token: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
+  } catch (error) {
+    console.warn('Failed to save auth token:', error);
+  }
+}
+
+function clearAuthToken(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+  } catch (error) {
+    console.warn('Failed to clear auth token:', error);
+  }
+}
+
 class CrowsEyeAPI {
   private baseURL: string;
   private authToken: string | null = null;
 
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL;
+    this.authToken = getAuthToken();
   }
 
   setAuthToken(token: string) {
     this.authToken = token;
+    setAuthToken(token);
+  }
+
+  // Try to get Firebase auth token for API requests
+  private async getFirebaseToken(): Promise<string | null> {
+    if (typeof window === 'undefined') return null;
+    
+    try {
+      // Try to get Firebase auth if available
+      const { auth } = await import('@/lib/firebase');
+      if (auth?.currentUser) {
+        return await auth.currentUser.getIdToken();
+      }
+    } catch (error) {
+      // Firebase not available or user not logged in
+      console.debug('Firebase auth not available:', error);
+    }
+    
+    return null;
   }
 
   private async request<T>(
@@ -106,14 +155,19 @@ class CrowsEyeAPI {
       ...(options.headers as Record<string, string>),
     };
 
-    if (this.authToken) {
-      headers.Authorization = `Bearer ${this.authToken}`;
+    // Try to get auth token (either stored API token or Firebase token)
+    let token = this.authToken;
+    if (!token) {
+      token = await this.getFirebaseToken();
+    }
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
     }
 
     try {
-      // Add timeout to prevent hanging requests
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // Reduced timeout for better UX
 
       const response = await fetch(url, {
         ...options,
@@ -128,12 +182,18 @@ class CrowsEyeAPI {
         try {
           errorData = await response.json();
         } catch {
-          // If JSON parsing fails, use status text
           errorData = { detail: response.statusText };
         }
         
+        // For authentication errors, provide a more helpful message
+        if (response.status === 401 || response.status === 403) {
+          return {
+            error: 'Authentication required - running in demo mode',
+          };
+        }
+        
         return {
-          error: errorData.detail || `HTTP ${response.status}: ${response.statusText}`,
+          error: errorData.detail || errorData.message || `HTTP ${response.status}: ${response.statusText}`,
         };
       }
 
@@ -142,39 +202,52 @@ class CrowsEyeAPI {
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          return { error: 'Request timeout - please try again' };
+          return { error: 'Request timeout - API may not be available' };
+        }
+        // Check if it's a network error (API not running)
+        if (error.message.includes('Failed to fetch') || error.message.includes('fetch')) {
+          return { error: 'API not available - running in demo mode' };
         }
         return { error: error.message };
       }
-      return { error: 'Network error - please check your connection' };
+      return { error: 'Network error - API may not be available' };
     }
   }
 
   // Authentication endpoints
   async login(email: string, password: string): Promise<ApiResponse<{ access_token: string; user: any }>> {
-    return this.request('/api/auth/login', {
+    const formData = new FormData();
+    formData.append('username', email); // FastAPI OAuth2 expects 'username'
+    formData.append('password', password);
+
+    return this.request('/token', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      headers: {}, // Let browser set Content-Type for FormData
+      body: formData,
     });
   }
 
   async register(email: string, password: string, name: string): Promise<ApiResponse<{ access_token: string; user: any }>> {
-    return this.request('/api/auth/register', {
+    return this.request('/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify({ 
+        email, 
+        password, 
+        name: name 
+      }),
     });
   }
 
   async getCurrentUser(): Promise<ApiResponse<any>> {
-    return this.request('/api/auth/me');
+    return this.request('/users/me');
   }
 
   // Media endpoints
   async uploadMedia(file: File): Promise<ApiResponse<MediaItem>> {
     const formData = new FormData();
-    formData.append('files', file);
+    formData.append('file', file);
 
-    return this.request('/api/media/upload', {
+    return this.request('/upload', {
       method: 'POST',
       headers: {}, // Let browser set Content-Type for FormData
       body: formData,
@@ -182,327 +255,221 @@ class CrowsEyeAPI {
   }
 
   async getMedia(mediaId: string): Promise<ApiResponse<MediaItem>> {
-    return this.request(`/api/media/${mediaId}`);
+    return this.request(`/media/${mediaId}`);
   }
 
   async listMedia(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ media: MediaItem[]; total: number }>> {
-    try {
-      const response = await this.request<{ items: MediaItem[]; total: number }>(`/api/media/?limit=${limit}&skip=${offset}`);
-      
-      // Transform the response to match expected format
-      if (response.data) {
-        return {
-          data: {
-            media: Array.isArray(response.data.items) ? response.data.items : [],
-            total: response.data.total || 0
-          }
-        };
-      }
-      
-      // Return error response if no data
-      return {
-        error: response.error || 'No data received'
-      };
-    } catch (error) {
-      console.error('Error in listMedia:', error);
-      return {
-        error: error instanceof Error ? error.message : 'Failed to fetch media'
-      };
-    }
+    return this.request(`/media/?limit=${limit}&skip=${offset}`);
   }
 
   async deleteMedia(mediaId: string): Promise<ApiResponse<{ message: string }>> {
-    return this.request(`/api/media/${mediaId}`, {
+    return this.request(`/media/${mediaId}`, {
       method: 'DELETE',
     });
   }
 
   // Audio endpoints
-  async importAudio(
-    file: File,
-    options: {
-      name?: string;
-      description?: string;
-      tags?: string[];
-      auto_enhance?: boolean;
-      normalize_volume?: boolean;
-    } = {}
-  ): Promise<ApiResponse<AudioItem>> {
+  async importAudio(file: File, options: any = {}): Promise<ApiResponse<AudioItem>> {
     const formData = new FormData();
-    formData.append('files', file);
-    formData.append('request', JSON.stringify(options));
+    formData.append('file', file);
+    if (options.name) formData.append('name', options.name);
+    if (options.description) formData.append('description', options.description);
+    if (options.tags) formData.append('tags', JSON.stringify(options.tags));
 
-    return this.request('/api/audio/upload', {
+    return this.request('/media/upload-audio', {
       method: 'POST',
       headers: {},
       body: formData,
     });
   }
 
-  async getAudio(audioId: string): Promise<ApiResponse<AudioItem>> {
-    return this.request(`/api/audio/${audioId}`);
+  async listAudio(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ audio_files: AudioItem[]; total: number }>> {
+    return this.request(`/media/audio?limit=${limit}&skip=${offset}`);
   }
 
-  async listAudio(
-    limit: number = 50,
-    offset: number = 0,
-    tags?: string
-  ): Promise<ApiResponse<{ audio_files: AudioItem[]; total: number }>> {
-    const params = new URLSearchParams({
-      limit: limit.toString(),
-      skip: offset.toString(),
-    });
-    if (tags) params.append('tags', tags);
-
-    return this.request(`/api/audio/?${params}`);
+  // Gallery endpoints
+  async listGalleries(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ galleries: GalleryItem[]; total: number }>> {
+    return this.request(`/galleries/?limit=${limit}&skip=${offset}`);
   }
 
-  async editAudio(
-    audioId: string,
-    operations: any[],
-    outputFormat: string = 'mp3'
-  ): Promise<ApiResponse<AudioItem>> {
-    return this.request('/api/audio/edit', {
+  async createGallery(request: any): Promise<ApiResponse<GalleryItem>> {
+    return this.request('/galleries/', {
       method: 'POST',
       body: JSON.stringify({
-        audio_id: audioId,
-        operations,
-        output_format: outputFormat,
+        name: request.name,
+        description: request.description,
+        media_selection_criteria: request.maxItems ? { max_items: request.maxItems } : {}
       }),
     });
   }
 
-  async deleteAudio(audioId: string): Promise<ApiResponse<{ message: string }>> {
-    return this.request(`/api/audio/${audioId}`, {
-      method: 'DELETE',
-    });
-  }
-
-  async listAudioEffects(): Promise<ApiResponse<any[]>> {
-    return this.request('/api/audio/effects/');
-  }
-
-  async analyzeAudio(audioId: string): Promise<ApiResponse<any>> {
-    return this.request(`/api/audio/${audioId}/analyze`);
-  }
-
-  // Analytics endpoints
-  async getAnalytics(
-    period: string = '30d',
-    platform?: string
-  ): Promise<ApiResponse<AnalyticsData>> {
-    const params = new URLSearchParams({ period });
-    if (platform) params.append('platform', platform);
-
-    return this.request(`/api/analytics/overview?${params}`);
-  }
-
-  async exportAnalytics(request: {
-    start_date: string;
-    end_date: string;
-    platforms?: string[];
-    metrics?: string[];
-    format?: string;
-  }): Promise<ApiResponse<any>> {
-    return this.request('/api/analytics/export', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  async getInsights(): Promise<ApiResponse<any>> {
-    return this.request('/api/analytics/insights');
-  }
-
-  async getCompetitorAnalysis(): Promise<ApiResponse<any>> {
-    return this.request('/api/analytics/competitors');
-  }
-
-  async getSummaryReport(period: string = '30d'): Promise<ApiResponse<any>> {
-    return this.request(`/api/analytics/reports/summary?period=${period}`);
-  }
-
-  // Stories endpoints
-  async createStory(request: {
-    title: string;
-    content_brief: string;
-    target_platforms: string[];
-    tone?: string;
-    include_media?: boolean;
-  }): Promise<ApiResponse<StoryData>> {
-    return this.request('/api/stories/create', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  async getStory(storyId: string): Promise<ApiResponse<StoryData>> {
-    return this.request(`/api/stories/${storyId}`);
-  }
-
-  async listStories(
-    limit: number = 50,
-    offset: number = 0
-  ): Promise<ApiResponse<{ stories: StoryData[]; total: number }>> {
-    return this.request(`/api/stories/?limit=${limit}&skip=${offset}`);
-  }
-
-  async updateStory(
-    storyId: string,
-    updates: Partial<StoryData>
-  ): Promise<ApiResponse<StoryData>> {
-    return this.request(`/api/stories/${storyId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
-  }
-
-  async deleteStory(storyId: string): Promise<ApiResponse<{ message: string }>> {
-    return this.request(`/api/stories/${storyId}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // Highlights endpoints
-  async createHighlightReel(request: {
-    title: string;
-    description: string;
-    media_selection_criteria: any;
-    duration_preference?: string;
-    style_preferences?: any;
-  }): Promise<ApiResponse<HighlightReel>> {
-    return this.request('/api/highlights/generate', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  async getHighlightReel(highlightId: string): Promise<ApiResponse<HighlightReel>> {
-    return this.request(`/api/highlights/${highlightId}`);
-  }
-
-  async listHighlightReels(
-    limit: number = 50,
-    offset: number = 0
-  ): Promise<ApiResponse<{ highlight_reels: HighlightReel[]; total: number }>> {
-    return this.request(`/api/highlights/?limit=${limit}&skip=${offset}`);
-  }
-
-  async updateHighlightReel(
-    highlightId: string,
-    updates: Partial<HighlightReel>
-  ): Promise<ApiResponse<HighlightReel>> {
-    return this.request(`/api/highlights/${highlightId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
-  }
-
-  async deleteHighlightReel(highlightId: string): Promise<ApiResponse<{ message: string }>> {
-    return this.request(`/api/highlights/${highlightId}`, {
-      method: 'DELETE',
-    });
-  }
-
-  async renderHighlightReel(
-    highlightId: string,
-    options: any = {}
-  ): Promise<ApiResponse<{ render_job_id: string }>> {
-    return this.request(`/api/highlights/${highlightId}/render`, {
-      method: 'POST',
-      body: JSON.stringify(options),
-    });
-  }
-
-  async getHighlightRenderStatus(jobId: string): Promise<ApiResponse<any>> {
-    return this.request(`/api/highlights/render-status/${jobId}`);
-  }
-
-  // Gallery endpoints
-  async createGallery(request: {
-    name: string;
-    description: string;
-    media_selection_criteria: any;
-    organization_style?: string;
-  }): Promise<ApiResponse<GalleryItem>> {
-    return this.request('/api/gallery/', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
   async getGallery(galleryId: string): Promise<ApiResponse<GalleryItem>> {
-    return this.request(`/api/gallery/${galleryId}`);
+    return this.request(`/galleries/${galleryId}`);
   }
 
-  async listGalleries(
-    limit: number = 50,
-    offset: number = 0
-  ): Promise<ApiResponse<{ galleries: GalleryItem[]; total: number }>> {
-    const response = await this.request<{ galleries: GalleryItem[]; total: number }>(`/api/gallery/?limit=${limit}&skip=${offset}`);
-    
-    // The local API already returns the correct format
-    return response;
-  }
-
-  async updateGallery(
-    galleryId: string,
-    updates: Partial<GalleryItem>
-  ): Promise<ApiResponse<GalleryItem>> {
-    return this.request(`/api/gallery/${galleryId}`, {
+  async updateGallery(galleryId: string, updates: Partial<GalleryItem>): Promise<ApiResponse<GalleryItem>> {
+    return this.request(`/galleries/${galleryId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
   }
 
   async deleteGallery(galleryId: string): Promise<ApiResponse<{ message: string }>> {
-    return this.request(`/api/gallery/${galleryId}`, {
+    return this.request(`/galleries/${galleryId}`, {
       method: 'DELETE',
     });
   }
 
-  // Admin endpoints (for admin users)
-  async getSystemStats(): Promise<ApiResponse<any>> {
-    return this.request('/api/admin/stats');
-  }
-
-  async listAllUsers(
-    limit: number = 50,
-    offset: number = 0
-  ): Promise<ApiResponse<{ users: any[]; total: number }>> {
-    return this.request(`/api/admin/users?limit=${limit}&skip=${offset}`);
-  }
-
-  async getUserDetails(userId: string): Promise<ApiResponse<any>> {
-    return this.request(`/api/admin/users/${userId}`);
-  }
-
-  async updateUserSubscription(
-    userId: string,
-    subscriptionData: any
-  ): Promise<ApiResponse<any>> {
-    return this.request(`/api/admin/users/${userId}/subscription`, {
-      method: 'PUT',
-      body: JSON.stringify(subscriptionData),
+  // Story endpoints
+  async createStory(request: any): Promise<ApiResponse<StoryData>> {
+    return this.request('/ai/generate-story', {
+      method: 'POST',
+      body: JSON.stringify(request),
     });
   }
 
-  async getSystemLogs(
-    limit: number = 100,
-    level?: string
-  ): Promise<ApiResponse<any>> {
-    const params = new URLSearchParams({ limit: limit.toString() });
-    if (level) params.append('level', level);
+  async listStories(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ stories: StoryData[]; total: number }>> {
+    return this.request(`/ai/stories?limit=${limit}&skip=${offset}`);
+  }
 
-    return this.request(`/api/admin/logs?${params}`);
+  // Analytics endpoints
+  async getAnalytics(period: string = '30d'): Promise<ApiResponse<AnalyticsData>> {
+    return this.request(`/ai/analytics?period=${period}`);
+  }
+
+  // Highlight reels endpoints
+  async listHighlightReels(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ highlight_reels: HighlightReel[]; total: number }>> {
+    return this.request(`/ai/highlights?limit=${limit}&skip=${offset}`);
   }
 
   // Health check
   async healthCheck(): Promise<ApiResponse<{ status: string; timestamp: string }>> {
     return this.request('/health');
   }
+
+  // Placeholder methods for endpoints that might not be implemented yet
+  async getAudio(audioId: string): Promise<ApiResponse<AudioItem>> {
+    return this.request(`/media/audio/${audioId}`);
+  }
+
+  async editAudio(audioId: string, operations: any[], outputFormat: string = 'mp3'): Promise<ApiResponse<AudioItem>> {
+    return this.request(`/media/audio/${audioId}/edit`, {
+      method: 'POST',
+      body: JSON.stringify({ operations, output_format: outputFormat }),
+    });
+  }
+
+  async deleteAudio(audioId: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request(`/media/audio/${audioId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async listAudioEffects(): Promise<ApiResponse<any[]>> {
+    return this.request('/media/audio/effects');
+  }
+
+  async analyzeAudio(audioId: string): Promise<ApiResponse<any>> {
+    return this.request(`/media/audio/${audioId}/analyze`);
+  }
+
+  async exportAnalytics(request: any): Promise<ApiResponse<any>> {
+    return this.request('/ai/analytics/export', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async getInsights(): Promise<ApiResponse<any>> {
+    return this.request('/ai/insights');
+  }
+
+  async getCompetitorAnalysis(): Promise<ApiResponse<any>> {
+    return this.request('/ai/competitors');
+  }
+
+  async getSummaryReport(period: string = '30d'): Promise<ApiResponse<any>> {
+    return this.request(`/ai/reports/summary?period=${period}`);
+  }
+
+  async getStory(storyId: string): Promise<ApiResponse<StoryData>> {
+    return this.request(`/ai/stories/${storyId}`);
+  }
+
+  async updateStory(storyId: string, updates: Partial<StoryData>): Promise<ApiResponse<StoryData>> {
+    return this.request(`/ai/stories/${storyId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteStory(storyId: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request(`/ai/stories/${storyId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async createHighlightReel(request: any): Promise<ApiResponse<HighlightReel>> {
+    return this.request('/ai/highlights', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async getHighlightReel(highlightId: string): Promise<ApiResponse<HighlightReel>> {
+    return this.request(`/ai/highlights/${highlightId}`);
+  }
+
+  async updateHighlightReel(highlightId: string, updates: Partial<HighlightReel>): Promise<ApiResponse<HighlightReel>> {
+    return this.request(`/ai/highlights/${highlightId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteHighlightReel(highlightId: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request(`/ai/highlights/${highlightId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async renderHighlightReel(highlightId: string, options: any = {}): Promise<ApiResponse<{ render_job_id: string }>> {
+    return this.request(`/ai/highlights/${highlightId}/render`, {
+      method: 'POST',
+      body: JSON.stringify(options),
+    });
+  }
+
+  async getHighlightRenderStatus(jobId: string): Promise<ApiResponse<any>> {
+    return this.request(`/ai/highlights/render-status/${jobId}`);
+  }
+
+  async getSystemStats(): Promise<ApiResponse<any>> {
+    return this.request('/admin/stats');
+  }
+
+  async listAllUsers(limit: number = 50, offset: number = 0): Promise<ApiResponse<{ users: any[]; total: number }>> {
+    return this.request(`/admin/users?limit=${limit}&skip=${offset}`);
+  }
+
+  async getUserDetails(userId: string): Promise<ApiResponse<any>> {
+    return this.request(`/admin/users/${userId}`);
+  }
+
+  async updateUserSubscription(userId: string, subscriptionData: any): Promise<ApiResponse<any>> {
+    return this.request(`/admin/users/${userId}/subscription`, {
+      method: 'PUT',
+      body: JSON.stringify(subscriptionData),
+    });
+  }
+
+  async getSystemLogs(limit: number = 100, level?: string): Promise<ApiResponse<any>> {
+    const params = new URLSearchParams({ limit: limit.toString() });
+    if (level) params.append('level', level);
+    return this.request(`/admin/logs?${params}`);
+  }
 }
 
-// Create and export singleton instance
-export const api = new CrowsEyeAPI();
-export default api; 
+// Export singleton instance
+export const crowsEyeAPI = new CrowsEyeAPI();
+export default crowsEyeAPI; 

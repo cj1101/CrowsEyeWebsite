@@ -46,7 +46,7 @@ const pricingPlans = [
       users: 1,
       aiCredits: "150/month",
       scheduledPosts: "100/month",
-      mediaStorage: "5 GB"
+      mediaStorage: "Generous storage (limits coming soon)"
     },
     features: {
       basicContentTools: true,
@@ -75,10 +75,10 @@ const pricingPlans = [
     targetUser: "Growing Businesses",
     limits: {
       linkedAccounts: 7,
-      users: "Up to 2",
+      users: 1,
       aiCredits: "400/month",
       scheduledPosts: "300/month",
-      mediaStorage: "25 GB"
+      mediaStorage: "Generous storage (limits coming soon)"
     },
     features: {
       basicContentTools: true,
@@ -86,9 +86,9 @@ const pricingPlans = [
       smartGallery: true,
       postFormatting: true,
       basicVideoTools: true,
-      advancedContent: "Basic Video Suite",
+      advancedContent: "Advanced Video Processing",
       analytics: "Enhanced Analytics",
-      teamCollaboration: true,
+      teamCollaboration: "Coming Soon",
       support: "Priority Email Support",
       customBranding: "Basic Branding",
       apiAccess: false

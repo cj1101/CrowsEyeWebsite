@@ -1,126 +1,133 @@
 'use client';
 
-import React, { useState } from 'react';
-import AnalyticsTab from '@/components/dashboard/AnalyticsTab';
+import { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import LibraryTab from '@/components/dashboard/LibraryTab';
-import StoriesTab from '@/components/dashboard/StoriesTab';
-import GalleriesTab from '@/components/dashboard/GalleriesTab';
-import HighlightsTab from '@/components/dashboard/HighlightsTab';
-import { 
-  ChartBarIcon, 
-  PhotoIcon, 
-  BookOpenIcon, 
-  RectangleGroupIcon, 
-  StarIcon,
-  SparklesIcon
-} from '@heroicons/react/24/outline';
+import CreatePostTab from '@/components/dashboard/CreatePostTab';
+import SchedulingTab from '@/components/dashboard/SchedulingTab';
+import ToolsTab from '@/components/dashboard/ToolsTab';
+import AnalyticsTab from '@/components/dashboard/AnalyticsTab';
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState('analytics');
-
-  const tabs = [
-    { 
-      id: 'analytics', 
-      name: 'Analytics', 
-      component: AnalyticsTab,
-      icon: ChartBarIcon,
-      description: 'Performance insights and metrics'
-    },
-    { 
-      id: 'library', 
-      name: 'Media Library', 
-      component: LibraryTab,
-      icon: PhotoIcon,
-      description: 'Manage your content assets'
-    },
-    { 
-      id: 'stories', 
-      name: 'Stories', 
-      component: StoriesTab,
-      icon: BookOpenIcon,
-      description: 'Create engaging story content'
-    },
-    { 
-      id: 'galleries', 
-      name: 'Galleries', 
-      component: GalleriesTab,
-      icon: RectangleGroupIcon,
-      description: 'Organize content collections'
-    },
-    { 
-      id: 'highlights', 
-      name: 'Highlights', 
-      component: HighlightsTab,
-      icon: StarIcon,
-      description: 'Showcase your best content'
-    },
-  ];
-
-  const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component || AnalyticsTab;
-  const activeTabData = tabs.find(tab => tab.id === activeTab);
+  const [activeTab, setActiveTab] = useState('library');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl">
-              <SparklesIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold">
-                <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                  Dashboard
-                </span>
-              </h1>
-              <p className="text-gray-300 mt-1">
-                Your AI-powered content command center
-              </p>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 p-6">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            Crow's Eye Dashboard
+          </h1>
+          <p className="text-gray-400 mt-2">
+            Manage your social media content and campaigns
+          </p>
+        </header>
 
-        {/* Tab Navigation */}
-        <div className="mb-8">
-          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-2">
-            <nav className="flex space-x-2">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-300 ${
-                      activeTab === tab.id
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span className="hidden sm:block">{tab.name}</span>
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-          
-          {/* Active Tab Description */}
-          {activeTabData && (
-            <div className="mt-4 text-center">
-              <p className="text-gray-400 text-sm">
-                {activeTabData.description}
-              </p>
-            </div>
-          )}
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5 bg-gray-800/50 backdrop-blur-sm">
+            <TabsTrigger 
+              value="library" 
+              className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
+            >
+              Library
+            </TabsTrigger>
+            <TabsTrigger 
+              value="create" 
+              className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
+            >
+              Create Post
+            </TabsTrigger>
+            <TabsTrigger 
+              value="schedule" 
+              className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
+            >
+              Scheduling
+            </TabsTrigger>
+            <TabsTrigger 
+              value="tools" 
+              className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
+            >
+              Tools
+            </TabsTrigger>
+            <TabsTrigger 
+              value="analytics" 
+              className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
+            >
+              Analytics
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Tab Content */}
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden">
-          <div className="p-6">
-            <ActiveComponent />
-          </div>
-        </div>
+          <TabsContent value="library" className="space-y-6">
+            <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Media Library</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Manage your media files and AI processing
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <LibraryTab />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="create" className="space-y-6">
+            <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Create Post</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Create and customize your social media posts
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CreatePostTab />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="schedule" className="space-y-6">
+            <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Scheduling</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Schedule posts and manage your content calendar
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <SchedulingTab />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="tools" className="space-y-6">
+            <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">AI Tools</CardTitle>
+                <CardDescription className="text-gray-400">
+                  AI-powered content creation and optimization tools
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ToolsTab />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Analytics</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Track your social media performance
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AnalyticsTab />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

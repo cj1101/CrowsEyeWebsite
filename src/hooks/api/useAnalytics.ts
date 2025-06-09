@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api, AnalyticsData as ApiAnalyticsData } from '@/lib/api';
+import { crowsEyeAPI, AnalyticsData as ApiAnalyticsData } from '@/lib/api';
 
 export interface AnalyticsData {
   totalPosts: number;
@@ -53,7 +53,7 @@ export function useAnalytics(period: string = '30d', platform?: string) {
       setLoading(true);
       setError(null);
       
-      const response = await api.getAnalytics(period, platform);
+      const response = await crowsEyeAPI.getAnalytics(period);
       
       if (response.error) {
         setError(response.error);
@@ -72,7 +72,7 @@ export function useAnalytics(period: string = '30d', platform?: string) {
           platformStats: [
             { platform: 'Instagram', posts: 89, engagement: 9.2 },
             { platform: 'Facebook', posts: 45, engagement: 7.8 },
-            { platform: 'Twitter', posts: 22, engagement: 6.5 }
+            { platform: 'BlueSky', posts: 22, engagement: 6.5 }
           ]
         };
         setData(mockData);
@@ -96,7 +96,7 @@ export function useAnalytics(period: string = '30d', platform?: string) {
       const endDate = new Date().toISOString().split('T')[0];
       const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       
-      const response = await api.exportAnalytics({
+      const response = await crowsEyeAPI.exportAnalytics({
         start_date: startDate,
         end_date: endDate,
         format
@@ -114,7 +114,7 @@ export function useAnalytics(period: string = '30d', platform?: string) {
 
   const getInsights = async () => {
     try {
-      const response = await api.getInsights();
+      const response = await crowsEyeAPI.getInsights();
       
       if (response.error) {
         throw new Error(response.error);
@@ -128,7 +128,7 @@ export function useAnalytics(period: string = '30d', platform?: string) {
 
   const getCompetitorAnalysis = async () => {
     try {
-      const response = await api.getCompetitorAnalysis();
+      const response = await crowsEyeAPI.getCompetitorAnalysis();
       
       if (response.error) {
         throw new Error(response.error);

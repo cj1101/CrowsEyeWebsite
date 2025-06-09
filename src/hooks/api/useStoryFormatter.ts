@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api, StoryData as ApiStoryData } from '@/lib/api';
+import { crowsEyeAPI, StoryData as ApiStoryData } from '@/lib/api';
 
 export interface Story {
   id: string;
@@ -31,7 +31,7 @@ export function useStoryFormatter() {
       setLoading(true);
       setError(null);
       
-      const response = await api.listStories(100, 0);
+      const response = await crowsEyeAPI.listStories(100, 0);
       
       if (response.error) {
         setError(response.error);
@@ -69,7 +69,7 @@ export function useStoryFormatter() {
     includeMedia: boolean = false
   ): Promise<Story> => {
     try {
-      const response = await api.createStory({
+      const response = await crowsEyeAPI.createStory({
         title,
         content_brief: contentBrief,
         target_platforms: platforms,
@@ -104,7 +104,7 @@ export function useStoryFormatter() {
 
   const updateStory = async (storyId: string, updates: Partial<Story>): Promise<Story> => {
     try {
-      const response = await api.updateStory(storyId, {
+      const response = await crowsEyeAPI.updateStory(storyId, {
         title: updates.title,
         content: updates.content,
         media_urls: updates.media
@@ -135,7 +135,7 @@ export function useStoryFormatter() {
 
   const deleteStory = async (storyId: string): Promise<void> => {
     try {
-      const response = await api.deleteStory(storyId);
+      const response = await crowsEyeAPI.deleteStory(storyId);
       
       if (response.error) {
         throw new Error(response.error);

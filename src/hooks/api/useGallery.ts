@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api, GalleryItem as ApiGalleryItem } from '@/lib/api';
+import { crowsEyeAPI, GalleryItem as ApiGalleryItem } from '@/lib/api';
 
 export interface GalleryItem {
   id: string;
@@ -31,7 +31,7 @@ export function useGallery() {
       setLoading(true);
       setError(null);
       
-      const response = await api.listGalleries(100, 0);
+      const response = await crowsEyeAPI.listGalleries(100, 0);
       
       if (response.error) {
         setError(response.error);
@@ -68,7 +68,7 @@ export function useGallery() {
     organizationStyle?: string
   ): Promise<GalleryItem> => {
     try {
-      const response = await api.createGallery({
+      const response = await crowsEyeAPI.createGallery({
         name,
         description,
         media_selection_criteria: mediaSelectionCriteria,
@@ -102,7 +102,7 @@ export function useGallery() {
 
   const updateGallery = async (galleryId: string, updates: Partial<GalleryItem>): Promise<GalleryItem> => {
     try {
-      const response = await api.updateGallery(galleryId, {
+      const response = await crowsEyeAPI.updateGallery(galleryId, {
         name: updates.title,
         description: updates.description,
         media_items: updates.images
@@ -133,7 +133,7 @@ export function useGallery() {
 
   const deleteGallery = async (galleryId: string): Promise<void> => {
     try {
-      const response = await api.deleteGallery(galleryId);
+      const response = await crowsEyeAPI.deleteGallery(galleryId);
       
       if (response.error) {
         throw new Error(response.error);
@@ -149,7 +149,7 @@ export function useGallery() {
 
   const getGallery = async (galleryId: string): Promise<GalleryItem> => {
     try {
-      const response = await api.getGallery(galleryId);
+      const response = await crowsEyeAPI.getGallery(galleryId);
       
       if (response.error) {
         throw new Error(response.error);
