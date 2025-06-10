@@ -150,4 +150,120 @@ async function processInstagramWebhook(webhookData) {
     console.error('💥 Error processing Instagram webhook:', error);
     throw error;
   }
-} 
+}
+
+// Instagram deauthorization callback
+exports.instagramDeauthorize = functions.https.onRequest(async (req, res) => {
+  console.log('🔓 Instagram deauthorization callback received');
+  
+  if (req.method === 'POST') {
+    try {
+      const signature = req.get('x-hub-signature-256');
+      const body = JSON.stringify(req.body);
+
+      console.log('🔐 Verifying deauthorization signature...');
+      
+      if (!verifySignature(body, signature)) {
+        console.error('❌ Instagram deauthorization signature verification failed');
+        return res.status(401).send('Unauthorized');
+      }
+
+      console.log('📊 Instagram deauthorization data:', req.body);
+      
+      // Process deauthorization
+      const userId = req.body.user_id;
+      console.log(`🔓 User ${userId} has deauthorized the app`);
+      
+      // Add your deauthorization logic here:
+      // - Remove user tokens
+      // - Cancel scheduled posts
+      // - Clean up user data
+      
+      console.log('✅ Instagram deauthorization processed successfully');
+      res.json({ 
+        success: true, 
+        message: 'Deauthorization processed',
+        userId: userId 
+      });
+    } catch (error) {
+      console.error('💥 Instagram deauthorization processing error:', error);
+      res.status(500).send('Internal Server Error');
+    }
+  } else if (req.method === 'GET') {
+    res.json({
+      success: true,
+      message: 'Instagram deauthorization callback endpoint is active',
+      timestamp: new Date().toISOString()
+    });
+  } else {
+    res.status(405).send('Method Not Allowed');
+  }
+});
+
+// Instagram data deletion request
+exports.instagramDataDeletion = functions.https.onRequest(async (req, res) => {
+  console.log('🗑️ Instagram data deletion request received');
+  
+  if (req.method === 'POST') {
+    try {
+      const signature = req.get('x-hub-signature-256');
+      const body = JSON.stringify(req.body);
+
+      console.log('🔐 Verifying data deletion request signature...');
+      
+      if (!verifySignature(body, signature)) {
+        console.error('❌ Instagram data deletion signature verification failed');
+        return res.status(401).send('Unauthorized');
+      }
+
+      console.log('📊 Instagram data deletion request data:', req.body);
+      
+      // Process data deletion request
+      const userId = req.body.user_id;
+      const confirmationCode = crypto.randomBytes(16).toString('hex');
+      
+      console.log(`🗑️ Data deletion requested for user ${userId}, confirmation: ${confirmationCode}`);
+      
+      // Add your data deletion logic here:
+      // - Mark user data for deletion
+      // - Schedule actual deletion (you have 30 days)
+      // - Remove user tokens
+      // - Delete user posts and media
+      
+      console.log('✅ Instagram data deletion request processed successfully');
+      
+      // Return required response format for Instagram
+      res.json({ 
+        url: `https://${req.get('host')}/instagramDataDeletion?code=${confirmationCode}`,
+        confirmation_code: confirmationCode
+      });
+    } catch (error) {
+      console.error('💥 Instagram data deletion processing error:', error);
+      res.status(500).send('Internal Server Error');
+    }
+  } else if (req.method === 'GET') {
+    const confirmationCode = req.query.code;
+    
+    if (confirmationCode) {
+      // Check deletion status
+      console.log(`🔍 Checking deletion status for code: ${confirmationCode}`);
+      
+      res.json({
+        success: true,
+        confirmationCode,
+        status: 'processing',
+        message: 'Data deletion is in progress and will be completed within 30 days',
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.json({
+        success: true,
+        message: 'Instagram data deletion request endpoint is active',
+        timestamp: new Date().toISOString(),
+        usage: 'POST to submit deletion requests, GET with ?code=CONFIRMATION_CODE to check status'
+      });
+    }
+  } else {
+    res.status(405).send('Method Not Allowed');
+  }
+}); 
