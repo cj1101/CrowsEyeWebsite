@@ -106,13 +106,42 @@ export default function AnalyticsDashboard({
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const response = await apiService.getAnalytics({
-        timeRange: selectedTimeRange.label,
-        ...activeFilters
+      // Updated to match backend API exactly
+      const response = await apiService.getPerformanceAnalytics({
+        start_date: selectedTimeRange.start.toISOString().split('T')[0],
+        end_date: selectedTimeRange.end.toISOString().split('T')[0],
+        metrics: 'likes,comments,shares,reach',
+        platform: activeFilters.platform !== 'all' ? activeFilters.platform : undefined
       });
-      setData(response.data);
-    } catch (error) {
+      
+      // Transform backend response to match component expectations
+      const backendData = response.data;
+      setData({
+        engagement: {
+          total: backendData.metrics.likes.total + backendData.metrics.comments.total,
+          change: (backendData.metrics.likes.growth + backendData.metrics.comments.growth) / 2,
+          trend: backendData.trends.map((t: any) => ({ date: t.date, value: t.metrics.likes + t.metrics.comments }))
+        },
+        reach: {
+          total: backendData.metrics.reach.total,
+          change: backendData.metrics.reach.growth,
+          trend: backendData.trends.map((t: any) => ({ date: t.date, value: t.metrics.reach || 0 }))
+        },
+        interactions: {
+          likes: backendData.metrics.likes.total,
+          comments: backendData.metrics.comments.total,
+          shares: backendData.metrics.shares.total,
+          saves: 0 // Not provided by backend
+        },
+        topContent: [], // Would need separate endpoint
+        platformBreakdown: [
+          { platform: backendData.platform, value: backendData.total_posts, color: '#3B82F6' }
+        ]
+      });
+    } catch (error: any) {
       console.error('Failed to fetch analytics:', error);
+      // Show user-friendly error message
+      alert(error.response?.data?.detail || 'Failed to fetch analytics. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -120,18 +149,9 @@ export default function AnalyticsDashboard({
 
   const exportAnalytics = async (format: 'pdf' | 'csv') => {
     try {
-      const response = await apiService.exportAnalytics(format, {
-        timeRange: selectedTimeRange.label,
-        ...activeFilters
-      });
-      
-      const blob = new Blob([response.data]);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `analytics-${selectedTimeRange.label}.${format}`;
-      link.click();
-      window.URL.revokeObjectURL(url);
+      // Export functionality will be implemented when backend supports it
+      console.log(`Export ${format} requested for ${selectedTimeRange.label}`);
+      // TODO: Implement export when backend API is ready
     } catch (error) {
       console.error('Failed to export analytics:', error);
     }

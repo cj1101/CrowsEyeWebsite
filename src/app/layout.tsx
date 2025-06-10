@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import I18nProvider from "@/components/I18nProvider";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
@@ -34,11 +33,9 @@ export default function RootLayout({
       <body className="antialiased" suppressHydrationWarning={true}>
         <ErrorBoundary>
           <AuthProvider>
-            <I18nProvider>
-              <Navigation />
-              <main>{children}</main>
-              <Footer />
-            </I18nProvider>
+            <Navigation />
+            <main>{children}</main>
+            <Footer />
           </AuthProvider>
         </ErrorBoundary>
       </body>

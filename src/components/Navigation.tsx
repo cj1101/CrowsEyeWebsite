@@ -4,24 +4,21 @@ import React, { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Bars3Icon, XMarkIcon, UserIcon, ChevronDownIcon, ArrowRightOnRectangleIcon, CreditCardIcon } from '@heroicons/react/24/outline'
-import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/contexts/AuthContext'
-import LanguageSelector from './LanguageSelector'
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
-  const { t } = useI18n()
   const { user, userProfile, logout, loading } = useAuth()
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const navigation = [
-    { name: t('nav.home') || 'Home', href: '/' },
-    { name: t('nav.demo') || 'Demo', href: '/demo' },
-    { name: t('nav.features') || 'Features', href: '/features' },
-    { name: t('nav.pricing') || 'Pricing', href: '/pricing' },
-    { name: t('nav.download') || 'Download', href: '/download' },
-    { name: t('nav.contact') || 'Contact', href: '/contact' },
+    { name: 'Home', href: '/' },
+    { name: 'Demo', href: '/demo' },
+    { name: 'Features', href: '/features' },
+    { name: 'Pricing', href: '/pricing' },
+    { name: 'Download', href: '/download' },
+    { name: 'Contact', href: '/contact' },
   ]
 
   // Add Web Application for all users (always visible)
@@ -105,7 +102,6 @@ const Navigation = () => {
 
           {/* Enhanced CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <LanguageSelector />
             {!loading && (
               <>
                 {user ? (
@@ -260,7 +256,6 @@ const Navigation = () => {
                 </>
               )}
               <div className="mt-3 space-y-1">
-                <LanguageSelector />
                 {user && (
                   <>
                     <Link

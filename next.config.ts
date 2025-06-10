@@ -1,9 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Enable static export for Firebase hosting
-  output: 'export',
-  trailingSlash: true,
+  // Enable static export only for production builds
+  ...(process.env.NODE_ENV === 'production' && {
+    output: 'export',
+    trailingSlash: true,
+  }),
   images: {
     unoptimized: true
   },
@@ -14,7 +16,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: false
   },
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://crow-eye-api-605899951231.us-central1.run.app'
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
   },
   // Improved webpack configuration
   webpack: (config, { isServer }) => {

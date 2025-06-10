@@ -110,7 +110,7 @@ const pricingPlans = [
       users: "Up to 3",
       aiCredits: "Over 750/month",
       scheduledPosts: "Unlimited",
-      mediaStorage: "50 GB"
+      mediaStorage: "Generous storage (limits coming soon)"
     },
     features: {
       basicContentTools: true,

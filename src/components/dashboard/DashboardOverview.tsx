@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { 
   CloudArrowUpIcon,
   PlusIcon,
@@ -33,6 +34,7 @@ interface QuickStats {
 }
 
 export default function DashboardOverview() {
+  const router = useRouter();
   const { files } = useMediaStore();
   const { posts } = usePostStore();
   const [stats, setStats] = useState<QuickStats | null>(null);
@@ -51,7 +53,7 @@ export default function DashboardOverview() {
         totalMedia: files.length,
         totalPosts: posts.length,
         scheduledPosts: posts.filter(p => p.status === 'scheduled').length,
-        totalEngagement: Math.floor(Math.random() * 10000) + 5000,
+        totalEngagement: 7500, // Use fixed value to avoid hydration issues
         recentActivity: [
           {
             id: '1',
@@ -124,6 +126,50 @@ export default function DashboardOverview() {
     }
   };
 
+  // Navigation handlers
+  const handleUploadMedia = () => {
+    router.push('/marketing-tool?tab=library');
+  };
+
+  const handleCreatePost = () => {
+    router.push('/marketing-tool?tab=create');
+  };
+
+  const handleGenerateHighlight = () => {
+    router.push('/marketing-tool?tab=tools&tool=highlight-reel');
+  };
+
+  const handleViewAnalytics = () => {
+    router.push('/marketing-tool?tab=analytics');
+  };
+
+  const handleActivityClick = (activity: any) => {
+    switch (activity.type) {
+      case 'upload':
+        router.push('/marketing-tool?tab=library');
+        break;
+      case 'post':
+        router.push('/marketing-tool?tab=create');
+        break;
+      case 'ai_generation':
+        router.push('/marketing-tool?tab=tools');
+        break;
+      case 'schedule':
+        router.push('/marketing-tool?tab=schedule');
+        break;
+      default:
+        router.push('/marketing-tool');
+    }
+  };
+
+  const handleViewAllActivity = () => {
+    router.push('/marketing-tool?tab=analytics&view=activity');
+  };
+
+  const handleViewDetailedAnalytics = () => {
+    router.push('/marketing-tool?tab=analytics');
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -173,7 +219,8 @@ export default function DashboardOverview() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+          onClick={() => router.push('/marketing-tool?tab=library')}
         >
           <div className="flex items-center justify-between">
             <div>
@@ -195,7 +242,8 @@ export default function DashboardOverview() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+          onClick={() => router.push('/marketing-tool?tab=create')}
         >
           <div className="flex items-center justify-between">
             <div>
@@ -217,7 +265,8 @@ export default function DashboardOverview() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+          onClick={() => router.push('/marketing-tool?tab=schedule')}
         >
           <div className="flex items-center justify-between">
             <div>
@@ -239,7 +288,8 @@ export default function DashboardOverview() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6"
+          className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+          onClick={() => router.push('/marketing-tool?tab=analytics')}
         >
           <div className="flex items-center justify-between">
             <div>
@@ -271,22 +321,34 @@ export default function DashboardOverview() {
             Quick Actions
           </h3>
           <div className="grid grid-cols-2 gap-4">
-            <button className="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200">
+            <button 
+              onClick={handleUploadMedia}
+              className="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200"
+            >
               <CloudArrowUpIcon className="h-8 w-8 text-gray-400 mb-2" />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Upload Media</span>
             </button>
 
-            <button className="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-green-400 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200">
+            <button 
+              onClick={handleCreatePost}
+              className="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-green-400 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200"
+            >
               <PlusIcon className="h-8 w-8 text-gray-400 mb-2" />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Create Post</span>
             </button>
 
-            <button className="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200">
+            <button 
+              onClick={handleGenerateHighlight}
+              className="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200"
+            >
               <SparklesIcon className="h-8 w-8 text-gray-400 mb-2" />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Generate Highlight</span>
             </button>
 
-            <button className="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-orange-400 dark:hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-200">
+            <button 
+              onClick={handleViewAnalytics}
+              className="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-orange-400 dark:hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-200"
+            >
               <ChartBarIcon className="h-8 w-8 text-gray-400 mb-2" />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">View Analytics</span>
             </button>
@@ -309,7 +371,11 @@ export default function DashboardOverview() {
               const colorClasses = getActivityColor(activity.type);
               
               return (
-                <div key={activity.id} className="flex items-start space-x-3">
+                <div 
+                  key={activity.id} 
+                  onClick={() => handleActivityClick(activity)}
+                  className="flex items-start space-x-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 p-2 rounded-lg transition-colors"
+                >
                   <div className={`flex-shrink-0 p-2 rounded-lg ${colorClasses}`}>
                     <IconComponent className="h-4 w-4" />
                   </div>
@@ -329,7 +395,10 @@ export default function DashboardOverview() {
             })}
           </div>
           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <button className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
+            <button 
+              onClick={handleViewAllActivity}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+            >
               View all activity →
             </button>
           </div>
@@ -347,25 +416,28 @@ export default function DashboardOverview() {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Performance Overview
           </h3>
-          <button className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
+          <button 
+            onClick={handleViewDetailedAnalytics}
+            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+          >
             View detailed analytics →
           </button>
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center">
+          <div className="text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 p-2 rounded-lg transition-colors" onClick={handleViewAnalytics}>
             <p className="text-2xl font-bold text-green-600 dark:text-green-400">+24%</p>
             <p className="text-xs text-gray-600 dark:text-gray-400">Engagement Rate</p>
           </div>
-          <div className="text-center">
+          <div className="text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 p-2 rounded-lg transition-colors" onClick={handleViewAnalytics}>
             <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">2.3K</p>
             <p className="text-xs text-gray-600 dark:text-gray-400">New Followers</p>
           </div>
-          <div className="text-center">
+          <div className="text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 p-2 rounded-lg transition-colors" onClick={handleViewAnalytics}>
             <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">89%</p>
             <p className="text-xs text-gray-600 dark:text-gray-400">Content Score</p>
           </div>
-          <div className="text-center">
+          <div className="text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 p-2 rounded-lg transition-colors" onClick={handleViewAnalytics}>
             <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">4.7</p>
             <p className="text-xs text-gray-600 dark:text-gray-400">Avg. Rating</p>
           </div>

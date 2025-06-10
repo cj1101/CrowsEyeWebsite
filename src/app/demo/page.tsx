@@ -228,6 +228,31 @@ export default function DemoPage() {
                 </div>
               </div>
             )}
+
+            {/* Context Instructions - Available even without file selection */}
+            <div className="mt-8 space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2 tech-subheading">
+                  Content Instructions (Optional)
+                </label>
+                <textarea
+                  placeholder="Describe what kind of content you want to generate... e.g., 'Create an engaging Instagram post with a friendly tone' or 'Generate professional captions for LinkedIn'"
+                  className="w-full px-4 py-3 vision-card rounded-lg bg-black/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none tech-body"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2 tech-subheading">
+                  Media Editing Instructions (Optional)
+                </label>
+                <textarea
+                  placeholder="Any specific editing instructions for the media... e.g., 'Add subtle filters', 'Crop to square format', or 'Enhance colors for social media'"
+                  className="w-full px-4 py-3 vision-card rounded-lg bg-black/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all resize-none tech-body"
+                  rows={2}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>

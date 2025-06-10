@@ -21,7 +21,10 @@ export default function SignInPage() {
     try {
       const result = await login(email, password);
       if (result.success) {
-        router.push('/dashboard');
+        // Check for stored redirect path, otherwise go to marketing tool
+        const redirectPath = localStorage.getItem('redirectAfterLogin') || '/marketing-tool';
+        localStorage.removeItem('redirectAfterLogin');
+        router.push(redirectPath);
       }
     } catch (err) {
       console.error('Login error:', err);

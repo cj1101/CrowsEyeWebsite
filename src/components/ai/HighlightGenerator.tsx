@@ -61,15 +61,56 @@ export default function HighlightGenerator({ mediaId, onGenerated }: HighlightGe
 
     setIsGenerating(true);
     try {
-      const response = await apiService.generateHighlight(selectedMedia, settings);
+      // Updated to match backend API exactly
+      const response = await apiService.generateHighlights({
+        media_ids: [parseInt(selectedMedia)],
+        duration: settings.duration,
+        highlight_type: settings.style,
+        style: settings.style,
+        include_text: settings.includeCaptions,
+        include_music: settings.musicTrack !== 'none',
+        context_padding: 2.0,
+        content_instructions: 'Create an engaging highlight reel'
+      });
+      
       const highlightData = response.data;
-      setGeneratedHighlight(highlightData);
+      setGeneratedHighlight({
+        id: highlightData.highlight_url,
+        videoUrl: highlightData.highlight_url,
+        duration: highlightData.duration,
+        highlights: [],
+        metadata: highlightData.generation_metadata || {}
+      });
       
       if (onGenerated) {
-        onGenerated(highlightData);
+        onGenerated({
+          id: highlightData.highlight_url,
+          videoUrl: highlightData.highlight_url,
+          duration: highlightData.duration,
+          highlights: [],
+          metadata: highlightData.generation_metadata || {}
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to generate highlight:', error);
+      
+      // Handle specific error cases for long videos in beta
+      const errorMessage = error.response?.data?.detail;
+      let userMessage = 'Failed to generate highlight reel. Please try again.';
+      
+      if (typeof errorMessage === 'string') {
+        if (errorMessage.includes('video duration') || errorMessage.includes('too long')) {
+          userMessage = 'Long video processing is currently in beta. Please try with a shorter video or contact support for assistance.';
+        } else if (errorMessage.includes('beta') || errorMessage.includes('experimental')) {
+          userMessage = 'This feature is currently in beta. Some limitations may apply.';
+        } else {
+          userMessage = errorMessage;
+        }
+      } else if (Array.isArray(errorMessage)) {
+        userMessage = errorMessage.map(err => err.msg || err.message || 'Validation error').join(', ');
+      }
+      
+      alert(userMessage);
     } finally {
       setIsGenerating(false);
     }

@@ -7,22 +7,22 @@ const contactMethods = [
   {
     icon: <Mail className="h-6 w-6" />,
     title: "Email Us",
-    details: "support@crowseye.tech",
+    details: "help@crowseye.tech",
     description: "Get in touch for support or inquiries",
     color: "text-blue-400"
   },
   {
     icon: <Phone className="h-6 w-6" />,
     title: "Call Us",
-    details: "+1 (555) 123-4567",
+    details: "+1 (512) 987-4449",
     description: "Speak directly with our team",
     color: "text-green-400"
   },
   {
     icon: <MapPin className="h-6 w-6" />,
     title: "Visit Us",
-    details: "San Francisco, CA",
-    description: "Meet us in person",
+    details: "Austin, TX",
+    description: "We operate remotely",
     color: "text-purple-400"
   },
   {

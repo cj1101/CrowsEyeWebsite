@@ -1,6 +1,7 @@
 /**
  * Centralized Type Definitions for Crow's Eye API
  * All API-related types in one place for better maintainability
+ * Updated to match backend implementation exactly
  */
 
 // Base Types
@@ -54,21 +55,371 @@ export interface UsageStats {
   api_calls_made: number;
 }
 
-// Media Types
+// === AI CONTENT GENERATION TYPES (Updated to match backend) ===
+
+export interface CaptionGenerationRequest {
+  media_ids: number[];
+  style: 'engaging' | 'professional' | 'casual' | 'funny';
+  platform: 'instagram' | 'facebook' | 'tiktok' | 'youtube';
+  auto_apply?: boolean;
+}
+
+export interface CaptionGenerationResponse {
+  results: Array<{
+    media_id: number;
+    caption: string;
+    status: 'success' | 'failed';
+  }>;
+  total_processed: number;
+  success_count: number;
+}
+
+export interface HashtagGenerationRequest {
+  content: string;
+  platforms?: string[];
+  niche?: string;
+  count?: number;
+  trending?: boolean;
+}
+
+export interface HashtagGenerationResponse {
+  hashtags: string[];
+  trending_hashtags: string[];
+  niche_hashtags: string[];
+  total: number;
+  platform_optimized: Record<string, string[]>;
+  niche: string;
+}
+
+export interface ContentIdeasRequest {
+  topic?: string;
+  platform?: string;
+  content_type?: string;
+  audience?: string;
+  brand_voice?: string;
+  count?: number;
+}
+
+export interface ContentIdeasResponse {
+  ideas: Array<{
+    id: string;
+    title: string;
+    description: string;
+    platform: string;
+    content_type: string;
+    suggested_hashtags: string[];
+    engagement_potential: 'low' | 'medium' | 'high';
+    difficulty: 'easy' | 'medium' | 'hard';
+  }>;
+  total: number;
+  platform: string;
+  content_type: string;
+  generation_metadata: Record<string, any>;
+}
+
+export interface ImageGenerationRequest {
+  prompt: string;
+  style: 'photorealistic' | 'artistic' | 'cartoon';
+  aspect_ratio: '1:1' | '16:9' | '4:5';
+  quality: 'standard' | 'hd';
+  count?: number;
+}
+
+export interface ImageGenerationResponse {
+  images: Array<{
+    image_url: string;
+    image_id: string;
+    width: number;
+    height: number;
+    format: string;
+  }>;
+  generation_time: number;
+  total_cost: number;
+  prompt_used: string;
+  style_applied: string;
+}
+
+export interface VideoGenerationRequest {
+  prompt: string;
+  duration?: number;
+  style?: string;
+  aspect_ratio?: string;
+  fps?: number;
+}
+
+export interface VideoGenerationResponse {
+  video_url: string;
+  video_id: string;
+  duration: number;
+  generation_time: number;
+  total_cost: number;
+  metadata: {
+    style: string;
+    aspect_ratio: string;
+    fps: number;
+    prompt: string;
+  };
+}
+
+export interface HighlightGenerationRequest {
+  media_ids: number[];
+  duration: number;
+  highlight_type: string;
+  style: string;
+  include_text: boolean;
+  include_music: boolean;
+  context_padding?: number;
+  content_instructions?: string;
+  example?: {
+    start_time?: number;
+    end_time?: number;
+    description?: string;
+  };
+}
+
+export interface HighlightGenerationResponse {
+  highlight_url: string;
+  thumbnail_url: string;
+  duration: number;
+  style_used: string;
+  media_count: number;
+  generation_metadata: Record<string, any>;
+  message: string;
+}
+
+// === MEDIA PROCESSING TYPES (Updated to match backend) ===
+
 export interface MediaFile extends BaseEntity {
   filename: string;
-  url: string;
-  type: 'image' | 'video';
-  size: number;
-  uploaded_at: string;
-  path?: string;
-  format?: string;
-  dimensions?: [number, number];
-  duration?: number;
+  media_type: 'image' | 'video';
+  file_size: number;
+  upload_url: string;
+  thumbnail_url?: string;
   caption?: string;
-  ai_tags: string[];
-  status: 'uploaded' | 'processing' | 'ready' | 'failed';
+  subtype?: string;
+  isProcessed?: boolean;
 }
+
+export interface VideoProcessingRequest {
+  video_id: string;
+  operations: Array<{
+    type: 'trim' | 'resize' | 'add_captions' | 'compress' | 'extract_audio' | 'add_effects';
+    [key: string]: any;
+  }>;
+  output_format: 'mp4' | 'webm' | 'mov';
+  quality?: string;
+}
+
+export interface VideoProcessingResponse {
+  job_id: string;
+  status: 'processing' | 'completed' | 'failed';
+  processed_video_url: string;
+  estimated_time: number;
+  operations_applied: string[];
+}
+
+export interface ThumbnailGenerationRequest {
+  video_id: string;
+  timestamp?: number;
+  count?: number;
+  style?: 'auto' | 'cinematic' | 'bright';
+}
+
+export interface ThumbnailGenerationResponse {
+  thumbnails: Array<{
+    thumbnail_id: string;
+    url: string;
+    timestamp: number;
+    quality_score: number;
+    width: number;
+    height: number;
+    file_size: number;
+  }>;
+  video_id: string;
+  total_generated: number;
+  best_thumbnail: {
+    thumbnail_id: string;
+    url: string;
+    timestamp: number;
+    quality_score: number;
+  };
+}
+
+// === ANALYTICS TYPES (Updated to match backend) ===
+
+export interface PerformanceAnalyticsResponse {
+  platform: string;
+  date_range: {
+    start: string;
+    end: string;
+  };
+  metrics: {
+    likes: {
+      total: number;
+      average: number;
+      growth: number;
+      best_day: number;
+    };
+    comments: {
+      total: number;
+      average: number;
+      growth: number;
+      best_day: number;
+    };
+    shares: {
+      total: number;
+      average: number;
+      growth: number;
+      best_day: number;
+    };
+    reach: {
+      total: number;
+      average: number;
+      growth: number;
+      best_day: number;
+    };
+  };
+  trends: Array<{
+    date: string;
+    metrics: {
+      likes: number;
+      comments: number;
+      shares?: number;
+      reach?: number;
+    };
+  }>;
+  insights: string[];
+  total_posts: number;
+}
+
+export interface TrackAnalyticsRequest {
+  event_type: string;
+  platform: string;
+  content_id?: string;
+  engagement_type?: string;
+  timestamp?: string;
+}
+
+export interface TrackAnalyticsResponse {
+  success: boolean;
+  event_id: string;
+  message: string;
+}
+
+// === BULK OPERATIONS TYPES (Updated to match backend) ===
+
+export interface BulkUploadRequest {
+  files: Array<{
+    filename: string;
+    size: number;
+    type: string;
+  }>;
+  folder_path?: string;
+  auto_process?: boolean;
+  processing_options?: Record<string, any>;
+}
+
+export interface BulkUploadResponse {
+  job_id: string;
+  status: 'completed' | 'processing' | 'failed';
+  total_files: number;
+  processed_files: number;
+  failed_files: number;
+  uploaded_media: Array<{
+    media_id: string;
+    filename: string;
+    status: 'uploaded' | 'failed';
+    upload_url?: string;
+  }>;
+}
+
+export interface BulkScheduleRequest {
+  posts: Array<{
+    id: string;
+    scheduled_time: string;
+  }>;
+  schedule_options?: {
+    timezone?: string;
+    auto_optimize?: boolean;
+  };
+  platforms?: string[];
+}
+
+export interface BulkScheduleResponse {
+  job_id: string;
+  status: 'completed' | 'processing' | 'failed';
+  scheduled_count: number;
+  failed_count: number;
+  schedule_details: Array<{
+    schedule_id: string;
+    post_id: string;
+    platforms: string[];
+    scheduled_time: string;
+    status: 'scheduled' | 'failed';
+    platform_posts: Record<string, {
+      post_id: string;
+      status: string;
+    }>;
+  }>;
+}
+
+export interface BulkJobStatusResponse {
+  job_id: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  progress: number;
+  total_items: number;
+  processed_items: number;
+  failed_items: number;
+  estimated_completion: string;
+  results?: any;
+}
+
+// === PLATFORM PREVIEWS TYPES (Updated to match backend) ===
+
+export interface PreviewGenerationRequest {
+  content: {
+    caption: string;
+    hashtags?: string[];
+    media_url?: string;
+    media_type?: string;
+  };
+  platforms: string[];
+  preview_type?: 'post' | 'story';
+}
+
+export interface PreviewGenerationResponse {
+  preview_id: string;
+  previews: Record<string, {
+    platform: string;
+    preview_type: string;
+    caption: string;
+    hashtags: string[];
+    media_preview: {
+      type: string;
+      url: string;
+      aspect_ratio: string;
+    };
+    engagement_estimate: {
+      likes: string;
+      comments: string;
+      shares: string;
+    };
+    character_count: number;
+    max_characters: number;
+  }>;
+  expiry_time: string;
+  total_platforms: number;
+}
+
+export interface PreviewResponse {
+  preview_id: string;
+  platform: string;
+  preview_data: any;
+  generated_at: string;
+  expires_at: string;
+}
+
+// === LEGACY TYPES (keeping for backward compatibility) ===
 
 export interface MediaItem {
   id: string;
@@ -79,6 +430,9 @@ export interface MediaItem {
   size: number;
   createdAt: string;
   tags: string[];
+  status?: 'completed' | 'unedited';
+  subtype?: string;
+  isProcessed?: boolean;
 }
 
 export interface MediaSearchResponse {
@@ -89,11 +443,14 @@ export interface MediaSearchResponse {
 }
 
 export interface MediaUploadResponse {
-  id: string;
+  id: number;
   filename: string;
-  status: string;
-  message: string;
-  media_item?: MediaFile;
+  media_type: 'image' | 'video';
+  file_size: number;
+  upload_url: string;
+  thumbnail_url?: string;
+  caption?: string;
+  created_at: string;
 }
 
 // Gallery Types
@@ -136,7 +493,7 @@ export interface StoryTemplate {
   preview_image?: string;
 }
 
-// Highlight Reel Types
+// Highlight Reel Types (legacy)
 export interface HighlightReel extends BaseEntity {
   name: string;
   duration: number;
@@ -169,7 +526,7 @@ export interface AudioTrack {
   createdAt: string;
 }
 
-// Analytics Types
+// Analytics Types (legacy)
 export interface AnalyticsData {
   topPosts: TopPost[];
   platformStats: PlatformStats[];
@@ -198,12 +555,12 @@ export interface EngagementMetrics {
   total_likes: number;
   total_comments: number;
   total_shares: number;
-  engagement_rate: number;
   reach: number;
   impressions: number;
 }
 
-// Request/Response Types
+// === UTILITY TYPES ===
+
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;
@@ -214,12 +571,9 @@ export interface PaginatedResponse<T> {
 }
 
 export interface ApiError {
-  status: number;
-  message: string;
-  details?: Record<string, any>;
+  detail: string;
 }
 
-// API Request Options
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   headers?: Record<string, string>;
@@ -228,7 +582,6 @@ export interface RequestOptions {
   retries?: number;
 }
 
-// Feature Access Types
 export enum Feature {
   MEDIA_UPLOAD = 'MEDIA_UPLOAD',
   SMART_GALLERIES = 'SMART_GALLERIES',
@@ -240,7 +593,6 @@ export enum Feature {
   API_ACCESS = 'API_ACCESS',
 }
 
-// Common API Response Wrapper
 export interface ApiResponse<T = any> {
   data?: T;
   error?: string;
@@ -248,14 +600,12 @@ export interface ApiResponse<T = any> {
   message?: string;
 }
 
-// Upload Progress
 export interface UploadProgress {
   loaded: number;
   total: number;
   percentage: number;
 }
 
-// Search and Filter Types
 export interface SearchParams {
   query?: string;
   type?: string;

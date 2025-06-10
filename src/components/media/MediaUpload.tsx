@@ -54,10 +54,10 @@ export default function MediaUpload({
     setErrors(newErrors);
 
     // Process accepted files
-    const filesWithPreview = acceptedFiles.map((file) => {
+    const filesWithPreview = acceptedFiles.map((file, index) => {
       const fileWithPreview = Object.assign(file, {
         preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
-        id: Math.random().toString(36).substr(2, 9),
+        id: `file-${Date.now()}-${index}`,
         progress: 0
       }) as FileWithPreview;
       
@@ -66,8 +66,14 @@ export default function MediaUpload({
 
     setFiles(prev => [...prev, ...filesWithPreview]);
     
-    if (onUpload) {
-      onUpload(acceptedFiles);
+    // Auto-trigger upload if onUpload callback is provided
+    if (onUpload && acceptedFiles.length > 0) {
+      // Call the parent's upload handler immediately for seamless experience
+      setTimeout(() => {
+        onUpload(acceptedFiles);
+        // Clear the files from our local state since parent is handling the upload
+        setFiles([]);
+      }, 100);
     }
   }, [maxSize, onUpload]);
 
@@ -94,31 +100,66 @@ export default function MediaUpload({
       for (const file of files) {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('metadata', JSON.stringify({
-          name: file.name,
-          type: file.type.startsWith('image/') ? 'image' : 
-                file.type.startsWith('video/') ? 'video' : 'audio',
-          size: file.size
-        }));
+        
+        // Add additional metadata that the backend expects
+        formData.append('title', file.name);
+        formData.append('description', `Uploaded ${file.name}`);
+        formData.append('tags', JSON.stringify(['uploaded', 'media']));
 
-        await apiService.uploadMedia(formData, (progress) => {
-          setFiles(prev => prev.map(f => 
-            f.id === file.id ? { ...f, progress } : f
-          ));
-        });
+        try {
+          const response = await apiService.uploadMedia(formData, (progress) => {
+            setFiles(prev => prev.map(f => 
+              f.id === file.id ? { ...f, progress } : f
+            ));
+          });
+          
+          console.log('Upload successful:', response);
+        } catch (uploadError: any) {
+          console.error('Upload error:', uploadError);
+          
+          // Check if it's an authentication error
+          if (uploadError.response?.status === 401) {
+            setErrors([`Authentication required. Please sign in to upload media.`]);
+            // Don't redirect to login, just show the error
+            return;
+          } else if (uploadError.response?.status === 422) {
+            const errorDetail = uploadError.response?.data?.detail;
+            const errorMessage = Array.isArray(errorDetail) 
+              ? errorDetail.map(err => err.msg || err.message || 'Validation error').join(', ')
+              : typeof errorDetail === 'string' 
+                ? errorDetail 
+                : 'Upload validation failed';
+            setErrors([`Upload validation error: ${errorMessage}`]);
+            return;
+          } else {
+            setErrors([`Upload failed for ${file.name}: ${uploadError.message}`]);
+          }
+        }
       }
 
+      // Call onUpload callback with all successfully uploaded files if provided
+      if (onUpload && files.length > 0) {
+        // Convert FileWithPreview back to File array
+        const fileArray = files.map(f => {
+          const { preview, id, progress, ...fileProps } = f;
+          return new File([f], f.name, { type: f.type, lastModified: f.lastModified });
+        });
+        onUpload(fileArray);
+      }
+      
       // Clear files after successful upload
       setFiles([]);
       setErrors([]);
-    } catch (error) {
-      setErrors(['Upload failed. Please try again.']);
+    } catch (error: any) {
+      console.error('General upload error:', error);
+      setErrors([`Upload failed: ${error.message || 'Unknown error'}`]);
     } finally {
       setIsUploading(false);
     }
   };
 
   const getFileIcon = (file: File) => {
+    if (!file.type) return DocumentIcon;
     if (file.type.startsWith('image/')) return PhotoIcon;
     if (file.type.startsWith('video/')) return VideoCameraIcon;
     if (file.type.startsWith('audio/')) return MusicalNoteIcon;

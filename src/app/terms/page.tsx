@@ -170,8 +170,8 @@ export default function TermsPage() {
               </p>
               <div className="mt-4 p-4 bg-gray-800/50 rounded-lg">
                 <p><strong>Email:</strong> help@crowseye.tech</p>
-                <p><strong>Address:</strong> [Your Business Address]</p>
-                <p><strong>Phone:</strong> [Your Phone Number]</p>
+                <p><strong>Address:</strong> Austin, TX</p>
+                <p><strong>Phone:</strong> +1 (512) 987-4449</p>
               </div>
             </section>
           </div>

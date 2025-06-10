@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useMediaLibrary, MediaItem } from '@/hooks/api/useMediaLibrary';
+import ContentValidator from '@/components/compliance/ContentValidator';
 import { 
   PhotoIcon, 
   VideoCameraIcon, 
@@ -91,7 +92,7 @@ export default function CreatePostTab() {
       ];
       
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
-      const randomCaption = mockCaptions[Math.floor(Math.random() * mockCaptions.length)];
+      const randomCaption = mockCaptions[0]; // Use first caption to avoid hydration issues
       setCaption(randomCaption);
     } catch (error) {
       console.error('Error generating caption:', error);
@@ -113,7 +114,7 @@ export default function CreatePostTab() {
       ];
       
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
-      const randomHashtags = mockHashtags[Math.floor(Math.random() * mockHashtags.length)];
+      const randomHashtags = mockHashtags[0]; // Use first hashtag set to avoid hydration issues
       setHashtags(randomHashtags);
     } catch (error) {
       console.error('Error generating hashtags:', error);
@@ -149,7 +150,7 @@ export default function CreatePostTab() {
         }
       ];
       
-      const randomResult = mockResults[Math.floor(Math.random() * mockResults.length)];
+      const randomResult = mockResults[0]; // Use first result to avoid hydration issues
       setGeneratedPost(randomResult);
       setCaption(randomResult.caption);
       setHashtags(randomResult.hashtags);
@@ -434,6 +435,25 @@ Be as detailed as possible - include content ideas, media editing instructions, 
               className="w-full h-20 bg-white/10 border border-white/20 rounded-lg p-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
             />
           </div>
+
+          {/* Content Validation */}
+          {(caption.trim() || hashtags.trim()) && selectedPlatforms.length > 0 && (
+            <ContentValidator
+              content={`${caption} ${hashtags}`.trim()}
+              platform={selectedPlatforms[0]} // Use primary platform for validation
+              contentType="text"
+              mediaUrls={selectedMedia ? [selectedMedia.url] : []}
+              metadata={{
+                platforms: selectedPlatforms,
+                scheduledFor: isScheduled ? `${scheduledDate} ${scheduledTime}` : undefined
+              }}
+              onValidationComplete={(result) => {
+                console.log('Validation result:', result);
+              }}
+              autoValidate={true}
+              className="mt-6"
+            />
+          )}
         </div>
 
         {/* Middle Column - Settings & Controls */}

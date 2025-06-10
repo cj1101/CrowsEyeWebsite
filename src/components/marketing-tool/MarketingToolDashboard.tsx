@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,14 +14,53 @@ import MediaUpload from '@/components/media/MediaUpload';
 import HighlightGenerator from '@/components/ai/HighlightGenerator';
 import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
+import ComplianceDashboard from '@/components/compliance/ComplianceDashboard';
 import { 
   CpuChipIcon,
   UserGroupIcon
 } from '@heroicons/react/24/outline';
+import { apiService } from '@/services/api';
 
 export default function MarketingToolDashboard() {
   const { user, userProfile, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
+  // Get tab from URL parameters, default to 'overview'
+  const tabFromUrl = searchParams.get('tab') || 'overview';
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [apiStatus, setApiStatus] = useState<'checking' | 'connected' | 'error'>('checking');
+
+  // Update tab when URL parameters change
+  useEffect(() => {
+    const urlTab = searchParams.get('tab') || 'overview';
+    setActiveTab(urlTab);
+  }, [searchParams]);
+
+  useEffect(() => {
+    // Check API health on component mount
+    const checkApiHealth = async () => {
+      try {
+        await apiService.healthCheck();
+        setApiStatus('connected');
+      } catch (error) {
+        console.error('API health check failed:', error);
+        setApiStatus('error');
+      }
+    };
+    
+    checkApiHealth();
+  }, []);
+
+  // Handle tab changes and update URL
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    // Update URL without page reload
+    const newSearchParams = new URLSearchParams(searchParams.toString());
+    newSearchParams.set('tab', value);
+    router.push(`/marketing-tool?${newSearchParams.toString()}`, { scroll: false });
+  };
 
   // Show loading state while authenticating
   if (loading) {
@@ -48,7 +88,21 @@ export default function MarketingToolDashboard() {
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                   Crow's Eye Web Application
                 </h1>
-                <p className="text-gray-400 text-sm">AI-Powered Content Creation Suite</p>
+                <div className="flex items-center space-x-3">
+                  <p className="text-gray-400 text-sm">AI-Powered Content Creation Suite</p>
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      apiStatus === 'connected' ? 'bg-green-500' : 
+                      apiStatus === 'checking' ? 'bg-yellow-500 animate-pulse' : 
+                      'bg-red-500'
+                    }`}></div>
+                    <span className="text-xs text-gray-500">
+                      {apiStatus === 'connected' ? 'API Connected' : 
+                       apiStatus === 'checking' ? 'Checking API...' : 
+                       'API Offline'}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -74,8 +128,8 @@ export default function MarketingToolDashboard() {
 
       {/* Main Dashboard Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-gray-800/50 backdrop-blur-sm">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-7 bg-gray-800/50 backdrop-blur-sm">
             <TabsTrigger 
               value="overview" 
               className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
@@ -111,6 +165,12 @@ export default function MarketingToolDashboard() {
               className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
             >
               Analytics
+            </TabsTrigger>
+            <TabsTrigger 
+              value="compliance" 
+              className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
+            >
+              Compliance
             </TabsTrigger>
           </TabsList>
 
@@ -200,6 +260,10 @@ export default function MarketingToolDashboard() {
 
           <TabsContent value="analytics" className="space-y-6">
             <AnalyticsDashboard />
+          </TabsContent>
+
+          <TabsContent value="compliance" className="space-y-6">
+            <ComplianceDashboard />
           </TabsContent>
         </Tabs>
       </div>
