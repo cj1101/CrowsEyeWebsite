@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Enable static export for production builds
-  ...(process.env.NODE_ENV === 'production' && {
+  // Enable static export for production builds, but disable for API routes
+  ...(process.env.NODE_ENV === 'production' && process.env.DISABLE_STATIC_EXPORT !== 'true' && {
     output: 'export',
     trailingSlash: true,
   }),

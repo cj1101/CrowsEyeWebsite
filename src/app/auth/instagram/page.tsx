@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, CheckCircle, XCircle, Instagram, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
-export default function InstagramAuthPage() {
+function InstagramAuthContent() {
   const [authState, setAuthState] = useState<'loading' | 'success' | 'error'>('loading');
   const [authData, setAuthData] = useState<any>(null);
   const [error, setError] = useState<string>('');
@@ -188,5 +188,20 @@ export default function InstagramAuthPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function InstagramAuthPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 p-4 flex items-center justify-center">
+        <div className="flex items-center">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-600 mr-2" />
+          <span className="text-lg">Loading...</span>
+        </div>
+      </div>
+    }>
+      <InstagramAuthContent />
+    </Suspense>
   );
 } 
