@@ -1,4 +1,5 @@
 import axios from 'axios';
+import crypto from 'crypto';
 
 // Instagram API configuration
 const INSTAGRAM_API_BASE_URL = 'https://graph.instagram.com';
@@ -361,7 +362,6 @@ export function createInstagramAPI(config: InstagramApiConfig): InstagramAPI {
 
 // Helper function to validate webhook signature (for use in webhook handler)
 export function validateInstagramWebhookSignature(body: string, signature: string, secret: string): boolean {
-  const crypto = require('crypto');
   
   if (!signature) {
     return false;

@@ -176,7 +176,7 @@ export function useMediaLibrary() {
       try {
         console.log('Attempting API upload to:', 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com/api/v1/media/upload');
         console.log('FormData contents:');
-        for (let pair of formData.entries()) {
+        for (const pair of formData.entries()) {
           console.log(pair[0], pair[1]);
         }
         

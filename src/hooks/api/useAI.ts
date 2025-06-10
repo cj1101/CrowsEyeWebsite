@@ -24,7 +24,7 @@ export function useAI() {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiService.generateCaptions(data);
+      const response = await apiService.generateCaptionsFromMedia(data);
       return response.data;
     } catch (err: any) {
       setError(err.response?.data?.detail || err.message || 'Failed to generate captions');
