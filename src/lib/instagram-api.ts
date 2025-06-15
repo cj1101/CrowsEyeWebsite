@@ -5,11 +5,23 @@ import crypto from 'crypto';
 const INSTAGRAM_API_BASE_URL = 'https://graph.instagram.com';
 const FACEBOOK_GRAPH_API_BASE_URL = 'https://graph.facebook.com/v18.0';
 
+export interface InstagramConfig {
+  clientId: string;
+  clientSecret: string;
+}
+
+export interface InstagramTokens {
+  access_token: string;
+  user_id: number;
+  expires_in?: number;
+  refresh_token?: string;
+}
+
 // Types for Instagram API
 export interface InstagramUser {
   id: string;
   username: string;
-  account_type: 'PERSONAL' | 'BUSINESS';
+  account_type?: string;
   media_count?: number;
 }
 
@@ -352,6 +364,89 @@ export class InstagramAPI {
         error: error.response?.data?.error?.message || error.message
       };
     }
+  }
+
+  /**
+   * Exchange OAuth `code` for access token.
+   */
+  static async exchangeCode(
+    config: InstagramConfig,
+    code: string,
+    redirectUri: string
+  ): Promise<InstagramTokens> {
+    const params = new URLSearchParams({
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      grant_type: 'authorization_code',
+      redirect_uri: redirectUri,
+      code,
+    });
+
+    const res = await axios.post(
+      'https://api.instagram.com/oauth/access_token',
+      params.toString(),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }
+    );
+
+    return res.data;
+  }
+
+  /**
+   * Get basic user information using access token.
+   */
+  static async getUser(accessToken: string): Promise<InstagramUser> {
+    const res = await axios.get(
+      'https://graph.instagram.com/me',
+      {
+        params: {
+          fields: 'id,username,account_type,media_count',
+          access_token: accessToken,
+        },
+      }
+    );
+
+    return res.data;
+  }
+
+  /**
+   * Get user's media using access token.
+   */
+  static async getUserMedia(accessToken: string, limit: number = 25): Promise<any> {
+    const res = await axios.get(
+      'https://graph.instagram.com/me/media',
+      {
+        params: {
+          fields: 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp',
+          limit,
+          access_token: accessToken,
+        },
+      }
+    );
+
+    return res.data;
+  }
+
+  /**
+   * Refresh a long-lived access token (for Instagram Basic Display API).
+   */
+  static async refreshToken(accessToken: string): Promise<InstagramTokens> {
+    const params = new URLSearchParams({
+      grant_type: 'ig_refresh_token',
+      access_token: accessToken,
+    });
+
+    const res = await axios.get(
+      'https://graph.instagram.com/refresh_access_token',
+      {
+        params: Object.fromEntries(params),
+      }
+    );
+
+    return res.data;
   }
 }
 

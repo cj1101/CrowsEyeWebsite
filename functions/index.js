@@ -266,4 +266,29 @@ exports.instagramDataDeletion = functions.https.onRequest(async (req, res) => {
   } else {
     res.status(405).send('Method Not Allowed');
   }
+});
+
+// === TIKTOK WEBHOOK ===
+const TIKTOK_VERIFY_TOKEN = functions.config().tiktok?.verify_token || 'tiktok-verify';
+
+exports.tiktokWebhook = functions.https.onRequest(async (req, res) => {
+  console.log('📥 TikTok webhook request received:', req.method);
+
+  try {
+    if (req.method === 'GET') {
+      // Some webhook validators might call GET; simply respond 200
+      return res.status(200).send('OK');
+    }
+
+    if (req.method === 'POST') {
+      console.log('📊 TikTok webhook payload:', JSON.stringify(req.body, null, 2));
+      // TODO: add signature/verify_token validation once production events are enabled
+      return res.status(200).send('OK');
+    }
+
+    res.status(405).send('Method Not Allowed');
+  } catch (err) {
+    console.error('💥 TikTok webhook error:', err);
+    res.status(500).send('Internal Server Error');
+  }
 }); 

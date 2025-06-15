@@ -1,11 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Enable static export for production builds, but disable for API routes
-  ...(process.env.NODE_ENV === 'production' && process.env.DISABLE_STATIC_EXPORT !== 'true' && {
-    output: 'export',
-    trailingSlash: true,
-  }),
+  // Configuration for Firebase hosting with Cloud Functions
   images: {
     unoptimized: true
   },
@@ -16,7 +12,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: false
   },
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://crowseye.tech/api'
   },
   // Improved webpack configuration
   webpack: (config, { isServer }) => {

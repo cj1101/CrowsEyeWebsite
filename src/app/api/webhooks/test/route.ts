@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // Test webhook endpoint
 export async function GET(request: NextRequest) {
   console.log('🧪 Test webhook endpoint called');

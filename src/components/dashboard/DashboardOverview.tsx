@@ -39,10 +39,37 @@ export default function DashboardOverview() {
   const { posts } = usePostStore();
   const [stats, setStats] = useState<QuickStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [connections, setConnections] = useState({
+    tiktok: false,
+    instagram: false
+  });
 
   useEffect(() => {
     fetchDashboardStats();
+    checkConnectionStatus();
   }, []);
+
+  // Also check connection status when we return from auth
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      checkConnectionStatus();
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const checkConnectionStatus = () => {
+    // Check if tokens exist in cookies
+    const checkCookie = (name: string) => {
+      return document.cookie.split(';').some(cookie => 
+        cookie.trim().startsWith(`${name}=`)
+      );
+    };
+
+    setConnections({
+      tiktok: checkCookie('tiktok_access_token'),
+      instagram: checkCookie('instagram_access_token')
+    });
+  };
 
   const fetchDashboardStats = async () => {
     setLoading(true);
@@ -320,7 +347,7 @@ export default function DashboardOverview() {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Quick Actions
           </h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <button 
               onClick={handleUploadMedia}
               className="flex flex-col items-center p-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200"
@@ -351,6 +378,58 @@ export default function DashboardOverview() {
             >
               <ChartBarIcon className="h-8 w-8 text-gray-400 mb-2" />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">View Analytics</span>
+            </button>
+
+            <button
+              onClick={() => connections.tiktok ? null : window.open('/api/auth/tiktok/start', '_self')}
+              className={`flex flex-col items-center p-4 border-2 rounded-lg transition-all duration-200 ${
+                connections.tiktok 
+                  ? 'border-green-500 bg-green-50 dark:bg-green-900/20 cursor-default' 
+                  : 'border-dashed border-gray-300 dark:border-gray-600 hover:border-black dark:hover:border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900/30 cursor-pointer'
+              }`}
+            >
+              {connections.tiktok ? (
+                <>
+                  <div className="flex items-center mb-2">
+                    <span className="text-xl">🎵</span>
+                    <svg className="w-4 h-4 text-green-500 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span className="text-sm font-medium text-green-700 dark:text-green-300">Connected to TikTok</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-2xl mb-2">🎵</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Connect TikTok</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={() => connections.instagram ? null : window.open('/api/auth/instagram/start', '_self')}
+              className={`flex flex-col items-center p-4 border-2 rounded-lg transition-all duration-200 ${
+                connections.instagram 
+                  ? 'border-green-500 bg-green-50 dark:bg-green-900/20 cursor-default' 
+                  : 'border-dashed border-gray-300 dark:border-gray-600 hover:border-purple-400 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 cursor-pointer'
+              }`}
+            >
+              {connections.instagram ? (
+                <>
+                  <div className="flex items-center mb-2">
+                    <span className="text-xl">📷</span>
+                    <svg className="w-4 h-4 text-green-500 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span className="text-sm font-medium text-green-700 dark:text-green-300">Connected to Instagram</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-2xl mb-2">📷</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Connect Instagram</span>
+                </>
+              )}
             </button>
           </div>
         </motion.div>
