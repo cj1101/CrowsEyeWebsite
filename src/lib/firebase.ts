@@ -12,16 +12,38 @@ interface FirebaseConfig {
   appId: string;
 }
 
-// Get Firebase configuration from environment variables
+// Robust environment variable checker
+const getEnvVar = (name: string, fallback: string = ''): string => {
+  if (typeof window !== 'undefined') {
+    // Client-side: use window object for environment variables
+    return (window as any).__ENV__?.[name] || process.env[name] || fallback;
+  }
+  // Server-side: use process.env
+  return process.env[name] || fallback;
+};
+
+// Get Firebase configuration from environment variables with enhanced error handling
 const getFirebaseConfig = (): FirebaseConfig => {
-  return {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'demo-api-key',
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'demo-project.firebaseapp.com',
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'demo-project',
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'demo-project.appspot.com',
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '123456789',
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || 'demo-app-id',
+  const config = {
+    apiKey: getEnvVar('NEXT_PUBLIC_FIREBASE_API_KEY', 'demo-api-key'),
+    authDomain: getEnvVar('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 'demo-project.firebaseapp.com'),
+    projectId: getEnvVar('NEXT_PUBLIC_FIREBASE_PROJECT_ID', 'demo-project'),
+    storageBucket: getEnvVar('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET', 'demo-project.appspot.com'),
+    messagingSenderId: getEnvVar('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', '123456789'),
+    appId: getEnvVar('NEXT_PUBLIC_FIREBASE_APP_ID', 'demo-app-id'),
   };
+
+  // Log configuration status for debugging (without exposing sensitive data)
+  if (typeof window !== 'undefined') {
+    console.log('🔧 Firebase Config Debug:', {
+      hasApiKey: !!config.apiKey && config.apiKey !== 'demo-api-key',
+      authDomain: config.authDomain,
+      projectId: config.projectId,
+      environment: getEnvVar('NODE_ENV', 'production')
+    });
+  }
+
+  return config;
 };
 
 // Check if we have a valid Firebase configuration
@@ -36,14 +58,27 @@ const isValidFirebaseConfig = (config: FirebaseConfig): boolean => {
   });
 };
 
-// Initialize Firebase app (idempotent)
+// Global variable to track initialization state
+let firebaseInitialized = false;
+let firebaseApp: FirebaseApp | null = null;
+let auth: any = null;
+let db: any = null;
+
+// Initialize Firebase app (idempotent and cross-platform compatible)
 const initializeFirebaseApp = (): FirebaseApp | null => {
+  // Prevent multiple initializations
+  if (firebaseInitialized && firebaseApp) {
+    return firebaseApp;
+  }
+
   try {
     // Check if Firebase app is already initialized (idempotency)
     const existingApps = getApps();
     if (existingApps.length > 0) {
       console.log('🔄 Firebase app already initialized, reusing existing instance');
-      return existingApps[0];
+      firebaseApp = existingApps[0];
+      firebaseInitialized = true;
+      return firebaseApp;
     }
 
     const config = getFirebaseConfig();
@@ -51,31 +86,28 @@ const initializeFirebaseApp = (): FirebaseApp | null => {
 
     if (!isValid) {
       console.warn('⚠️ Firebase configuration incomplete or using demo values');
-      console.warn('📋 Current config status:', {
-        apiKey: config.apiKey.substring(0, 10) + '...',
-        authDomain: config.authDomain,
-        projectId: config.projectId,
-        storageBucket: config.storageBucket,
-        messagingSenderId: config.messagingSenderId,
-        appId: config.appId.substring(0, 10) + '...',
-        isValid
-      });
-      console.warn('🔧 Please set up your Firebase environment variables in .env.local');
+      console.warn('📋 Please set up your Firebase environment variables');
+      console.warn('🔧 The app will work in demo mode with limited functionality');
+      firebaseInitialized = true;
       return null;
     }
 
     // Initialize Firebase app
-    const app = initializeApp(config);
+    firebaseApp = initializeApp(config);
+    firebaseInitialized = true;
+    
     console.log('✅ Firebase app initialized successfully');
     console.log('🔧 Firebase config loaded:', {
       projectId: config.projectId,
       authDomain: config.authDomain,
-      environment: process.env.NODE_ENV
+      environment: getEnvVar('NODE_ENV', 'production')
     });
 
-    return app;
+    return firebaseApp;
   } catch (error) {
     console.error('❌ Firebase app initialization failed:', error);
+    firebaseInitialized = true; // Prevent retry loops
+    
     if (error instanceof Error) {
       console.error('Error details:', {
         name: error.name,
@@ -87,7 +119,7 @@ const initializeFirebaseApp = (): FirebaseApp | null => {
   }
 };
 
-// Initialize Firebase services
+// Initialize Firebase services with enhanced error handling
 const initializeFirebaseServices = (app: FirebaseApp | null) => {
   if (!app) {
     console.log('🎭 Running in demo mode - Firebase services not available');
@@ -99,20 +131,32 @@ const initializeFirebaseServices = (app: FirebaseApp | null) => {
 
   try {
     // Initialize Firebase Authentication
-    const auth = getAuth(app);
-    console.log('🔐 Firebase Authentication initialized');
+    if (!auth) {
+      auth = getAuth(app);
+      console.log('🔐 Firebase Authentication initialized');
+    }
 
     // Initialize Cloud Firestore
-    const db = getFirestore(app);
-    console.log('🗄️ Cloud Firestore initialized');
+    if (!db) {
+      db = getFirestore(app);
+      console.log('🗄️ Cloud Firestore initialized');
+    }
 
-    // Connect to emulators in development if needed
-    if (process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === 'true') {
+    // Connect to emulators in development if needed (only if explicitly enabled)
+    const useEmulator = getEnvVar('NEXT_PUBLIC_USE_FIREBASE_EMULATOR') === 'true';
+    const isDevelopment = getEnvVar('NODE_ENV') === 'development';
+    
+    if (isDevelopment && useEmulator && typeof window !== 'undefined') {
       try {
-        connectAuthEmulator(auth, 'http://localhost:9099');
-        connectFirestoreEmulator(db, 'localhost', 8080);
+        // Only connect if not already connected
+        if (!auth._delegate._config.emulator) {
+          connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+        }
+        if (!db._delegate._databaseId.database.includes('localhost')) {
+          connectFirestoreEmulator(db, 'localhost', 8080);
+        }
         console.log('🧪 Connected to Firebase emulators');
-      } catch {
+      } catch (emulatorError) {
         console.warn('⚠️ Could not connect to Firebase emulators (this is normal if not running)');
       }
     }
@@ -127,16 +171,25 @@ const initializeFirebaseServices = (app: FirebaseApp | null) => {
   }
 };
 
-// Initialize Firebase
-const firebaseApp = initializeFirebaseApp();
-const { auth, db } = initializeFirebaseServices(firebaseApp);
+// Initialize Firebase on first import (safe for both server and client)
+try {
+  firebaseApp = initializeFirebaseApp();
+  const services = initializeFirebaseServices(firebaseApp);
+  auth = services.auth;
+  db = services.db;
+} catch (error) {
+  console.error('❌ Failed to initialize Firebase on import:', error);
+  firebaseApp = null;
+  auth = null;
+  db = null;
+}
 
 // Export Firebase services
 export { auth, db };
 
 // Export configuration status for debugging
 export const isFirebaseConfigured = (): boolean => {
-  return firebaseApp !== null;
+  return firebaseApp !== null && auth !== null;
 };
 
 // Export configuration details for debugging
@@ -148,14 +201,18 @@ export const getFirebaseDebugInfo = () => {
     hasDb: !!db,
     isConfigured: isFirebaseConfigured(),
     projectId: config.projectId,
-    environment: process.env.NODE_ENV,
-    timestamp: new Date().toISOString()
+    environment: getEnvVar('NODE_ENV', 'production'),
+    timestamp: new Date().toISOString(),
+    initialized: firebaseInitialized
   };
 };
 
-// Client-side debug logging
+// Client-side debug logging (safe check)
 if (typeof window !== 'undefined') {
-  console.log('🔧 Firebase Debug Info:', getFirebaseDebugInfo());
+  // Delay debug info to allow proper initialization
+  setTimeout(() => {
+    console.log('🔧 Firebase Debug Info:', getFirebaseDebugInfo());
+  }, 100);
 }
 
 export default firebaseApp; 

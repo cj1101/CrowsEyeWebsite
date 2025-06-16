@@ -174,7 +174,8 @@ export function useMediaLibrary() {
       let uploadedItem: MediaItem | null = null;
 
       try {
-        console.log('Attempting API upload to:', 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com/api/v1/media/upload');
+        // Log the destination endpoint dynamically using the base URL derived at runtime
+        console.log('Attempting API upload to /media/upload');
         console.log('FormData contents:');
         for (const pair of formData.entries()) {
           console.log(pair[0], pair[1]);

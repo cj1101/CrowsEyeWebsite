@@ -382,8 +382,11 @@ export class InstagramAPI {
       code,
     });
 
+    // Use Facebook Graph OAuth token exchange endpoint (works for Instagram Graph API apps)
+    const FB_OAUTH_VERSION = process.env.FB_OAUTH_VERSION || 'v18.0';
+
     const res = await axios.post(
-      'https://api.instagram.com/oauth/access_token',
+      `https://graph.facebook.com/${FB_OAUTH_VERSION}/oauth/access_token`,
       params.toString(),
       {
         headers: {

@@ -33,11 +33,20 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const redirectUri = `${request.nextUrl.origin}/api/auth/instagram/redirect`;
+    // Use the same redirect URI logic as the start route
+    const baseUrl = process.env.NODE_ENV === 'development' 
+      ? (process.env.NEXT_PUBLIC_OAUTH_REDIRECT_BASE_URL || 'https://crows-eye-website.web.app')
+      : request.nextUrl.origin;
+    const redirectUri = `${baseUrl}/api/auth/instagram/redirect`;
+    
+    // Determine where to redirect the user after successful auth
+    const finalRedirectUrl = process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000/marketing-tool?connected=instagram'
+      : `${request.nextUrl.origin}/marketing-tool?connected=instagram`;
     
     const config = {
-      clientId: process.env.INSTAGRAM_APP_ID!,
-      clientSecret: process.env.INSTAGRAM_APP_SECRET!,
+      clientId: process.env.FACEBOOK_APP_ID || process.env.INSTAGRAM_APP_ID!,
+      clientSecret: process.env.FACEBOOK_APP_SECRET || process.env.INSTAGRAM_APP_SECRET!,
     };
 
     console.log('🔄 Exchanging Instagram authorization code for tokens...');
@@ -45,8 +54,10 @@ export async function GET(request: NextRequest) {
     
     console.log('✅ Instagram token exchange successful');
 
+    console.log('✅ Instagram token exchange successful, redirecting to:', finalRedirectUrl);
+    
     // Set tokens in cookies
-    const resp = NextResponse.redirect(`${request.nextUrl.origin}/marketing-tool?connected=instagram`);
+    const resp = NextResponse.redirect(finalRedirectUrl);
     
     resp.cookies.set('instagram_access_token', tokens.access_token, {
       httpOnly: true,

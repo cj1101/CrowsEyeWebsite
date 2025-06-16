@@ -12,40 +12,102 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: false
   },
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://crowseye.tech/api'
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://us-central1-crows-eye-website.cloudfunctions.net'
   },
-  // Improved webpack configuration
-  webpack: (config, { isServer }) => {
-    // Ensure proper module resolution
+  // Cross-platform compatibility settings
+  trailingSlash: false,
+  reactStrictMode: true,
+  
+  // Enhanced webpack configuration for cross-platform compatibility
+  webpack: (config, { isServer, dev }) => {
+    // Ensure proper module resolution across platforms
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
       net: false,
       tls: false,
+      crypto: false,
+      stream: false,
+      url: false,
+      zlib: false,
+      http: false,
+      https: false,
+      assert: false,
+      os: false,
+      path: false,
     };
     
-    // Exclude desktop_app and crow_eye_api directories
+    // Exclude non-web directories
     config.module.rules.push({
       test: /\.(ts|tsx|js|jsx)$/,
       exclude: [
         /node_modules/,
         /desktop_app/,
         /crow_eye_api/,
-        /\.git/
+        /\.git/,
+        /functions/,
+        /scripts/,
       ]
     });
+
+    // Handle potential module resolution issues
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@': require('path').resolve(__dirname, 'src'),
+      };
+    }
     
     return config;
   },
-  // Add experimental features for better error handling
+  
+  // External packages for server components
+  serverExternalPackages: ['firebase-admin'],
+  
+  // Experimental features for better performance and compatibility
   experimental: {
     esmExternals: true,
   },
-  // Ensure proper handling of client-side errors
+  
+  // Enhanced headers for better cross-platform support
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+        ],
+      },
+    ];
+  },
+  
+  // Optimized settings for better error handling
   onDemandEntries: {
     maxInactiveAge: 25 * 1000,
     pagesBufferLength: 2,
-  }
+  },
+  
+  // Output configuration for better compatibility
+  output: 'standalone',
+  
+  // Static optimization
+  generateEtags: false,
+  poweredByHeader: false,
 };
 
 export default nextConfig;

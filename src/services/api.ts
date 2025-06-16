@@ -1,11 +1,54 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com/api/v1';
-const DEVELOPMENT_FALLBACK = process.env.NODE_ENV === 'development';
+// Helper function to get environment variables safely
+const getEnvVar = (name: string, fallback: string = ''): string => {
+  if (typeof window !== 'undefined') {
+    // Client-side: check for runtime environment variables
+    return (window as any).__ENV__?.[name] || process.env[name] || fallback;
+  }
+  // Server-side: use process.env
+  return process.env[name] || fallback;
+};
+
+// Determine the API base URL dynamically for cross-platform compatibility
+// Priority: 1. Explicit env var, 2. Production endpoint, 3. Development fallback
+const getApiBaseUrl = (): string => {
+  const explicitUrl = getEnvVar('NEXT_PUBLIC_API_URL');
+  if (explicitUrl && explicitUrl !== '') {
+    return `${explicitUrl}/api/v1`;
+  }
+
+  const environment = getEnvVar('NODE_ENV', 'production');
+  const isProduction = environment === 'production';
+  
+  if (isProduction || typeof window === 'undefined') {
+    // Production or server-side: use deployed Firebase Cloud Functions
+    return 'https://us-central1-crows-eye-website.cloudfunctions.net/api/v1';
+  }
+
+  // Development fallback (only for local development)
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:5001/crows-eye-website/us-central1/api/v1';
+  }
+
+  // For development on non-localhost (e.g., network access), use production endpoint
+  return 'https://us-central1-crows-eye-website.cloudfunctions.net/api/v1';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+const DEVELOPMENT_FALLBACK = getEnvVar('NODE_ENV') === 'development';
+
+console.log('🌐 API Configuration:', {
+  baseUrl: API_BASE_URL,
+  environment: getEnvVar('NODE_ENV', 'production'),
+  fallbackEnabled: DEVELOPMENT_FALLBACK,
+  hostname: typeof window !== 'undefined' ? window.location.hostname : 'server'
+});
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 5000, // Reduced timeout for faster fallback
+  timeout: 10000, // Increased timeout for better reliability
   headers: {
     'Content-Type': 'application/json',
   },
@@ -40,7 +83,7 @@ const mockData = {
 };
 
 // Helper function to create mock responses
-const mockResponse = (data: any, delay: number = 500) => {
+const mockResponse = (data: any, delay: number = 300) => {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({ data, status: 200, statusText: 'OK' });
@@ -48,44 +91,47 @@ const mockResponse = (data: any, delay: number = 500) => {
   });
 };
 
-// Helper function to handle API calls with fallback
-const apiWithFallback = async (apiCall: () => Promise<any>, mockResponseData: any) => {
-  console.log('🔄 apiWithFallback called, DEVELOPMENT_FALLBACK:', DEVELOPMENT_FALLBACK);
-  
+// Enhanced helper function to handle API calls with fallback
+const apiWithFallback = async (apiCall: () => Promise<any>, mockResponseData: any, operationName: string = 'API call') => {
   if (!DEVELOPMENT_FALLBACK) {
-    console.log('🚀 Production mode - making direct API call');
-    return apiCall();
+    console.log(`🚀 Production mode - making direct ${operationName}`);
+    try {
+      return await apiCall();
+    } catch (error: any) {
+      console.error(`❌ ${operationName} failed in production:`, error?.message || error);
+      throw error; // Don't fallback in production
+    }
   }
   
   try {
-    console.log('🔧 Development mode - attempting API call first');
+    console.log(`🔧 Development mode - attempting ${operationName}`);
     const result = await apiCall();
-    console.log('✅ API call succeeded in development mode:', result?.status);
+    console.log(`✅ ${operationName} succeeded:`, result?.status);
     
     // Check if API indicates it's not fully implemented
     if (result?.data?.status === 'available' && result?.data?.note?.includes('coming soon')) {
-      console.log('⚠️ API endpoint exists but is not fully implemented, using mock data');
+      console.log(`⚠️ ${operationName} exists but not fully implemented, using mock data`);
       const mockResult = await mockResponse(mockResponseData);
-      console.log('🎭 Returning mock response due to unimplemented API:', mockResult);
+      console.log(`🎭 Returning mock response for ${operationName}`);
       return mockResult;
     }
     
     return result;
   } catch (error: any) {
-    console.warn('❌ API call failed, using mock data:', error?.message || 'Unknown error');
+    console.warn(`❌ ${operationName} failed, using mock data:`, error?.message || 'Unknown error');
     console.log('📊 Error details:', {
       status: error?.response?.status,
       statusText: error?.response?.statusText,
-      data: error?.response?.data,
-      url: error?.config?.url
+      url: error?.config?.url,
+      message: error?.message
     });
     const mockResult = await mockResponse(mockResponseData);
-    console.log('🎭 Returning mock response:', mockResult);
+    console.log(`🎭 Returning mock response for ${operationName}`);
     return mockResult;
   }
 };
 
-// Request interceptor for authentication
+// Request interceptor for authentication with better error handling
 api.interceptors.request.use(async (config) => {
   try {
     // Try to get Firebase auth token first
@@ -94,52 +140,76 @@ api.interceptors.request.use(async (config) => {
       const token = await auth.currentUser.getIdToken();
       config.headers.Authorization = `Bearer ${token}`;
     } else {
-      // Fallback to localStorage token
-      const token = localStorage.getItem('authToken');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+      // Fallback to localStorage token (if available)
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
       }
     }
   } catch (error) {
     console.warn('Failed to get auth token:', error);
-    // Continue without token
+    // Continue without token - API might not require authentication
   }
   return config;
 });
 
-// Response interceptor for error handling
+// Response interceptor for error handling with cross-platform support
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Handle authentication errors
     if (error.response?.status === 401) {
-      localStorage.removeItem('authToken');
-      // Store current path for redirect after login
-      const currentPath = window.location.pathname;
-      if (currentPath !== '/auth/signin' && currentPath !== '/auth/signup') {
-        localStorage.setItem('redirectAfterLogin', currentPath);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('authToken');
+        // Store current path for redirect after login
+        const currentPath = window.location.pathname;
+        if (currentPath !== '/auth/signin' && currentPath !== '/auth/signup') {
+          localStorage.setItem('redirectAfterLogin', currentPath);
+        }
+        window.location.href = '/auth/signin';
       }
-      window.location.href = '/auth/signin';
     }
+    
+    // Handle network errors gracefully
+    if (!error.response && error.code === 'ECONNABORTED') {
+      console.error('Request timeout - please check your internet connection');
+    } else if (!error.response && error.message?.includes('Network Error')) {
+      console.error('Network error - please check your internet connection');
+    }
+    
     return Promise.reject(error);
   }
 );
 
 export const apiService = {
-  // Health checks
-  healthCheck: () => apiWithFallback(() => api.get('/health'), mockData.health),
-  apiHealthCheck: () => apiWithFallback(() => api.get('/health'), mockData.health),
+  // Health checks with enhanced error handling
+  healthCheck: () => apiWithFallback(
+    () => api.get('/health'), 
+    mockData.health, 
+    'Health check'
+  ),
+  
+  apiHealthCheck: () => apiWithFallback(
+    () => api.get('/health'), 
+    mockData.health, 
+    'API health check'
+  ),
 
   // === AI CONTENT GENERATION (Updated to match backend) ===
   
-  // AI Caption Generation (Updated to match new backend naming)
+  // AI Caption Generation
   generateCaptionsFromMedia: (data: {
     media_ids: number[];
     style: 'engaging' | 'professional' | 'casual' | 'funny';
     platform: 'instagram' | 'facebook' | 'tiktok' | 'youtube';
     auto_apply?: boolean;
-  }) => apiWithFallback(() => api.post('/ai/captions/generate-from-media', data), { 
-    captions: ['🌟 Amazing content coming your way! #exciting #demo'] 
-  }),
+  }) => apiWithFallback(
+    () => api.post('/ai/captions/generate-from-media', data), 
+    { captions: ['🌟 Amazing content coming your way! #exciting #demo'] },
+    'Caption generation'
+  ),
 
   generateCustomCaptions: (data: {
     content: string;
@@ -147,32 +217,38 @@ export const apiService = {
     platform: string;
     audience?: string;
     brand_voice?: string;
-  }) => apiWithFallback(() => api.post('/ai/captions/generate-custom', data), {
-    captions: ['✨ Custom caption generated for your content! #AI #creative']
-  }),
+  }) => apiWithFallback(
+    () => api.post('/ai/captions/generate-custom', data), 
+    { captions: ['✨ Custom caption generated for your content! #AI #creative'] },
+    'Custom caption generation'
+  ),
 
-  // AI Hashtag Generation (Updated to match new backend naming)
+  // AI Hashtag Generation
   generateHashtags: (data: {
     content: string;
     platforms?: string[];
     niche?: string;
     count?: number;
     trending?: boolean;
-  }) => apiWithFallback(() => api.post('/ai/hashtags/generate', data), {
-    hashtags: ['#content', '#social', '#marketing', '#demo', '#AI']
-  }),
+  }) => apiWithFallback(
+    () => api.post('/ai/hashtags/generate', data), 
+    { hashtags: ['#content', '#social', '#marketing', '#demo', '#AI'] },
+    'Hashtag generation'
+  ),
 
-  // AI Content Suggestions (Updated to match new backend naming)
+  // AI Content Suggestions
   generateContentSuggestions: (data: {
     content: string;
     platform?: string;
     variation_count?: number;
     improvement_focus?: string;
-  }) => apiWithFallback(() => api.post('/ai/content/suggestions', data), {
-    suggestions: ['Try adding more emojis!', 'Consider a call-to-action', 'Include trending hashtags']
-  }),
+  }) => apiWithFallback(
+    () => api.post('/ai/content/suggestions', data), 
+    { suggestions: ['Try adding more emojis!', 'Consider a call-to-action', 'Include trending hashtags'] },
+    'Content suggestions'
+  ),
 
-  // AI Content Ideas (Updated to match new backend naming)
+  // AI Content Ideas
   generateContentIdeas: (data: {
     topic?: string;
     platform?: string;
@@ -180,20 +256,23 @@ export const apiService = {
     audience?: string;
     brand_voice?: string;
     count?: number;
-  }) => apiWithFallback(() => api.post('/ai/content/ideas', data), {
-    ideas: ['Behind-the-scenes content', 'User-generated content campaign', 'Tutorial series']
-  }),
+  }) => apiWithFallback(
+    () => api.post('/ai/content/ideas', data), 
+    { ideas: ['Behind-the-scenes content', 'User-generated content campaign', 'Tutorial series'] },
+    'Content ideas generation'
+  ),
 
-  // Imagen 3 Image Generation (Updated to match backend)
+  // Imagen 3 Image Generation
   generateImages: (data: {
     prompt: string;
-    style: 'photorealistic' | 'artistic' | 'cartoon';
-    aspect_ratio: '1:1' | '16:9' | '4:5';
-    quality: 'standard' | 'hd';
+    style?: string;
+    aspect_ratio?: string;
     count?: number;
-  }) => apiWithFallback(() => api.post('/ai/images/generate', data), {
-    images: [{ url: '/images/placeholder-image.jpg', id: 'generated-1' }]
-  }),
+  }) => apiWithFallback(
+    () => api.post('/ai/images/generate', data), 
+    { images: [{ url: '/images/placeholder-generated.jpg', prompt: data.prompt }] },
+    'Image generation'
+  ),
 
   // Veo Video Generation (Updated to match backend)
   generateVideos: (data: {
@@ -451,25 +530,28 @@ export const apiService = {
   // === COMPLIANCE & PLATFORM REQUIREMENTS ===
   
   // Comprehensive Compliance Audit
-  comprehensiveComplianceCheck: () => api.get('/compliance/compliance/comprehensive-check'),
+  comprehensiveComplianceCheck: () => apiWithFallback(() => api.get('/compliance/comprehensive-check'), { status: 'ok', note: 'mock compliance check' }),
 
   // Platform-specific Requirements
-  getPlatformRequirements: (platformId: string) => api.get(`/compliance/compliance/platform/${platformId}`),
+  getPlatformRequirements: (platformId: string) => apiWithFallback(() => api.get(`/compliance/platform/${platformId}`), {
+    platformId,
+    requirements: []
+  }),
 
   // All Platforms Compliance Overview
-  getPlatformsSummary: () => api.get('/compliance/compliance/platforms/summary'),
+  getPlatformsSummary: () => apiWithFallback(() => api.get('/compliance/platforms/summary'), { summary: [] }),
 
   // Rate Limiting Information
-  getRateLimits: () => api.get('/compliance/compliance/rate-limits'),
+  getRateLimits: () => apiWithFallback(() => api.get('/compliance/rate-limits'), { rateLimits: [] }),
 
   // Authentication Requirements
-  getAuthRequirements: () => api.get('/compliance/compliance/authentication-requirements'),
+  getAuthRequirements: () => apiWithFallback(() => api.get('/compliance/authentication-requirements'), { auth: [] }),
 
   // Content Policies
-  getContentPolicies: () => api.get('/compliance/compliance/content-policies'),
+  getContentPolicies: () => apiWithFallback(() => api.get('/compliance/content-policies'), { policies: [] }),
 
   // Privacy Requirements
-  getPrivacyRequirements: () => api.get('/compliance/compliance/privacy-requirements'),
+  getPrivacyRequirements: () => apiWithFallback(() => api.get('/compliance/privacy-requirements'), { privacy: [] }),
 
   // Content Validation
   validateContent: (data: {
@@ -481,7 +563,7 @@ export const apiService = {
   }) => api.post('/compliance/compliance/validate-content', data),
 
   // Compliance System Health Check
-  complianceHealthCheck: () => api.get('/compliance/compliance/health-check'),
+  complianceHealthCheck: () => apiWithFallback(() => api.get('/compliance/health-check'), { status: 'ok', timestamp: new Date().toISOString() }),
 
   // === UTILITY FUNCTIONS ===
   

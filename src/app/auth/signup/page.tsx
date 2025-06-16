@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeftIcon, EyeIcon, EyeSlashIcon, UserIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, EyeIcon, EyeSlashIcon, UserIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -19,9 +19,27 @@ export default function SignUpPage() {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [systemStatus, setSystemStatus] = useState<{
+    configured: boolean;
+    message?: string;
+  }>({ configured: true });
   
-  const { signup, loading: authLoading } = useAuth();
+  const { signup, loading: authLoading, isConfigured } = useAuth();
   const router = useRouter();
+
+  // Check system status on component mount
+  useEffect(() => {
+    const checkSystemStatus = () => {
+      if (!isConfigured) {
+        setSystemStatus({
+          configured: false,
+          message: 'Authentication service is running in demo mode. Account creation may be limited.'
+        });
+      }
+    };
+
+    checkSystemStatus();
+  }, [isConfigured]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -43,10 +61,14 @@ export default function SignUpPage() {
 
     if (!formData.firstName.trim()) {
       newErrors.firstName = 'First name is required';
+    } else if (formData.firstName.trim().length < 2) {
+      newErrors.firstName = 'First name must be at least 2 characters';
     }
 
     if (!formData.lastName.trim()) {
       newErrors.lastName = 'Last name is required';
+    } else if (formData.lastName.trim().length < 2) {
+      newErrors.lastName = 'Last name must be at least 2 characters';
     }
 
     if (!formData.email.trim()) {
@@ -59,6 +81,8 @@ export default function SignUpPage() {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one uppercase and one lowercase letter';
     }
 
     if (!formData.confirmPassword) {
@@ -91,11 +115,22 @@ export default function SignUpPage() {
           router.push('/dashboard');
         }, 3000);
       } else {
-        setErrors({ general: result.error || 'Failed to create account. Please try again.' });
+        // Handle specific error cases
+        const errorMessage = result.error || 'Failed to create account. Please try again.';
+        
+        if (errorMessage.includes('email already exists')) {
+          setErrors({ email: 'An account with this email already exists' });
+        } else if (errorMessage.includes('network') || errorMessage.includes('connection')) {
+          setErrors({ general: 'Network error. Please check your internet connection and try again.' });
+        } else if (errorMessage.includes('not available')) {
+          setErrors({ general: 'Account creation service is temporarily unavailable. Please try again later.' });
+        } else {
+          setErrors({ general: errorMessage });
+        }
       }
     } catch (error) {
       console.error('Error creating account:', error);
-      setErrors({ general: 'Failed to create account. Please try again.' });
+      setErrors({ general: 'An unexpected error occurred. Please try again or contact support if the problem persists.' });
     } finally {
       setIsLoading(false);
     }
@@ -120,6 +155,16 @@ export default function SignUpPage() {
             Start your journey with Crow's Eye Marketing Suite
           </p>
         </div>
+
+        {/* System Status Warning */}
+        {!systemStatus.configured && (
+          <div className="bg-yellow-500/20 backdrop-blur-sm border border-yellow-500/30 rounded-xl p-4 mb-6">
+            <div className="flex items-center gap-2">
+              <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400" />
+              <p className="text-yellow-200 text-sm">{systemStatus.message}</p>
+            </div>
+          </div>
+        )}
 
         {/* Sign Up Form */}
         <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 mb-8">
@@ -155,6 +200,7 @@ export default function SignUpPage() {
                         : 'border-white/20 focus:border-purple-500 focus:ring-purple-500/20'
                     }`}
                     placeholder="First name"
+                    disabled={isLoading || authLoading}
                   />
                   {errors.firstName && <p className="text-red-400 text-sm mt-2">{errors.firstName}</p>}
                 </div>
@@ -175,6 +221,7 @@ export default function SignUpPage() {
                         : 'border-white/20 focus:border-purple-500 focus:ring-purple-500/20'
                     }`}
                     placeholder="Last name"
+                    disabled={isLoading || authLoading}
                   />
                   {errors.lastName && <p className="text-red-400 text-sm mt-2">{errors.lastName}</p>}
                 </div>
@@ -196,6 +243,7 @@ export default function SignUpPage() {
                       : 'border-white/20 focus:border-purple-500 focus:ring-purple-500/20'
                   }`}
                   placeholder="Enter your email"
+                  disabled={isLoading || authLoading}
                 />
                 {errors.email && <p className="text-red-400 text-sm mt-2">{errors.email}</p>}
               </div>
@@ -217,11 +265,13 @@ export default function SignUpPage() {
                         : 'border-white/20 focus:border-purple-500 focus:ring-purple-500/20'
                     }`}
                     placeholder="Create a password"
+                    disabled={isLoading || authLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-300 transition-colors"
+                    disabled={isLoading || authLoading}
                   >
                     {showPassword ? (
                       <EyeSlashIcon className="h-5 w-5" />
@@ -250,11 +300,13 @@ export default function SignUpPage() {
                         : 'border-white/20 focus:border-purple-500 focus:ring-purple-500/20'
                     }`}
                     placeholder="Confirm your password"
+                    disabled={isLoading || authLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-300 transition-colors"
+                    disabled={isLoading || authLoading}
                   >
                     {showConfirmPassword ? (
                       <EyeSlashIcon className="h-5 w-5" />

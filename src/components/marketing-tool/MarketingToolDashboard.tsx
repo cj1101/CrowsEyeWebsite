@@ -222,14 +222,12 @@ export default function MarketingToolDashboard() {
             >
               Analytics
             </TabsTrigger>
-            {/* Temporarily disabled - API not available
             <TabsTrigger 
               value="compliance" 
               className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
             >
               Compliance
             </TabsTrigger>
-            */}
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -320,11 +318,9 @@ export default function MarketingToolDashboard() {
             <AnalyticsDashboard />
           </TabsContent>
 
-          {/* Temporarily disabled - API not available
           <TabsContent value="compliance" className="space-y-6">
             <ComplianceDashboard />
           </TabsContent>
-          */}
         </Tabs>
       </div>
     </div>

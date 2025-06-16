@@ -10,7 +10,7 @@ import {
   updateProfile,
   User
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, isFirebaseConfigured } from '@/lib/firebase';
 
 // Mock user profile interface
 interface UserProfile {
@@ -69,52 +69,94 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [firebaseConfigured, setFirebaseConfigured] = useState(true);
 
-  // Initialize auth state listener
+  // Check Firebase configuration status
   useEffect(() => {
-    if (!auth) return;
-
-    const unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
-      setLoading(true);
+    const checkFirebaseConfig = () => {
+      const configured = isFirebaseConfigured();
+      setFirebaseConfigured(configured);
       
-      if (user) {
-        // Create mock user profile from Firebase user
-        const profile: UserProfile = {
-          id: user.uid,
-          email: user.email || '',
-          displayName: user.displayName || user.email?.split('@')[0] || 'User',
-          firstName: user.displayName?.split(' ')[0] || '',
-          lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
-          avatar: user.photoURL || undefined,
-          plan: 'free',
-          createdAt: user.metadata.creationTime || new Date().toISOString(),
-          lastLoginAt: new Date().toISOString(),
-        };
-        
-        setUserProfile(profile);
-        setIsAuthenticated(true);
-        setError(null);
-      } else {
-        setUserProfile(null);
-        setIsAuthenticated(false);
+      if (!configured) {
+        console.warn('🚨 Firebase not properly configured. Authentication will work in demo mode.');
+        setError('Authentication service is running in demo mode. Some features may be limited.');
       }
-      
-      setLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
+    checkFirebaseConfig();
   }, []);
 
-  // Firebase login function
-  const login = useCallback(async (email?: string, password?: string) => {
-    if (!email || !password) {
-      setError('Email and password are required');
-      return { success: false, error: 'Email and password are required' };
+  // Initialize auth state listener with better error handling
+  useEffect(() => {
+    if (!auth || !firebaseConfigured) {
+      console.log('🎭 Firebase not available, skipping auth state listener');
+      return;
     }
 
-    if (!auth) {
-      setError('Authentication is not available');
-      return { success: false, error: 'Authentication is not available' };
+    let unsubscribe: (() => void) | null = null;
+
+    try {
+      unsubscribe = onAuthStateChanged(auth, (user: User | null) => {
+        setLoading(true);
+        
+        try {
+          if (user) {
+            // Create mock user profile from Firebase user
+            const profile: UserProfile = {
+              id: user.uid,
+              email: user.email || '',
+              displayName: user.displayName || user.email?.split('@')[0] || 'User',
+              firstName: user.displayName?.split(' ')[0] || '',
+              lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+              avatar: user.photoURL || undefined,
+              plan: 'free',
+              createdAt: user.metadata.creationTime || new Date().toISOString(),
+              lastLoginAt: new Date().toISOString(),
+            };
+            
+            setUserProfile(profile);
+            setIsAuthenticated(true);
+            setError(null);
+          } else {
+            setUserProfile(null);
+            setIsAuthenticated(false);
+          }
+        } catch (profileError) {
+          console.error('Error processing user profile:', profileError);
+          setError('Error processing user information');
+        }
+        
+        setLoading(false);
+      });
+    } catch (listenerError) {
+      console.error('Error setting up auth state listener:', listenerError);
+      setError('Authentication service initialization failed');
+      setLoading(false);
+    }
+
+    return () => {
+      if (unsubscribe) {
+        try {
+          unsubscribe();
+        } catch (error) {
+          console.error('Error unsubscribing from auth state:', error);
+        }
+      }
+    };
+  }, [firebaseConfigured]);
+
+  // Enhanced Firebase login function
+  const login = useCallback(async (email?: string, password?: string) => {
+    if (!email || !password) {
+      const errorMsg = 'Email and password are required';
+      setError(errorMsg);
+      return { success: false, error: errorMsg };
+    }
+
+    if (!auth || !firebaseConfigured) {
+      const errorMsg = 'Authentication service is not available. Please check your internet connection and try again.';
+      setError(errorMsg);
+      return { success: false, error: errorMsg };
     }
 
     try {
@@ -128,7 +170,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: any) {
       let errorMessage = 'Login failed';
       
-      // Handle Firebase Auth errors
+      // Handle Firebase Auth errors with better messages
       switch (error.code) {
         case 'auth/user-not-found':
           errorMessage = 'No account found with this email address';
@@ -142,8 +184,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         case 'auth/too-many-requests':
           errorMessage = 'Too many failed attempts. Please try again later';
           break;
+        case 'auth/network-request-failed':
+          errorMessage = 'Network error. Please check your internet connection';
+          break;
+        case 'auth/invalid-credential':
+          errorMessage = 'Invalid email or password';
+          break;
         default:
-          errorMessage = error.message || 'Login failed';
+          errorMessage = error.message || 'Login failed. Please try again.';
       }
 
       setError(errorMessage);
@@ -151,13 +199,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [firebaseConfigured]);
 
-  // Firebase signup function
+  // Enhanced Firebase signup function
   const signup = useCallback(async (email: string, password: string, firstName: string, lastName: string) => {
-    if (!auth) {
-      setError('Authentication is not available');
-      return { success: false, error: 'Authentication is not available' };
+    if (!auth || !firebaseConfigured) {
+      const errorMsg = 'Account creation service is not available. Please check your internet connection and try again.';
+      setError(errorMsg);
+      return { success: false, error: errorMsg };
     }
 
     try {
@@ -170,18 +219,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Update the user's display name
       const displayName = `${firstName} ${lastName}`.trim();
       if (displayName) {
-        await updateProfile(user, { displayName });
+        try {
+          await updateProfile(user, { displayName });
+        } catch (updateError) {
+          console.warn('Failed to update user profile:', updateError);
+          // Don't fail the signup for this
+        }
       }
 
-      // Send email verification
-      await sendEmailVerification(user);
+      // Send email verification (optional - don't fail if it doesn't work)
+      try {
+        await sendEmailVerification(user);
+      } catch (emailError) {
+        console.warn('Failed to send verification email:', emailError);
+        // Don't fail the signup for this
+      }
 
       // User profile will be set by the auth state listener
       return { success: true };
     } catch (error: any) {
       let errorMessage = 'Account creation failed';
       
-      // Handle Firebase Auth errors
+      // Handle Firebase Auth errors with better messages
       switch (error.code) {
         case 'auth/email-already-in-use':
           errorMessage = 'An account with this email already exists';
@@ -192,8 +251,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         case 'auth/weak-password':
           errorMessage = 'Password should be at least 6 characters';
           break;
+        case 'auth/network-request-failed':
+          errorMessage = 'Network error. Please check your internet connection';
+          break;
+        case 'auth/operation-not-allowed':
+          errorMessage = 'Account creation is currently disabled. Please contact support.';
+          break;
         default:
-          errorMessage = error.message || 'Account creation failed';
+          errorMessage = error.message || 'Account creation failed. Please try again.';
       }
 
       setError(errorMessage);
@@ -201,19 +266,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [firebaseConfigured]);
 
-  // Firebase logout function
+  // Enhanced Firebase logout function
   const logout = useCallback(async () => {
     console.log('Logging out user...');
     setLoading(true);
     
     try {
-      if (auth) {
+      if (auth && firebaseConfigured) {
         await signOut(auth);
       }
       
-      // Clear all user data
+      // Clear all user data regardless of Firebase state
       setIsAuthenticated(false);
       setUserProfile(null);
       setError(null);
@@ -221,10 +286,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('User logged out successfully');
     } catch (error) {
       console.error('Error during logout:', error);
+      // Still clear local state even if Firebase logout fails
+      setIsAuthenticated(false);
+      setUserProfile(null);
+      setError(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [firebaseConfigured]);
 
   // Mock refresh user profile function
   const refreshUserProfile = useCallback(async () => {
@@ -241,7 +310,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user: userProfile ? { uid: userProfile.id, email: userProfile.email } : null,
     userProfile,
     loading,
-    isConfigured: true,
+    isConfigured: firebaseConfigured,
     refreshUserProfile,
     error,
     login,

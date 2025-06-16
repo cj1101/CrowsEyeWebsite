@@ -159,7 +159,7 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
                 <h3 className="text-lg font-semibold text-white">Platform Status</h3>
               </div>
               <div className="space-y-3">
-                {platformsSummary.platforms.map((platform) => (
+                {(platformsSummary.platforms || []).map((platform) => (
                   <div key={platform.platform} className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
                     <div className="flex items-center space-x-3">
                       <div className={`w-3 h-3 rounded-full ${getStatusColor(platform.status).split(' ')[1]}`}></div>
@@ -194,7 +194,7 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
                 <h3 className="text-lg font-semibold text-white">Rate Limits</h3>
               </div>
               <div className="space-y-3">
-                {rateLimits.slice(0, 3).map((limit) => (
+                {(rateLimits || []).slice(0, 3).map((limit) => (
                   <div key={limit.platform} className="p-3 bg-gray-700/30 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-white font-medium capitalize">{limit.platform}</span>
@@ -236,7 +236,7 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
                     {healthCheck.status.toUpperCase()}
                   </div>
                 </div>
-                {healthCheck.services.slice(0, 3).map((service) => (
+                {(healthCheck.services || []).slice(0, 3).map((service) => (
                   <div key={service.name} className="flex items-center justify-between p-2 bg-gray-700/30 rounded">
                     <span className="text-white text-sm">{service.name}</span>
                     <div className="flex items-center space-x-2">
