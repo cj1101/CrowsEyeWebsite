@@ -68,8 +68,18 @@ export default function MarketingToolDashboard() {
     // Check API health on component mount
     const checkApiHealth = async () => {
       try {
-        await apiService.healthCheck();
-        setApiStatus('connected');
+        // Use the correct health endpoint that we know works
+        const response = await fetch('https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com/api/v1/health');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === 'ok') {
+            setApiStatus('connected');
+          } else {
+            setApiStatus('error');
+          }
+        } else {
+          setApiStatus('error');
+        }
       } catch (error) {
         console.error('API health check failed:', error);
         setApiStatus('error');
