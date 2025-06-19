@@ -40,7 +40,7 @@
 
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, Suspense } from 'react'
 import { Check, X, Gift, Calculator, CreditCard } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -294,7 +294,7 @@ const PAYGBenefits = ({ plan }: { plan: typeof pricingPlans[0] }) => {
   )
 }
 
-export default function PricingPage() {
+function PricingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
@@ -840,5 +840,15 @@ export default function PricingPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function PricingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-purple-900 flex items-center justify-center">
+      <div className="text-white text-xl">Loading...</div>
+    </div>}>
+      <PricingContent />
+    </Suspense>
   );
 } 
