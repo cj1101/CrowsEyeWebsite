@@ -132,19 +132,22 @@ export const USAGE_PRICING_CONFIG = {
   // Usage meters and simple flat pricing
   meters: {
     ai_credits: {
-      stripe_meter_id: 'mtr_ai_credits_placeholder', // Replace with your actual Stripe meter ID
+      stripe_meter_id: process.env.STRIPE_AI_CREDITS_METER_ID || 'mtr_61Sl9eelYsOgIYgfj41GU2Wb0yZINWj2',
+      event_name: 'ai_credit_used',
       price_per_unit: 0.15, // $0.15 per AI credit
       display_name: 'AI Credits',
       unit: 'credit'
     },
     scheduled_posts: {
-      stripe_meter_id: 'mtr_scheduled_posts_placeholder', // Replace with your actual Stripe meter ID
+      stripe_meter_id: process.env.STRIPE_POSTS_METER_ID || 'mtr_61Sl9gDxkiKC5UgsQ41GU2Wb0yZIN2MK',
+      event_name: 'post_scheduled',
       price_per_unit: 0.25, // $0.25 per scheduled post
       display_name: 'Scheduled Posts',
       unit: 'post'
     },
     storage_gb: {
-      stripe_meter_id: 'mtr_storage_gb_placeholder', // Replace with your actual Stripe meter ID
+      stripe_meter_id: process.env.STRIPE_STORAGE_METER_ID || 'mtr_61Sl9gcwiovreXe7u41GU2Wb0yZINUuu',
+      event_name: 'storage_used',
       price_per_unit: 2.99, // $2.99 per GB per month
       display_name: 'Storage',
       unit: 'GB'
@@ -279,10 +282,11 @@ export const reportUsageToStripe = async (params: {
   }
 
   try {
-    const meterId = USAGE_PRICING_CONFIG.meters[params.meterType].stripe_meter_id
+    const meterConfig = USAGE_PRICING_CONFIG.meters[params.meterType]
+    const eventName = meterConfig.event_name
     
     await stripe.billing.meterEvents.create({
-      event_name: params.meterType,
+      event_name: eventName,
       payload: {
         stripe_customer_id: params.customerId,
         value: params.value.toString()
