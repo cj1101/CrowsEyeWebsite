@@ -152,9 +152,9 @@ export default function ContentHubPage() {
     
     try {
       const response = await api.generateHashtags({
-        content: newPost.content,
-        platform: newPost.platforms[0] || 'instagram',
-        count: 10
+        prompt: newPost.content,
+        type: 'hashtags',
+        platform: newPost.platforms[0] || 'instagram'
       });
       
       if (response.data?.generated_content) {

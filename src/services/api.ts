@@ -1350,37 +1350,140 @@ export class CrowsEyeAPI {
   // =============================================================================
 
   async getMarketingToolStats(): Promise<AxiosResponse<MarketingToolStats>> {
-    return apiWithFallback(
-      () => this.api.get('/api/v1/marketing-tool/stats'),
-      {
-        totalPosts: 12,
-        scheduledPosts: 3,
-        aiGenerated: 8,
-        engagementRate: 4.2,
-        socialAccounts: 3,
-        mediaFiles: 24,
-        recentActivity: [
-          { id: '1', action: 'Post published to Instagram', timestamp: new Date().toISOString(), type: 'success' },
-          { id: '2', action: 'AI caption generated', timestamp: new Date().toISOString(), type: 'info' },
-          { id: '3', action: 'Schedule updated', timestamp: new Date().toISOString(), type: 'info' }
-        ],
-        subscriptionTier: 'free',
-        aiCreditsRemaining: 50,
-        aiEditsRemaining: 25
-      },
-      'Marketing tool stats'
-    );
+    try {
+      const response = await apiWithFallback(
+        () => this.api.get('/api/v1/marketing-tool/stats'),
+        {
+          totalPosts: 24,
+          scheduledPosts: 8,
+          aiGenerated: 15,
+          engagementRate: 4.2,
+          socialAccounts: 5,
+          mediaFiles: 142,
+          recentActivity: [
+            {
+              id: '1',
+              action: 'Published to Instagram',
+              timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+              type: 'success' as const
+            },
+            {
+              id: '2',
+              action: 'Generated AI caption',
+              timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+              type: 'info' as const
+            }
+          ],
+          subscriptionTier: 'Pro',
+          aiCreditsRemaining: 85,
+          aiEditsRemaining: 23
+        }
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching marketing tool stats:', error);
+      throw error;
+    }
   }
 
   async createMarketingPost(postData: CreatePostRequest): Promise<AxiosResponse<CreatePostResponse>> {
-    return apiWithFallback(
-      () => this.api.post('/api/v1/marketing-tool/posts', postData),
-      {
-        success: true,
-        postId: `post_${Date.now()}`
-      },
-      'Create marketing post'
-    );
+    try {
+      const response = await this.api.post('/api/v1/marketing-tool/posts', postData);
+      return response;
+    } catch (error) {
+      console.error('Error creating marketing post:', error);
+      throw error;
+    }
+  }
+
+  // === CONTENT HUB METHODS ===
+  
+  async getPosts(params?: { page?: number; limit?: number; status?: string; platform?: string }): Promise<AxiosResponse> {
+    try {
+      const response = await apiWithFallback(
+        () => this.api.get('/api/v1/posts', { params }),
+        {
+          data: [
+            {
+              id: '1',
+              content: 'Sample post content',
+              platforms: ['instagram', 'tiktok'],
+              status: 'published',
+              createdAt: new Date().toISOString(),
+              mediaUrls: [],
+              hashtags: ['#sample', '#post'],
+              analytics: {
+                likes: 24,
+                comments: 5,
+                shares: 3,
+                reach: 156
+              }
+            }
+          ],
+          pagination: {
+            page: 1,
+            limit: 20,
+            total: 1
+          }
+        }
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      throw error;
+    }
+  }
+
+  async getTemplates(): Promise<AxiosResponse> {
+    try {
+      const response = await apiWithFallback(
+        () => this.api.get('/api/v1/templates'),
+        {
+          data: [
+            {
+              id: '1',
+              name: 'Product Launch',
+              content: 'Exciting news! Our new {product} is now available! 🎉',
+              category: 'marketing',
+              tags: ['product', 'launch', 'announcement'],
+              usage: 15
+            },
+            {
+              id: '2',
+              name: 'Behind the Scenes',
+              content: 'Take a peek behind the scenes at {company}! 👀',
+              category: 'engagement',
+              tags: ['bts', 'company', 'culture'],
+              usage: 23
+            }
+          ]
+        }
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      throw error;
+    }
+  }
+
+  async createPost(postData: PostData): Promise<AxiosResponse> {
+    try {
+      const response = await this.api.post('/api/v1/posts', postData);
+      return response;
+    } catch (error) {
+      console.error('Error creating post:', error);
+      throw error;
+    }
+  }
+
+  async deletePost(postId: string): Promise<AxiosResponse> {
+    try {
+      const response = await this.api.delete(`/api/v1/posts/${postId}`);
+      return response;
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      throw error;
+    }
   }
 }
 
