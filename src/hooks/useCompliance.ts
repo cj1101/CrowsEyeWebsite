@@ -14,6 +14,49 @@ import type {
   PrivacyRequirement
 } from '@/types/compliance';
 
+interface PlatformStatus {
+  platform: string;
+  status: 'connected' | 'disconnected' | 'error';
+  compliance_score: number;
+  last_check: string;
+  issues_count: number;
+  warnings_count: number;
+}
+
+interface AuditResult {
+  id: string;
+  status: string;
+  timestamp: string;
+  platforms_checked: string[];
+  issues_found: number;
+  warnings_found: number;
+}
+
+interface RateLimit {
+  platform: string;
+  limit: number;
+  remaining: number;
+  reset_time: string;
+  status: 'ok' | 'warning' | 'limited';
+}
+
+interface HealthCheck {
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  timestamp: string;
+  services: Array<{
+    name: string;
+    status: 'up' | 'down' | 'degraded';
+    response_time: number;
+    last_check: string;
+  }>;
+  platform_connections: Array<{
+    platform: string;
+    status: 'connected' | 'disconnected' | 'error';
+    last_successful_call: string;
+    error_count_24h: number;
+  }>;
+}
+
 interface UseComplianceReturn {
   // Loading states
   loading: boolean;

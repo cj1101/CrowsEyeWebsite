@@ -17,12 +17,20 @@ from typing import Dict, List, Any
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from crow_eye_api.database import DatabaseManager
+try:
+    from crow_eye_api.database import DatabaseManager
+    DATABASE_MANAGER_AVAILABLE = True
+except ImportError:
+    DATABASE_MANAGER_AVAILABLE = False
+    DatabaseManager = None
+    print("⚠️  crow_eye_api.database.DatabaseManager not available. Migration script disabled.")
 
 class DataMigrator:
     """Handles migration from JSON files to PostgreSQL database."""
     
     def __init__(self):
+        if not DATABASE_MANAGER_AVAILABLE:
+            raise ImportError("DatabaseManager not available. Cannot run migration.")
         self.db = DatabaseManager()
         self.data_dir = project_root / "data"
         self.migration_log = []
@@ -284,8 +292,16 @@ class DataMigrator:
 
 async def main():
     """Main migration function."""
-    migrator = DataMigrator()
-    await migrator.migrate_all()
+    if not DATABASE_MANAGER_AVAILABLE:
+        print("❌ Database migration not available. crow_eye_api.database module not found.")
+        print("   To run migrations, please ensure the crow_eye_api backend is properly installed.")
+        return
+    
+    try:
+        migrator = DataMigrator()
+        await migrator.migrate_all()
+    except Exception as e:
+        print(f"❌ Migration failed: {e}")
 
 if __name__ == "__main__":
     asyncio.run(main()) 

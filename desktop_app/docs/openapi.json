@@ -1911,7 +1911,7 @@
           "Analytics"
         ],
         "summary": "Get Analytics",
-        "description": "Get performance analytics for user's content.\n\n**Tier Required:** Pro+ ($19/month and above)\n\nProvides comprehensive analytics including:\n- Engagement rates and trends\n- Top performing content\n- Platform-specific metrics\n- Growth tracking\n- Audience insights",
+        "description": "Get performance analytics for user's content.\n\n**Tier Required:** Creator+ ($15/month and above)\n\nProvides comprehensive analytics including:\n- Engagement rates and trends\n- Top performing content\n- Platform-specific metrics\n- Growth tracking\n- Audience insights",
         "operationId": "get_analytics_analytics__get",
         "security": [
           {
@@ -1992,7 +1992,7 @@
           "Analytics"
         ],
         "summary": "Export Analytics",
-        "description": "Export analytics data in CSV, JSON, or Excel format.\n\n**Tier Required:** Pro+ ($19/month and above)\n\nExport comprehensive analytics data for external analysis:\n- Custom date ranges\n- Platform filtering\n- Multiple export formats\n- Bulk data export",
+        "description": "Export analytics data in CSV, JSON, or Excel format.\n\n**Tier Required:** Pro+ ($30/month and above)\n\nExport comprehensive analytics data for external analysis:\n- Custom date ranges\n- Platform filtering\n- Multiple export formats\n- Bulk data export",
         "operationId": "export_analytics_analytics_export_post",
         "security": [
           {
@@ -2055,7 +2055,7 @@
           "Analytics"
         ],
         "summary": "Get Insights",
-        "description": "Get AI-powered insights and recommendations.\n\n**Tier Required:** Pro+ ($19/month and above)",
+        "description": "Get AI-powered insights and recommendations.\n\n**Tier Required:** Pro+ ($30/month and above)",
         "operationId": "get_insights_analytics_insights_get",
         "security": [
           {
@@ -2108,7 +2108,7 @@
           "Analytics"
         ],
         "summary": "Get Competitor Analysis",
-        "description": "Get competitor analysis and benchmarking.\n\n**Tier Required:** Pro+ ($19/month and above)",
+        "description": "Get competitor analysis and benchmarking.\n\n**Tier Required:** Pro+ ($30/month and above)",
         "operationId": "get_competitor_analysis_analytics_competitors_get",
         "security": [
           {
@@ -2161,7 +2161,7 @@
           "Analytics"
         ],
         "summary": "Get Summary Report",
-        "description": "Get executive summary report.\n\n**Tier Required:** Pro+ ($19/month and above)",
+        "description": "Get executive summary report.\n\n**Tier Required:** Pro+ ($30/month and above)",
         "operationId": "get_summary_report_analytics_reports_summary_get",
         "security": [
           {

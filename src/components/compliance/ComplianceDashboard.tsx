@@ -8,6 +8,72 @@ interface ComplianceDashboardProps {
   showHeader?: boolean;
 }
 
+// Platform Connection Row Component
+interface PlatformConnectionRowProps {
+  platform: string;
+  name: string;
+  icon: string;
+  color: string;
+  status: 'connected' | 'disconnected' | 'error';
+  userInfo?: string;
+  onConnect: () => void;
+  onDisconnect: () => void;
+}
+
+const PlatformConnectionRow: React.FC<PlatformConnectionRowProps> = ({
+  platform,
+  name,
+  icon,
+  color,
+  status,
+  userInfo,
+  onConnect,
+  onDisconnect
+}) => {
+  const isConnected = status === 'connected';
+  
+  return (
+    <div className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
+      <div className="flex items-center space-x-3">
+        <div className={`w-10 h-10 rounded-lg ${color} flex items-center justify-center text-white text-lg`}>
+          {icon}
+        </div>
+        <div>
+          <div className="text-white font-medium">{name}</div>
+          {userInfo && (
+            <div className="text-xs text-gray-400">{userInfo}</div>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center space-x-3">
+        <div className={`w-3 h-3 rounded-full ${
+          isConnected ? 'bg-green-500' : status === 'error' ? 'bg-red-500' : 'bg-gray-500'
+        }`}></div>
+        <span className={`text-sm font-medium ${
+          isConnected ? 'text-green-400' : status === 'error' ? 'text-red-400' : 'text-gray-400'
+        }`}>
+          {isConnected ? 'Connected' : status === 'error' ? 'Error' : 'Disconnected'}
+        </span>
+        {isConnected ? (
+          <button
+            onClick={onDisconnect}
+            className="text-xs bg-red-500/20 text-red-300 px-2 py-1 rounded hover:bg-red-500/30 transition-colors"
+          >
+            Disconnect
+          </button>
+        ) : (
+          <button
+            onClick={onConnect}
+            className="text-xs bg-blue-500/20 text-blue-300 px-2 py-1 rounded hover:bg-blue-500/30 transition-colors"
+          >
+            Connect
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({ 
   className = "", 
   showHeader = true 
@@ -27,10 +93,15 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
   } = useCompliance();
 
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [googlePhotosStatus, setGooglePhotosStatus] = useState<{
+    isConnected: boolean;
+    userEmail?: string;
+  }>({ isConnected: false });
 
   useEffect(() => {
     // Load initial data
     loadInitialData();
+    checkGooglePhotosConnection();
   }, []);
 
   const loadInitialData = async () => {
@@ -50,6 +121,67 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
   const handleRefresh = () => {
     clearError();
     loadInitialData();
+    checkGooglePhotosConnection();
+  };
+
+  const checkGooglePhotosConnection = async () => {
+    try {
+      const response = await fetch('/api/google-photos/connection');
+      const data = await response.json();
+      setGooglePhotosStatus(data);
+    } catch (error) {
+      console.error('Failed to check Google Photos connection:', error);
+      setGooglePhotosStatus({ isConnected: false });
+    }
+  };
+
+  const handleConnectGooglePhotos = async () => {
+    try {
+      const response = await fetch('/api/google-photos/auth/url');
+      const data = await response.json();
+      
+      if (data.authUrl) {
+        // Open OAuth popup
+        const popup = window.open(
+          data.authUrl,
+          'google-photos-auth',
+          'width=600,height=600,scrollbars=yes,resizable=yes'
+        );
+
+        // Monitor for completion
+        const pollTimer = setInterval(() => {
+          try {
+            if (popup?.closed) {
+              clearInterval(pollTimer);
+              // Refresh connection status
+              checkGooglePhotosConnection();
+            }
+          } catch (error) {
+            // Ignore cross-origin errors
+          }
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Failed to initiate Google Photos connection:', error);
+    }
+  };
+
+  const handleDisconnectGooglePhotos = async () => {
+    try {
+      await fetch('/api/google-photos/connection', { method: 'DELETE' });
+      setGooglePhotosStatus({ isConnected: false });
+    } catch (error) {
+      console.error('Failed to disconnect Google Photos:', error);
+    }
+  };
+
+  const handleDisconnectPlatform = async (platform: string) => {
+    try {
+      // This would need to be implemented for each platform
+      console.log(`Disconnect ${platform} - not implemented`);
+    } catch (error) {
+      console.error(`Failed to disconnect ${platform}:`, error);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -151,6 +283,62 @@ const ComplianceDashboard: React.FC<ComplianceDashboardProps> = ({
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Platform Connections */}
+          <div className="bg-gray-800/50 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-blue-400">🔗</span>
+                <h3 className="text-lg font-semibold text-white">Platform Connections</h3>
+              </div>
+              <button
+                onClick={handleRefresh}
+                className="p-1 text-gray-400 hover:text-white transition-colors rounded"
+                title="Refresh connections"
+              >
+                🔄
+              </button>
+            </div>
+            <div className="space-y-3">
+              <PlatformConnectionRow
+                platform="tiktok"
+                name="TikTok"
+                icon="🎵"
+                color="bg-black"
+                status="connected"
+                onConnect={() => window.open('/api/auth/tiktok/start', '_blank')}
+                onDisconnect={() => handleDisconnectPlatform('tiktok')}
+              />
+              <PlatformConnectionRow
+                platform="instagram"
+                name="Instagram"
+                icon="📸"
+                color="bg-gradient-to-r from-purple-600 to-pink-600"
+                status="connected"
+                onConnect={() => window.open('/api/auth/instagram/start', '_blank')}
+                onDisconnect={() => handleDisconnectPlatform('instagram')}
+              />
+              <PlatformConnectionRow
+                platform="google-photos"
+                name="Google Photos"
+                icon="📷"
+                color="bg-blue-600"
+                status={googlePhotosStatus?.isConnected ? 'connected' : 'disconnected'}
+                userInfo={googlePhotosStatus?.userEmail}
+                onConnect={handleConnectGooglePhotos}
+                onDisconnect={handleDisconnectGooglePhotos}
+              />
+              <PlatformConnectionRow
+                platform="facebook"
+                name="Facebook"
+                icon="📘"
+                color="bg-blue-700"
+                status="disconnected"
+                onConnect={() => window.open('/api/auth/facebook/start', '_blank')}
+                onDisconnect={() => handleDisconnectPlatform('facebook')}
+              />
+            </div>
+          </div>
+          
           {/* Platform Status */}
           {platformsSummary && (
             <div className="bg-gray-800/50 rounded-lg p-6">

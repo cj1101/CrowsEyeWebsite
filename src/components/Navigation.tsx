@@ -21,6 +21,14 @@ const Navigation = () => {
     { name: 'Contact', href: '/contact' },
   ]
 
+  // Developer and testing navigation items
+  const devNavigation = [
+    { name: 'API Testing', href: '/api-testing' },
+    { name: 'Content Hub', href: '/content-hub' },
+    { name: 'Analytics', href: '/analytics-dashboard' },
+    { name: 'Test Functions', href: '/test-functions' },
+  ]
+
   // Add Web Application for all users (always visible)
   const userNavigation = [
     ...navigation,
@@ -110,10 +118,10 @@ const Navigation = () => {
                       onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                       className="flex items-center space-x-2 text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:bg-vision-purple/10"
                     >
-                      {userProfile?.avatar ? (
+                      {userProfile?.avatar_url ? (
                         <div className="relative">
                           <img
-                            src={userProfile.avatar}
+                            src={userProfile.avatar_url}
                             alt="Profile"
                             className="h-6 w-6 rounded-full border border-vision-purple/30"
                           />
@@ -215,10 +223,10 @@ const Navigation = () => {
                 <>
                   {user ? (
                     <div className="flex items-center px-3 pb-3">
-                      {userProfile?.avatar ? (
+                      {userProfile?.avatar_url ? (
                         <div className="relative">
                           <img
-                            src={userProfile.avatar}
+                            src={userProfile.avatar_url}
                             alt="Profile"
                             className="h-8 w-8 rounded-full border border-vision-purple/30"
                           />
