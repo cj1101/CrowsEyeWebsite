@@ -171,12 +171,13 @@ export default function SchedulingTab() {
   const getPlatformIcon = (platform: string) => {
     const icons: { [key: string]: string } = {
       instagram: '📷',
-      facebook: '👥',
+      facebook: '📘',
       twitter: '🐦',
       linkedin: '💼',
       tiktok: '🎵',
       youtube: '📺',
       pinterest: '📌',
+      'google-mybusiness': '🏢',
       snapchat: '👻'
     };
     return icons[platform] || '🌐';

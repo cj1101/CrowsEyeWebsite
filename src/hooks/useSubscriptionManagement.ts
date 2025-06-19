@@ -49,15 +49,23 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
 
     try {
       setIsLoading(true)
+      const token = localStorage.getItem('auth_token')
+      
+      if (!token) {
+        throw new Error('No authentication token found')
+      }
+
       const response = await fetch('/api/subscription', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
       })
 
       if (!response.ok) {
-        throw new Error('Failed to fetch subscription')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch subscription')
       }
 
       const data = await response.json()
@@ -75,11 +83,18 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
   // Open Stripe Customer Portal
   const openCustomerPortal = async () => {
     try {
+      const token = localStorage.getItem('auth_token')
+      
+      if (!token) {
+        throw new Error('No authentication token found')
+      }
+
       // For demo purposes, open the demo portal link
       const response = await fetch('/api/create-portal-session', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
       })
 
@@ -102,10 +117,17 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
     if (!subscription) return
 
     try {
+      const token = localStorage.getItem('auth_token')
+      
+      if (!token) {
+        throw new Error('No authentication token found')
+      }
+
       const response = await fetch('/api/cancel-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ subscriptionId: subscription.id }),
       })
@@ -126,10 +148,17 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
     if (!subscription) return
 
     try {
+      const token = localStorage.getItem('auth_token')
+      
+      if (!token) {
+        throw new Error('No authentication token found')
+      }
+
       const response = await fetch('/api/resume-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ subscriptionId: subscription.id }),
       })

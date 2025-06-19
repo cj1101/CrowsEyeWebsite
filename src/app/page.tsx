@@ -38,14 +38,12 @@ export default function Home() {
   return (
     <div ref={containerRef} className="relative min-h-screen bg-gradient-to-br from-gray-900 via-black to-purple-900 text-white overflow-hidden">
       {/* Animated Background Elements */}
-      {mounted && (
-        <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_var(--mouse-x,50%)_var(--mouse-y,50%),rgba(120,119,198,0.1),transparent_50%)]" />
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute top-3/4 right-1/4 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
-          <div className="absolute bottom-1/4 left-1/3 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-2000" />
-        </div>
-      )}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_var(--mouse-x,50%)_var(--mouse-y,50%),rgba(120,119,198,0.1),transparent_50%)]" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-3/4 right-1/4 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute bottom-1/4 left-1/3 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-pulse delay-2000" />
+      </div>
 
       {/* Floating Particles */}
       {mounted && (
@@ -80,9 +78,9 @@ export default function Home() {
         >
           {/* Logo with Glow Effect */}
           <motion.div
-            initial={{ scale: 0, rotate: -180 }}
+            initial={{ scale: 0.8, rotate: -10 }}
             animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 1, ease: "easeOut" }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             className="relative mb-8 flex justify-center"
           >
             <div className="relative">
@@ -99,9 +97,9 @@ export default function Home() {
 
           {/* Main Title with Gradient Text */}
           <motion.div
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0.3, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.5 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
             className="mb-8"
           >
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-black mb-4 leading-tight">
@@ -118,9 +116,9 @@ export default function Home() {
 
           {/* Subtitle */}
           <motion.p
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0.4, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.8 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
             className="text-xl md:text-2xl text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed"
           >
             Revolutionize your social media presence with Google's Gemini AI, 
@@ -129,9 +127,9 @@ export default function Home() {
 
           {/* CTA Buttons */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0.4, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 1.1 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-6 justify-center items-center"
           >
             <Link
@@ -143,10 +141,10 @@ export default function Home() {
             </Link>
             
             <Link
-              href="/demo"
+              href="/features"
               className="group relative px-8 py-4 border-2 border-purple-500 rounded-xl text-lg font-semibold text-purple-300 hover:bg-purple-500/10 transition-all duration-300 transform hover:scale-105"
             >
-              <span className="relative z-10">Watch Demo</span>
+              <span className="relative z-10">Learn More</span>
             </Link>
             
             <Link

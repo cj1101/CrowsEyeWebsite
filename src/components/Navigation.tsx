@@ -14,7 +14,6 @@ const Navigation = () => {
 
   const navigation = [
     { name: 'Home', href: '/' },
-    { name: 'Demo', href: '/demo' },
     { name: 'Features', href: '/features' },
     { name: 'Pricing', href: '/pricing' },
     { name: 'Download', href: '/download' },
@@ -29,10 +28,10 @@ const Navigation = () => {
     { name: 'Test Functions', href: '/test-functions' },
   ]
 
-  // Add Web Application for all users (always visible)
+  // Add Dashboard for all users (always visible)
   const userNavigation = [
     ...navigation,
-    { name: 'Web Application', href: '/marketing-tool' }
+    { name: 'Dashboard', href: '/dashboard' }
   ]
 
   // Close dropdown when clicking outside

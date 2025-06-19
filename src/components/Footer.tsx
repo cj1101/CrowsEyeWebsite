@@ -67,11 +67,6 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/demo" className="text-gray-400 hover:text-vision-purple-light transition-all duration-300 hover:translate-x-1 block">
-                  Live Demo
-                </Link>
-              </li>
-              <li>
                 <Link href="/marketing-tool" className="text-gray-400 hover:text-vision-purple-light transition-all duration-300 hover:translate-x-1 block">
                   Web Platform
                 </Link>

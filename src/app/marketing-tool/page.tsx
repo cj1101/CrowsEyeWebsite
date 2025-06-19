@@ -27,19 +27,19 @@ import {
 } from 'lucide-react';
 
 const planLimits = {
-  free: {
-    name: 'Free Plan',
-    linkedAccounts: 1,
-    aiCredits: 25,
-    scheduledPosts: 10,
-    storage: 500,
+  payg: {
+    name: 'Pay-as-you-Go',
+    linkedAccounts: 10,
+    aiCredits: 'Per usage',
+    scheduledPosts: 'Per usage',
+    storage: 'Per usage',
     features: {
       basicTools: true,
-      smartGallery: false,
-      advancedAnalytics: false,
-      teamCollaboration: false,
-      customBranding: false,
-      apiAccess: false
+      smartGallery: true,
+      advancedAnalytics: true,
+      teamCollaboration: true,
+      customBranding: true,
+      apiAccess: true
     },
     upgradeUrl: '/pricing'
   },
@@ -78,8 +78,8 @@ const planLimits = {
   pro: {
     name: 'Pro Plan',
     linkedAccounts: 10,
-    aiCredits: 750,
-    scheduledPosts: -1, // unlimited
+    aiCredits: 999999,
+    scheduledPosts: 999999,
     storage: 50000,
     features: {
       basicTools: true,
@@ -93,76 +93,124 @@ const planLimits = {
   }
 };
 
-const UsageMeter = ({ label, used, max, unit = '', color = 'blue' }: {
-  label: string;
-  used: number;
-  max: number;
-  unit?: string;
-  color?: string;
+const UsageMeter = ({ 
+  label, 
+  used, 
+  max, 
+  unit = '', 
+  isUnlimited = false, 
+  displayText 
+}: { 
+  label: string; 
+  used: number; 
+  max: number; 
+  unit?: string; 
+  isUnlimited?: boolean;
+  displayText?: string;
 }) => {
-  const percentage = max === -1 ? 0 : Math.min((used / max) * 100, 100);
-  const isNearLimit = percentage > 80;
+  const percentage = isUnlimited ? 100 : Math.min((used / max) * 100, 100);
   
   return (
     <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <span className="text-sm font-medium text-gray-300">{label}</span>
-        <span className={`text-sm ${isNearLimit ? 'text-red-400' : 'text-gray-400'}`}>
-          {used}{unit} / {max === -1 ? '∞' : `${max}${unit}`}
+      <div className="flex justify-between text-sm">
+        <span className="text-gray-300">{label}</span>
+        <span className="text-gray-400">
+          {isUnlimited ? (
+            <span className="text-green-400 font-semibold">∞ Unlimited</span>
+          ) : displayText ? (
+            <span className="text-blue-400">{displayText}</span>
+          ) : (
+            `${used}/${max}${unit}`
+          )}
         </span>
       </div>
       <div className="w-full bg-gray-700 rounded-full h-2">
         <div 
           className={`h-2 rounded-full transition-all duration-300 ${
-            isNearLimit ? 'bg-red-500' : `bg-${color}-500`
+            isUnlimited ? 'bg-gradient-to-r from-green-400 to-emerald-500' :
+            percentage > 80 ? 'bg-gradient-to-r from-orange-500 to-red-500' :
+            percentage > 60 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
+            'bg-gradient-to-r from-blue-500 to-purple-500'
           }`}
           style={{ width: `${percentage}%` }}
         />
       </div>
-      {isNearLimit && (
-        <p className="text-xs text-red-400">
-          ⚠️ Approaching limit - consider upgrading
-        </p>
-      )}
     </div>
   );
 };
 
-const PlanCard = ({ userPlan }: { userPlan: 'free' | 'creator' | 'growth' | 'pro' }) => {
+const PlanCard = ({ userPlan }: { userPlan: 'payg' | 'creator' | 'growth' | 'pro' }) => {
+  const { user, userProfile } = useAuth();
+  const router = useRouter();
   const plan = planLimits[userPlan];
   
+  // Check if user has lifetime access
+  const isLifetimeUser = userProfile?.subscription_tier === 'pro' && 
+                        (userProfile?.subscription_status === 'active' || 
+                         userProfile?.subscription_type === 'lifetime');
+
+  const handleUpgradeClick = () => {
+    // Use router.push instead of window.open to maintain auth state
+    router.push('/pricing');
+  };
+
   return (
-    <Card className="bg-gradient-to-br from-gray-900 to-gray-800 border-gray-700 text-white">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            {userPlan === 'pro' && <Crown className="h-5 w-5 text-yellow-500" />}
-            {userPlan === 'growth' && <TrendingUp className="h-5 w-5 text-green-500" />}
-            {userPlan === 'creator' && <Sparkles className="h-5 w-5 text-purple-500" />}
-            {userPlan === 'free' && <Zap className="h-5 w-5 text-blue-500" />}
-            {plan.name}
-          </CardTitle>
-          <Badge className={`
-            ${userPlan === 'pro' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' : ''}
-            ${userPlan === 'growth' ? 'bg-green-500/20 text-green-300 border-green-500/30' : ''}
-            ${userPlan === 'creator' ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' : ''}
-            ${userPlan === 'free' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' : ''}
-          `}>
-            Current Plan
-          </Badge>
-        </div>
+    <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span className="text-white">{plan.name}</span>
+          {isLifetimeUser && (
+            <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold">
+              LIFETIME ACCESS
+            </Badge>
+          )}
+          {userPlan === 'pro' && !isLifetimeUser && (
+            <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+              PRO
+            </Badge>
+          )}
+        </CardTitle>
+        <CardDescription className="text-gray-300">
+          {isLifetimeUser ? 'You have unlimited access for life!' : 'Your current plan and usage'}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <UsageMeter label="Linked Accounts" used={0} max={plan.linkedAccounts} />
-        <UsageMeter label="AI Credits" used={0} max={plan.aiCredits} unit=" credits" />
-        <UsageMeter label="Scheduled Posts" used={0} max={plan.scheduledPosts} unit=" posts" />
-        <UsageMeter label="Storage" used={0} max={plan.storage} unit="MB" />
+        <UsageMeter 
+          label="Linked Accounts" 
+          used={0} 
+          max={plan.linkedAccounts} 
+          isUnlimited={isLifetimeUser || userPlan === 'pro'}
+        />
+        <UsageMeter 
+          label="AI Credits" 
+          used={0} 
+          max={typeof plan.aiCredits === 'number' ? plan.aiCredits : 1000} 
+          unit=" credits"
+          isUnlimited={isLifetimeUser || userPlan === 'pro'}
+          displayText={typeof plan.aiCredits === 'string' ? plan.aiCredits : undefined}
+        />
+        <UsageMeter 
+          label="Scheduled Posts" 
+          used={0} 
+          max={typeof plan.scheduledPosts === 'number' ? plan.scheduledPosts : 1000} 
+          unit=" posts"
+          isUnlimited={isLifetimeUser || userPlan === 'pro'}
+          displayText={typeof plan.scheduledPosts === 'string' ? plan.scheduledPosts : undefined}
+        />
+        <UsageMeter 
+          label="Storage" 
+          used={0} 
+          max={typeof plan.storage === 'number' ? plan.storage : 10000} 
+          unit="MB"
+          isUnlimited={isLifetimeUser || userPlan === 'pro'}
+          displayText={typeof plan.storage === 'string' ? plan.storage : undefined}
+        />
         
-        {userPlan !== 'pro' && (
+        {userPlan !== 'pro' && !isLifetimeUser && (
           <div className="pt-4 border-t border-gray-700">
             <Button 
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-              onClick={() => window.open('/pricing', '_blank')}
+              onClick={handleUpgradeClick}
             >
               <Rocket className="h-4 w-4 mr-2" />
               Upgrade Plan
@@ -326,32 +374,48 @@ const FeatureCard = ({ icon: Icon, title, description, available, upgradeText }:
 };
 
 export default function MarketingToolPage() {
-  const { userProfile, loading, isAuthenticated } = useAuth();
+  const { user, userProfile, hasValidSubscription, requiresSubscription } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (!userProfile) {
       router.push('/auth/signin');
+      return;
     }
-  }, [loading, isAuthenticated, router]);
+    
+    // Check if user needs to set up subscription
+    if (requiresSubscription()) {
+      console.log('🔒 User requires subscription setup, redirecting to pricing');
+      router.push('/pricing?required=true');
+      return;
+    }
+  }, [userProfile, requiresSubscription, router]);
 
-  if (loading) {
+  // Show loading while checking auth and subscription
+  if (!userProfile || requiresSubscription()) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-purple-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4" />
-          <p className="text-gray-300">Loading your dashboard...</p>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500 mx-auto"></div>
+          <p className="text-gray-300 mt-4">
+            {!userProfile ? 'Checking authentication...' : 'Checking subscription status...'}
+          </p>
         </div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  // Determine user plan - default to payg if no subscription tier
+  const userPlan: 'payg' | 'creator' | 'growth' | 'pro' = userProfile?.subscription_tier === 'free' 
+    ? 'payg' 
+    : (userProfile?.subscription_tier as 'payg' | 'creator' | 'growth' | 'pro') || 'payg';
 
-  const userPlan = (userProfile?.plan || 'free') as 'free' | 'creator' | 'growth' | 'pro';
+  // Check if user has lifetime access
+  const isLifetimeUser = userProfile?.subscription_tier === 'pro' && 
+                        (userProfile?.subscription_status === 'active' || 
+                         userProfile?.subscription_type === 'lifetime');
+
   const currentPlan = planLimits[userPlan];
 
   return (
