@@ -11,7 +11,7 @@ export default function AccountPage() {
     name: userProfile?.displayName || 'Guest User',
     email: userProfile?.email || 'guest@example.com',
     plan: userProfile?.plan || 'Free',
-    joinDate: userProfile?.createdAt || '2024-01-01'
+    joinDate: userProfile?.created_at || '2024-01-01'
   });
 
   const [usage] = useState({
@@ -42,13 +42,13 @@ export default function AccountPage() {
   };
 
   const planColors = {
-    Free: 'from-gray-500 to-gray-600',
+    'Pay-as-you-Go': 'from-emerald-500 to-teal-500',
     Creator: 'from-purple-500 to-pink-500',
     Growth: 'from-blue-500 to-cyan-500',
     Pro: 'from-yellow-500 to-orange-500'
   };
 
-  const currentPlanColor = planColors[user.plan as keyof typeof planColors] || planColors.Free;
+  const currentPlanColor = planColors[user.plan as keyof typeof planColors] || planColors['Pay-as-you-Go'];
 
   return (
     <div className="min-h-screen darker-gradient-bg logo-bg-overlay">

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useMediaLibrary, MediaItem } from '@/hooks/api/useMediaLibrary';
 import ContentValidator from '@/components/compliance/ContentValidator';
+import { apiService, CreatePostRequest } from '@/services/api';
 import { 
   PhotoIcon, 
   VideoCameraIcon, 
@@ -185,36 +186,46 @@ export default function CreatePostTab() {
 
   const handlePublish = async () => {
     try {
-      const postData = {
-        mediaId: selectedMedia?.id,
-        caption: caption.trim(),
-        hashtags: hashtags.trim(),
+      // Prepare data for the marketing tool API
+      const scheduledFor = isScheduled && scheduledDate && scheduledTime 
+        ? `${scheduledDate}T${scheduledTime}:00.000Z`
+        : undefined;
+
+      const marketingPostData: CreatePostRequest = {
+        content: caption.trim(),
         platforms: selectedPlatforms,
-        isScheduled,
-        scheduledDate: isScheduled ? scheduledDate : undefined,
-        scheduledTime: isScheduled ? scheduledTime : undefined
+        hashtags: hashtags.split('#').filter(h => h.trim()).map(h => `#${h.trim()}`),
+        mediaFiles: selectedMedia ? [selectedMedia.id] : [],
+        scheduledFor
       };
 
-      console.log('Publishing post:', postData);
+      console.log('🚀 Publishing post via marketing tool API:', marketingPostData);
       
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call the marketing tool API
+      const response = await apiService.createMarketingPost(marketingPostData);
       
-      // Reset form
-      setCaption('');
-      setHashtags('');
-      setSelectedMedia(null);
-      setIsScheduled(false);
-      setScheduledDate('');
-      setScheduledTime('');
-      setShowPostPreview(false);
-      setGeneratedPost(null);
-      setNaturalLanguagePrompt('');
-      
-      alert('Post published successfully!');
-    } catch (error) {
-      console.error('Error publishing post:', error);
-      alert('Error publishing post. Please try again.');
+      if (response.data?.success) {
+        console.log('✅ Post created successfully:', response.data);
+        
+        // Reset form
+        setCaption('');
+        setHashtags('');
+        setSelectedMedia(null);
+        setIsScheduled(false);
+        setScheduledDate('');
+        setScheduledTime('');
+        setShowPostPreview(false);
+        setGeneratedPost(null);
+        setNaturalLanguagePrompt('');
+        setContextFiles([]);
+        
+        alert(`Post ${isScheduled ? 'scheduled' : 'published'} successfully! Post ID: ${response.data.postId}`);
+      } else {
+        throw new Error('Failed to create post');
+      }
+    } catch (error: any) {
+      console.error('❌ Error publishing post:', error);
+      alert(`Error ${isScheduled ? 'scheduling' : 'publishing'} post: ${error.message || 'Please try again.'}`);
     }
   };
 

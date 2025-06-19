@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crow's Eye API Test Suite</title>
+    <style>
+        body { font-family: monospace; margin: 20px; background: #1a1a1a; color: #fff; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #333; border-radius: 5px; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .warning { color: #ff9800; }
+        .info { color: #2196F3; }
+        button { padding: 10px 20px; margin: 5px; background: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #45a049; }
+        .results { background: #2a2a2a; padding: 15px; border-radius: 5px; margin: 10px 0; white-space: pre-wrap; font-size: 12px; }
+        .status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+        .online { background: #4CAF50; }
+        .offline { background: #f44336; }
+        .warning-status { background: #ff9800; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Crow's Eye API Diagnostic Suite</h1>
+        <p>This tool tests your API connectivity and identifies issues. Frontend: <strong>http://localhost:3000</strong> → Backend: <strong>http://localhost:3002</strong></p>
+        
+        <div class="test-section">
+            <h2>🚀 Quick Actions</h2>
+            <button onclick="runAllTests()">Run Full Test Suite</button>
+            <button onclick="testBasicConnectivity()">Test Basic Connectivity</button>
+            <button onclick="testAuthentication()">Test Authentication</button>
+            <button onclick="checkEnvironment()">Check Environment</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Status Overview</h2>
+            <div id="status-overview">
+                <div>Backend API: <span class="status-indicator offline" id="backend-status"></span><span id="backend-status-text">Testing...</span></div>
+                <div>Authentication: <span class="status-indicator offline" id="auth-status"></span><span id="auth-status-text">Not tested</span></div>
+                <div>Core Endpoints: <span class="status-indicator offline" id="endpoints-status"></span><span id="endpoints-status-text">Not tested</span></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📝 Test Results</h2>
+            <div id="results" class="results">Click "Run Full Test Suite" to start testing...</div>
+        </div>
+
+        <div class="test-section">
+            <h2>💡 Manual Tests</h2>
+            <p>You can also run these manual tests:</p>
+            <ul>
+                <li><strong>Console Test:</strong> Open DevTools (F12) → Console → Copy and paste the script below</li>
+                <li><strong>Network Tab:</strong> Open DevTools → Network → Reload page → Look for failed requests</li>
+                <li><strong>Authentication:</strong> Try signing in at <a href="http://localhost:3000/auth/signin" target="_blank">http://localhost:3000/auth/signin</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = 'http://localhost:3002';
+        const FRONTEND_URL = 'http://localhost:3000';
+        
+        let testResults = [];
+
+        // Utility functions
+        const log = (message, type = 'info') => {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = {
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️',
+                'info': 'ℹ️'
+            }[type] || 'ℹ️';
+            
+            const colorClass = type;
+            const formattedMessage = `[${timestamp}] ${prefix} ${message}`;
+            
+            testResults.push({ timestamp, type, message: formattedMessage });
+            updateResults();
+            console.log(formattedMessage);
+        };
+
+        const updateResults = () => {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = testResults.map(r => 
+                `<span class="${r.type}">${r.message}</span>`
+            ).join('\n');
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        };
+
+        const updateStatus = (component, status, text) => {
+            const statusElement = document.getElementById(`${component}-status`);
+            const textElement = document.getElementById(`${component}-status-text`);
+            
+            statusElement.className = `status-indicator ${status}`;
+            textElement.textContent = text;
+        };
+
+        // HTTP request helper
+        const makeRequest = async (endpoint, options = {}) => {
+            const startTime = Date.now();
+            const url = `${API_BASE_URL}${endpoint}`;
+            
+            try {
+                const response = await fetch(url, {
+                    timeout: 10000,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        ...options.headers
+                    },
+                    ...options
+                });
+
+                const duration = Date.now() - startTime;
+                let data;
+                
+                try {
+                    data = await response.json();
+                } catch {
+                    data = await response.text();
+                }
+
+                return {
+                    success: response.ok,
+                    status: response.status,
+                    data,
+                    duration
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    status: 0,
+                    error: error.message,
+                    duration: Date.now() - startTime
+                };
+            }
+        };
+
+        // Test functions
+        const testBasicConnectivity = async () => {
+            log('Testing basic connectivity...', 'info');
+            
+            // Test backend health
+            const healthResult = await makeRequest('/health');
+            if (healthResult.success) {
+                log(`Backend health check: OK (${healthResult.status}) - ${healthResult.duration}ms`, 'success');
+                updateStatus('backend', 'online', 'Online');
+            } else {
+                log(`Backend health check: FAILED - ${healthResult.error || 'Unknown error'}`, 'error');
+                updateStatus('backend', 'offline', 'Offline');
+                return false;
+            }
+
+            // Test API v1
+            const apiResult = await makeRequest('/api/v1/health');
+            if (apiResult.success) {
+                log(`API v1 health check: OK (${apiResult.status})`, 'success');
+            } else {
+                log(`API v1 health check: FAILED (${apiResult.status})`, 'warning');
+            }
+
+            return true;
+        };
+
+        const testAuthentication = async () => {
+            log('Testing authentication endpoints...', 'info');
+            
+            // Test registration endpoint
+            const regResult = await makeRequest('/api/v1/auth/register', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: `test_${Date.now()}@example.com`,
+                    password: 'TestPass123!',
+                    name: 'Test User'
+                })
+            });
+
+            if (regResult.status === 201 || regResult.status === 409) {
+                log(`Registration endpoint: OK (${regResult.status})`, 'success');
+            } else {
+                log(`Registration endpoint: FAILED (${regResult.status})`, 'error');
+            }
+
+            // Test login endpoint
+            const loginResult = await makeRequest('/api/v1/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: 'test@example.com',
+                    password: 'wrongpassword'
+                })
+            });
+
+            if (loginResult.status === 401) {
+                log(`Login endpoint: OK (correctly rejected invalid credentials)`, 'success');
+                updateStatus('auth', 'online', 'Working');
+            } else if (loginResult.status === 200) {
+                log(`Login endpoint: OK (accepted credentials)`, 'success');
+                updateStatus('auth', 'online', 'Working');
+            } else {
+                log(`Login endpoint: FAILED (${loginResult.status})`, 'error');
+                updateStatus('auth', 'offline', 'Failed');
+            }
+        };
+
+        const testCoreEndpoints = async () => {
+            log('Testing core endpoints...', 'info');
+            
+            const endpoints = [
+                { path: '/api/v1/platforms/', name: 'Platforms' },
+                { path: '/api/v1/posts/', name: 'Posts' },
+                { path: '/api/v1/media/', name: 'Media' },
+                { path: '/api/v1/analytics/overview', name: 'Analytics' }
+            ];
+
+            let successCount = 0;
+            
+            for (const endpoint of endpoints) {
+                const result = await makeRequest(endpoint.path);
+                
+                if (result.success || result.status === 401) {
+                    log(`${endpoint.name} endpoint: OK`, 'success');
+                    successCount++;
+                } else if (result.status === 404) {
+                    log(`${endpoint.name} endpoint: NOT FOUND`, 'error');
+                } else {
+                    log(`${endpoint.name} endpoint: FAILED (${result.status})`, 'warning');
+                }
+            }
+
+            if (successCount === endpoints.length) {
+                updateStatus('endpoints', 'online', 'All working');
+            } else if (successCount > 0) {
+                updateStatus('endpoints', 'warning-status', 'Partial');
+            } else {
+                updateStatus('endpoints', 'offline', 'Failed');
+            }
+        };
+
+        const checkEnvironment = () => {
+            log('Checking environment configuration...', 'info');
+            
+            // Check current URL
+            log(`Frontend URL: ${window.location.origin}`, 'info');
+            log(`Backend URL: ${API_BASE_URL}`, 'info');
+            log(`User Agent: ${navigator.userAgent}`, 'info');
+            
+            // Check localStorage
+            const authToken = localStorage.getItem('auth_token');
+            if (authToken) {
+                log(`Auth token: Present (${authToken.length} chars)`, 'success');
+            } else {
+                log(`Auth token: Not found`, 'warning');
+            }
+            
+            // Check if running in development
+            const isDev = window.location.hostname === 'localhost';
+            log(`Environment: ${isDev ? 'Development' : 'Production'}`, 'info');
+            
+            // Check CORS
+            log('CORS will be tested during API calls...', 'info');
+        };
+
+        const runAllTests = async () => {
+            clearResults();
+            log('Starting comprehensive API test suite...', 'info');
+            
+            // Reset status indicators
+            updateStatus('backend', 'offline', 'Testing...');
+            updateStatus('auth', 'offline', 'Testing...');
+            updateStatus('endpoints', 'offline', 'Testing...');
+            
+            try {
+                checkEnvironment();
+                
+                const connectivityOk = await testBasicConnectivity();
+                if (!connectivityOk) {
+                    log('❌ Basic connectivity failed. Check if backend is running on port 3002', 'error');
+                    log('💡 Try: cd desktop_app/backend && npm run dev', 'info');
+                    return;
+                }
+                
+                await testAuthentication();
+                await testCoreEndpoints();
+                
+                log('✅ Test suite completed! Check status indicators above.', 'success');
+                
+            } catch (error) {
+                log(`Test suite failed: ${error.message}`, 'error');
+            }
+        };
+
+        const clearResults = () => {
+            testResults = [];
+            updateResults();
+        };
+
+        // Auto-run basic connectivity test on page load
+        window.addEventListener('load', () => {
+            setTimeout(testBasicConnectivity, 1000);
+        });
+    </script>
+</body>
+</html> 

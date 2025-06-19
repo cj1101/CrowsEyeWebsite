@@ -9,27 +9,30 @@ import LibraryTab from '@/components/dashboard/LibraryTab';
 import CreatePostTab from '@/components/dashboard/CreatePostTab';
 import SchedulingTab from '@/components/dashboard/SchedulingTab';
 import ToolsTab from '@/components/dashboard/ToolsTab';
-import AnalyticsTab from '@/components/dashboard/AnalyticsTab';
 import MediaUpload from '@/components/media/MediaUpload';
 import HighlightGenerator from '@/components/ai/HighlightGenerator';
 import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import ComplianceDashboard from '@/components/compliance/ComplianceDashboard';
+import AccountManagementDashboard from '@/components/compliance/AccountManagementDashboard';
+import GooglePhotosIntegration from '@/components/google-photos/GooglePhotosIntegration';
+import VideoProcessingHub from '@/components/video-processing/VideoProcessingHub';
 import { 
   CpuChipIcon,
-  UserGroupIcon
+  UserGroupIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { apiService } from '@/services/api';
 
 export default function MarketingToolDashboard() {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, isConfigured } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   
   // Get tab from URL parameters, default to 'overview'
   const tabFromUrl = searchParams.get('tab') || 'overview';
   const [activeTab, setActiveTab] = useState(tabFromUrl);
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const [apiStatus, setApiStatus] = useState<'checking' | 'connected' | 'error'>('checking');
   const [showConnectionSuccess, setShowConnectionSuccess] = useState(false);
 
@@ -134,7 +137,7 @@ export default function MarketingToolDashboard() {
                   {user ? `Welcome, ${userProfile?.displayName || user?.email?.split('@')[0]}` : 'Welcome to Crow\'s Eye'}
                 </span>
                 <div className="text-xs text-purple-300">
-                  Pro Plan
+                  {isConfigured ? 'Connected' : 'Demo Mode'}
                 </div>
               </div>
               <div className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center">
@@ -149,17 +152,27 @@ export default function MarketingToolDashboard() {
         </div>
       </div>
 
+      {/* System Status Warning */}
+      {!isConfigured && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4 mb-4">
+            <div className="flex items-center">
+              <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400 mr-2" />
+              <p className="text-yellow-200 text-sm">
+                Running in demo mode. Some features may be limited. Please configure Firebase for full functionality.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Success Message */}
       {showConnectionSuccess && connectedPlatform && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
           <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-4 mb-4">
             <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
+              <CheckCircleIcon className="h-5 w-5 text-green-400 mr-2" />
+              <div className="flex-1">
                 <p className="text-sm font-medium text-green-300">
                   {connectedPlatform.charAt(0).toUpperCase() + connectedPlatform.slice(1)} connected successfully!
                 </p>
@@ -167,16 +180,14 @@ export default function MarketingToolDashboard() {
                   You can now use {connectedPlatform.charAt(0).toUpperCase() + connectedPlatform.slice(1)} features in your campaigns.
                 </p>
               </div>
-              <div className="ml-auto">
-                <button
-                  onClick={() => setShowConnectionSuccess(false)}
-                  className="text-green-400 hover:text-green-300"
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </div>
+              <button
+                onClick={() => setShowConnectionSuccess(false)}
+                className="text-green-400 hover:text-green-300"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
@@ -185,7 +196,7 @@ export default function MarketingToolDashboard() {
       {/* Main Dashboard Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-gray-800/50 backdrop-blur-sm">
+          <TabsList className="grid w-full grid-cols-8 bg-gray-800/50 backdrop-blur-sm">
             <TabsTrigger 
               value="overview" 
               className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
@@ -197,6 +208,18 @@ export default function MarketingToolDashboard() {
               className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
             >
               Media Library
+            </TabsTrigger>
+            <TabsTrigger 
+              value="google-photos" 
+              className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
+            >
+              Google Photos
+            </TabsTrigger>
+            <TabsTrigger 
+              value="video-processing" 
+              className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
+            >
+              Video AI
             </TabsTrigger>
             <TabsTrigger 
               value="create" 
@@ -211,22 +234,16 @@ export default function MarketingToolDashboard() {
               Scheduling
             </TabsTrigger>
             <TabsTrigger 
-              value="tools" 
-              className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
-            >
-              AI Tools
-            </TabsTrigger>
-            <TabsTrigger 
               value="analytics" 
               className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
             >
               Analytics
             </TabsTrigger>
             <TabsTrigger 
-              value="compliance" 
+              value="account-management" 
               className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
             >
-              Compliance
+              Account Management
             </TabsTrigger>
           </TabsList>
 
@@ -235,91 +252,116 @@ export default function MarketingToolDashboard() {
           </TabsContent>
 
           <TabsContent value="library" className="space-y-6">
-            <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white">Media Upload</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Upload and manage your media files with drag & drop support
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <MediaUpload />
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white">Media Library</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Browse, organize, and manage your uploaded content
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <LibraryTab />
-              </CardContent>
-            </Card>
+            <LibraryTab />
+          </TabsContent>
+
+          <TabsContent value="google-photos" className="space-y-6">
+            <GooglePhotosIntegration 
+              onMediaImported={(mediaItems) => {
+                console.log('Media imported from Google Photos:', mediaItems);
+                // Optionally refresh the media library or show success message
+              }}
+            />
+          </TabsContent>
+
+          <TabsContent value="video-processing" className="space-y-6">
+            <VideoProcessingHub />
           </TabsContent>
 
           <TabsContent value="create" className="space-y-6">
-            <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white">Create Post</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Design and customize your social media posts with AI assistance
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CreatePostTab />
-              </CardContent>
-            </Card>
+            <CreatePostTab />
           </TabsContent>
 
           <TabsContent value="schedule" className="space-y-6">
-            <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white">Content Scheduling</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Schedule posts, manage your content calendar, and automate publishing
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <SchedulingTab />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="tools" className="space-y-6">
-            <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white">AI Highlight Generator</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Generate engaging video highlights automatically using AI
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <HighlightGenerator />
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white">AI-Powered Tools</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Advanced AI tools for content creation, optimization, and automation
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ToolsTab />
-              </CardContent>
-            </Card>
+            <SchedulingTab />
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
-            <AnalyticsDashboard />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="bg-gray-800/50 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">Performance Analytics</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Detailed metrics and insights from your campaigns
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <AnalyticsDashboard />
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-800/50 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">Processing Statistics</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Video processing and API usage metrics
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3 bg-gray-700/50 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-400">24</div>
+                        <div className="text-sm text-gray-400">Videos Processed</div>
+                      </div>
+                      <div className="p-3 bg-gray-700/50 rounded-lg">
+                        <div className="text-2xl font-bold text-green-400">18</div>
+                        <div className="text-sm text-gray-400">Highlights Created</div>
+                      </div>
+                      <div className="p-3 bg-gray-700/50 rounded-lg">
+                        <div className="text-2xl font-bold text-purple-400">142</div>
+                        <div className="text-sm text-gray-400">Photos Imported</div>
+                      </div>
+                      <div className="p-3 bg-gray-700/50 rounded-lg">
+                        <div className="text-2xl font-bold text-yellow-400">2.3GB</div>
+                        <div className="text-sm text-gray-400">Storage Used</div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-800/50 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">Account Management Monitor</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Monitor your account across all platforms
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ComplianceDashboard showHeader={false} />
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-800/50 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">Legacy AI Tools</CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Classic content generation tools
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <MediaUpload />
+                    <HighlightGenerator />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
-          <TabsContent value="compliance" className="space-y-6">
-            <ComplianceDashboard />
+          <TabsContent value="account-management" className="space-y-6">
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Account Management</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Manage your platform connections, monitor account health, and ensure optimal performance across all integrated services
+                </CardDescription>
+              </CardHeader>
+                              <CardContent>
+                  <AccountManagementDashboard showHeader={true} />
+                </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

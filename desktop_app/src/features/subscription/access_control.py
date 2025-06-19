@@ -32,13 +32,13 @@ class Feature(Enum):
     BASIC_ANALYTICS = "basic_analytics"
     COMMUNITY_SUPPORT = "community_support"
     
-    # Creator tier features ($19/month)
+    # Creator tier features ($15/month)
     SMART_GALLERY_GENERATOR = "smart_gallery_generator"
     POST_FORMATTING = "post_formatting"
     BASIC_VIDEO_PROCESSING = "basic_video_processing"
     EMAIL_SUPPORT = "email_support"
     
-    # Pro tier features ($50/month)
+    # Pro tier features ($30/month)
     FULL_VIDEO_EDITING_SUITE = "full_video_editing_suite"
     VEO_VIDEO_GENERATOR = "veo_video_generator"
     HIGHLIGHT_REEL_GENERATOR = "highlight_reel_generator"
@@ -98,13 +98,19 @@ FEATURE_ACCESS = {
 
 # Usage limits for different tiers based on the new pricing model
 USAGE_LIMITS = {
-    SubscriptionTier.FREE: {
-        "social_accounts": 1,
+    SubscriptionTier.PAYG: {
+        "social_accounts": 5,
         "users": 1,
-        "ai_content_credits_per_month": 25,
-        "scheduled_posts_per_month": 10,
-        "storage_gb": 0.5,  # 500MB
+        "ai_content_credits_per_month": -1,  # Usage-based
+        "scheduled_posts_per_month": -1,  # Usage-based
+        "storage_gb": -1,  # Usage-based
         "team_members": 1,
+        "usage_based": True,
+        "rates": {
+            "ai_credits": 0.15,
+            "scheduled_posts": 0.25,
+            "storage_gb_monthly": 2.99
+        }
     },
     SubscriptionTier.CREATOR: {
         "social_accounts": 3,
@@ -295,7 +301,7 @@ class SubscriptionAccessControl:
             logger.error(f"Error getting usage info: {e}")
             return {}
     
-    def get_upgrade_benefits(self, current_tier: SubscriptionTier = SubscriptionTier.FREE) -> List[str]:
+    def get_upgrade_benefits(self, current_tier: SubscriptionTier = SubscriptionTier.PAYG) -> List[str]:
         """
         Get list of benefits for upgrading from current tier.
         
@@ -305,20 +311,22 @@ class SubscriptionAccessControl:
         Returns:
             list: List of upgrade benefits
         """
-        if current_tier == SubscriptionTier.FREE:
+        if current_tier == SubscriptionTier.PAYG:
             return [
-                "✨ Creator ($19/month): 3 social accounts, 150 AI credits, 100 scheduled posts, basic video tools",
-                "🚀 Pro ($50/month): 10 social accounts, 750 AI credits, unlimited posts, full video suite, team collaboration",
+                "✨ Creator ($15/month): 3 social accounts, 150 AI credits, 100 scheduled posts, basic video tools",
+                "🚀 Growth ($20/month): 7 social accounts, 400 AI credits, 300 scheduled posts, advanced video processing",
+                "⭐ Pro ($30/month): 10 social accounts, 750+ AI credits, unlimited posts, full video suite + team collaboration",
                 "🏢 Business (Custom): Unlimited accounts, custom limits, advanced team features, dedicated support"
             ]
         elif current_tier == SubscriptionTier.CREATOR:
             return [
-                "🚀 Pro ($50/month): 10 social accounts, 750 AI credits, unlimited posts, full video processing suite, team collaboration",
+                "🚀 Growth ($20/month): 7 social accounts, 400 AI credits, 300 scheduled posts, advanced video processing",
+                "⭐ Pro ($30/month): 10 social accounts, 750+ AI credits, unlimited posts, full video suite + team collaboration",
                 "🏢 Business (Custom): Unlimited accounts, custom limits, advanced team features, dedicated account manager"
             ]
         elif current_tier == SubscriptionTier.PRO:
             return [
-                "�� Business (Custom): Unlimited accounts, custom limits, advanced team collaboration, API access, dedicated account manager"
+                "🏢 Business (Custom): Unlimited accounts, custom limits, advanced team collaboration, API access, dedicated account manager"
             ]
         else:
             return ["Contact sales for custom business solutions"]

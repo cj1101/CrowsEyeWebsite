@@ -1,4 +1,5 @@
-import axios from 'axios';
+import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+import crypto from 'crypto';
 
 // Helper function to get environment variables safely
 const getEnvVar = (name: string, fallback: string = ''): string => {
@@ -10,30 +11,57 @@ const getEnvVar = (name: string, fallback: string = ''): string => {
   return process.env[name] || fallback;
 };
 
+// Security utilities
+const generateNonce = (): string => {
+  return crypto.randomBytes(16).toString('hex');
+};
+
+const sanitizeInput = (input: string): string => {
+  return input.replace(/[<>\"'&]/g, '');
+};
+
+// Rate limiting helper
+class RateLimiter {
+  private requests: Map<string, number[]> = new Map();
+  private readonly maxRequests: number = 100;
+  private readonly windowMs: number = 60000; // 1 minute
+
+  isAllowed(key: string): boolean {
+    const now = Date.now();
+    const requests = this.requests.get(key) || [];
+    
+    // Remove old requests outside the window
+    const validRequests = requests.filter(time => now - time < this.windowMs);
+    
+    if (validRequests.length >= this.maxRequests) {
+      return false;
+    }
+    
+    validRequests.push(now);
+    this.requests.set(key, validRequests);
+    return true;
+  }
+}
+
+const rateLimiter = new RateLimiter();
+
 // Determine the API base URL dynamically for cross-platform compatibility
-// Priority: 1. Explicit env var, 2. Production endpoint, 3. Development fallback
+// Priority: 1. Explicit env var, 2. Local development backend, 3. Deployed endpoint
 const getApiBaseUrl = (): string => {
   const explicitUrl = getEnvVar('NEXT_PUBLIC_API_URL');
   if (explicitUrl && explicitUrl !== '') {
-    return `${explicitUrl}/api/v1`;
+    return explicitUrl;
   }
 
   const environment = getEnvVar('NODE_ENV', 'production');
-  const isProduction = environment === 'production';
   
-  if (isProduction || typeof window === 'undefined') {
-    // Production or server-side: use deployed Firebase Cloud Functions
-    return 'https://us-central1-crows-eye-website.cloudfunctions.net/api/v1';
+  // In development, use local backend
+  if (environment === 'development') {
+    return 'http://localhost:3002';
   }
-
-  // Development fallback (only for local development)
-  const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:5001/crows-eye-website/us-central1/api/v1';
-  }
-
-  // For development on non-localhost (e.g., network access), use production endpoint
-  return 'https://us-central1-crows-eye-website.cloudfunctions.net/api/v1';
+  
+  // Use the deployed API endpoint for production
+  return 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -46,15 +74,352 @@ console.log('🌐 API Configuration:', {
   hostname: typeof window !== 'undefined' ? window.location.hostname : 'server'
 });
 
-const api = axios.create({
+// Enhanced API instance with better timeout handling and interceptors
+const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000, // Increased timeout for better reliability
+  timeout: 60000, // 60 seconds for video processing
   headers: {
     'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+    'X-Client-Version': '1.0.0',
   },
 });
 
-// Mock data for fallback
+// Add request interceptor for authentication and security
+api.interceptors.request.use(
+  (config) => {
+    // Rate limiting check
+    const identifier = typeof window !== 'undefined' ? 
+      window.location.hostname : 
+      config.headers?.['X-Forwarded-For'] || 'server';
+    
+    if (!rateLimiter.isAllowed(identifier)) {
+      return Promise.reject(new Error('Rate limit exceeded'));
+    }
+
+    // Add security headers
+    config.headers['X-Request-ID'] = generateNonce();
+    config.headers['X-Timestamp'] = Date.now().toString();
+    
+    // Add authentication token if available
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    // Sanitize string inputs in data
+    if (config.data && typeof config.data === 'object') {
+      Object.keys(config.data).forEach(key => {
+        if (typeof config.data[key] === 'string') {
+          config.data[key] = sanitizeInput(config.data[key]);
+        }
+      });
+    }
+    
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Add response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    // Handle 401 Unauthorized
+    if (error.response?.status === 401) {
+      // Clear token and redirect to login
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('refresh_token');
+        window.location.href = '/auth/signin';
+      }
+    }
+    
+    // Handle 502 Bad Gateway - API is down
+    if (error.response?.status === 502) {
+      console.warn('API is temporarily unavailable (502). Using fallback mode.');
+      // Return mock data in development
+      if (DEVELOPMENT_FALLBACK) {
+        return Promise.resolve({ 
+          data: { error: 'API unavailable', fallback: true },
+          status: 502,
+          statusText: 'Bad Gateway',
+          headers: {},
+          config: error.config || {}
+        } as AxiosResponse);
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+// Type definitions for Google Photos integration
+export interface GooglePhotosAuth {
+  isConnected: boolean;
+  userEmail?: string;
+  albumCount?: number;
+  lastSync?: string;
+}
+
+export interface GooglePhotosAlbum {
+  id: string;
+  title: string;
+  productUrl: string;
+  coverPhotoUrl?: string;
+  mediaItemsCount: number;
+  isWriteable: boolean;
+}
+
+export interface GooglePhotosMediaItem {
+  id: string;
+  filename: string;
+  mimeType: string;
+  baseUrl: string;
+  productUrl: string;
+  description?: string;
+  mediaMetadata: {
+    creationTime: string;
+    width: string;
+    height: string;
+    photo?: {
+      cameraMake?: string;
+      cameraModel?: string;
+      focalLength?: number;
+      apertureFNumber?: number;
+      isoEquivalent?: number;
+    };
+    video?: {
+      fps?: number;
+      status?: string;
+    };
+  };
+}
+
+// Marketing Tool Types (matching backend)
+export interface RecentActivity {
+  id: string;
+  action: string;
+  timestamp: string;
+  type: 'success' | 'info' | 'warning';
+}
+
+export interface MarketingToolStats {
+  totalPosts: number;
+  scheduledPosts: number;
+  aiGenerated: number;
+  engagementRate: number;
+  socialAccounts: number;
+  mediaFiles: number;
+  recentActivity: RecentActivity[];
+  subscriptionTier: string;
+  aiCreditsRemaining: number;
+  aiEditsRemaining: number;
+}
+
+export interface CreatePostRequest {
+  content: string;
+  platforms: string[];
+  hashtags: string[];
+  mediaFiles: string[];
+  scheduledFor?: string;
+}
+
+export interface CreatePostResponse {
+  success: boolean;
+  postId: string;
+}
+
+// Enhanced authentication types with subscription tiers
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar_url?: string;
+  subscription_tier: 'free' | 'creator' | 'growth' | 'pro';
+  subscription_status: 'active' | 'inactive' | 'cancelled' | 'past_due';
+  subscription_expires?: string;
+  created_at: string;
+  updated_at: string;
+  last_login?: string;
+  email_verified?: boolean;
+  usage_limits: {
+    linked_accounts: number;
+    max_linked_accounts: number;
+    ai_credits: number;
+    max_ai_credits: number;
+    scheduled_posts: number;
+    max_scheduled_posts: number;
+    media_storage_mb: number;
+    max_media_storage_mb: number;
+  };
+  plan_features: {
+    basic_content_tools: boolean;
+    media_library: boolean;
+    smart_gallery: boolean;
+    post_formatting: boolean;
+    basic_video_tools: boolean;
+    advanced_content: boolean;
+    analytics: 'none' | 'basic' | 'enhanced' | 'advanced';
+    team_collaboration: boolean;
+    custom_branding: boolean;
+    api_access: boolean;
+    priority_support: boolean;
+  };
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData {
+  email: string;
+  password: string;
+  name: string;
+  subscription_tier?: 'free' | 'creator' | 'growth' | 'pro';
+}
+
+export interface AuthResponse {
+  success?: boolean;
+  error?: string;
+  data?: {
+    access_token: string;
+    refresh_token: string;
+    user: User;
+    expires_in?: number;
+  };
+}
+
+export interface APIResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+// Platform integration types
+export interface PlatformConnection {
+  platform: 'instagram' | 'tiktok' | 'pinterest' | 'twitter' | 'linkedin' | 'facebook';
+  connected: boolean;
+  username?: string;
+  profile_url?: string;
+  connected_at?: string;
+  last_sync?: string;
+  permissions: string[];
+}
+
+export interface PostData {
+  content: string;
+  media_ids: string[];
+  platforms: string[];
+  schedule_date?: string;
+  hashtags: string[];
+  location?: string;
+  caption?: string;
+}
+
+export interface ScheduledPost {
+  id: string;
+  content: string;
+  platforms: string[];
+  schedule_date: string;
+  status: 'scheduled' | 'published' | 'failed' | 'cancelled';
+  created_at: string;
+  published_at?: string;
+  error_message?: string;
+}
+
+// Analytics types
+export interface AnalyticsOverview {
+  total_posts: number;
+  total_engagement: number;
+  reach: number;
+  impressions: number;
+  follower_growth: number;
+  date_range: {
+    start: string;
+    end: string;
+  };
+}
+
+export interface PostAnalytics {
+  post_id: string;
+  platform: string;
+  likes: number;
+  comments: number;
+  shares: number;
+  reach: number;
+  impressions: number;
+  engagement_rate: number;
+  published_at: string;
+}
+
+// Compliance types
+export interface ComplianceCheck {
+  content: string;
+  media_urls: string[];
+  platforms: string[];
+}
+
+export interface ComplianceResult {
+  overall_score: number;
+  platform_results: {
+    [platform: string]: {
+      score: number;
+      issues: ComplianceIssue[];
+      suggestions: string[];
+    };
+  };
+}
+
+export interface ComplianceIssue {
+  type: 'warning' | 'error';
+  category: 'content' | 'format' | 'policy';
+  message: string;
+  suggestion?: string;
+}
+
+// AI Content Generation types
+export interface AIGenerationRequest {
+  prompt: string;
+  type: 'caption' | 'hashtags' | 'content_idea' | 'optimization';
+  platform?: string;
+  tone?: 'professional' | 'casual' | 'friendly' | 'energetic';
+  max_length?: number;
+}
+
+export interface AIGenerationResponse {
+  generated_content: string;
+  alternatives?: string[];
+  metadata: {
+    confidence_score: number;
+    suggested_hashtags?: string[];
+    estimated_engagement?: number;
+  };
+}
+
+// Type definitions for video processing
+export interface VideoProcessingOptions {
+  targetDuration?: number;
+  style?: 'dynamic' | 'calm' | 'energetic' | 'cinematic';
+  includeAudio?: boolean;
+  outputFormat?: 'mp4' | 'webm' | 'gif';
+  quality?: 'low' | 'medium' | 'high' | 'ultra';
+}
+
+export interface ProcessingJob {
+  id: string;
+  type: 'highlight' | 'story' | 'longform' | 'thumbnail';
+  status: 'queued' | 'processing' | 'completed' | 'failed';
+  progress: number;
+  inputFile: string;
+  outputFile?: string;
+  error?: string;
+  createdAt: string;
+  estimatedCompletion?: string;
+}
+
+// Enhanced mock data with Google Photos examples
 const mockData = {
   media: [
     {
@@ -65,7 +430,8 @@ const mockData = {
       file_size: 245760,
       created_at: '2024-01-15T10:30:00Z',
       tags: ['sample', 'demo'],
-      platforms: ['instagram', 'facebook']
+      platforms: ['instagram', 'facebook'],
+      source: 'upload'
     },
     {
       id: '2',
@@ -76,30 +442,101 @@ const mockData = {
       file_size: 15728640,
       created_at: '2024-01-14T14:20:00Z',
       tags: ['video', 'demo'],
-      platforms: ['youtube', 'tiktok']
+      platforms: ['youtube', 'tiktok'],
+      source: 'upload'
+    },
+    {
+      id: '3',
+      name: 'google-photos-sunset.jpg',
+      content_type: 'image/jpeg',
+      url: '/images/placeholder-sunset.jpg',
+      file_size: 512000,
+      created_at: '2023-12-20T18:30:00Z',
+      tags: ['sunset', 'landscape', 'google-photos'],
+      platforms: ['instagram'],
+      source: 'google_photos',
+      googlePhotosId: 'AGj1f4Y2XmE8H3kL9pQ'
     }
   ],
-  health: { status: 'ok', timestamp: new Date().toISOString() }
+  googlePhotos: {
+    auth: {
+      isConnected: false,
+      userEmail: undefined,
+      albumCount: 0,
+      lastSync: undefined
+    } as GooglePhotosAuth,
+    albums: [
+      {
+        id: 'album1',
+        title: 'Vacation 2024',
+        productUrl: 'https://photos.app.goo.gl/example1',
+        coverPhotoUrl: '/images/album-cover-1.jpg',
+        mediaItemsCount: 45,
+        isWriteable: false
+      },
+      {
+        id: 'album2',
+        title: 'Wedding Photos',
+        productUrl: 'https://photos.app.goo.gl/example2',
+        coverPhotoUrl: '/images/album-cover-2.jpg',
+        mediaItemsCount: 180,
+        isWriteable: false
+      }
+    ] as GooglePhotosAlbum[],
+    mediaItems: [] as GooglePhotosMediaItem[]
+  },
+  processingJobs: [
+    {
+      id: 'job1',
+      type: 'highlight',
+      status: 'completed',
+      progress: 100,
+      inputFile: 'long-video.mp4',
+      outputFile: 'highlight-reel.mp4',
+      createdAt: '2024-01-15T10:00:00Z'
+    }
+  ] as ProcessingJob[],
+  health: { 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    services: {
+      database: 'connected',
+      storage: 'connected',
+      googlePhotos: 'available',
+      aiProcessing: 'available'
+    }
+  }
 };
 
 // Helper function to create mock responses
-const mockResponse = (data: any, delay: number = 300) => {
+const mockResponse = (data: any, delay: number = 300): Promise<AxiosResponse> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve({ data, status: 200, statusText: 'OK' });
+      resolve({ 
+        data, 
+        status: 200, 
+        statusText: 'OK',
+        headers: {},
+        config: {} as any
+      });
     }, delay);
   });
 };
 
 // Enhanced helper function to handle API calls with fallback
-const apiWithFallback = async (apiCall: () => Promise<any>, mockResponseData: any, operationName: string = 'API call') => {
+const apiWithFallback = async (
+  apiCall: () => Promise<AxiosResponse>, 
+  mockResponseData: any, 
+  operationName: string = 'API call'
+): Promise<AxiosResponse> => {
   if (!DEVELOPMENT_FALLBACK) {
     console.log(`🚀 Production mode - making direct ${operationName}`);
     try {
       return await apiCall();
     } catch (error: any) {
       console.error(`❌ ${operationName} failed in production:`, error?.message || error);
-      throw error; // Don't fallback in production
+      throw error;
     }
   }
   
@@ -131,70 +568,869 @@ const apiWithFallback = async (apiCall: () => Promise<any>, mockResponseData: an
   }
 };
 
-// Request interceptor for authentication with better error handling
-api.interceptors.request.use(async (config) => {
-  try {
-    // Try to get Firebase auth token first
-    const { auth } = await import('@/lib/firebase');
-    if (auth?.currentUser) {
-      const token = await auth.currentUser.getIdToken();
-      config.headers.Authorization = `Bearer ${token}`;
-    } else {
-      // Fallback to localStorage token (if available)
-      if (typeof window !== 'undefined') {
-        const token = localStorage.getItem('authToken');
+// API endpoints are now correctly implemented and working
+
+export class CrowsEyeAPI {
+  private api: AxiosInstance;
+
+  // Transform backend user data to frontend User interface
+  private transformUser(backendUser: any): User {
+    return {
+      id: backendUser.id,
+      email: backendUser.email,
+      name: backendUser.displayName || `${backendUser.firstName || ''} ${backendUser.lastName || ''}`.trim(),
+      avatar_url: backendUser.avatar,
+      subscription_tier: backendUser.plan as 'free' | 'creator' | 'growth' | 'pro',
+      subscription_status: 'active', // Backend doesn't provide this
+      created_at: backendUser.createdAt,
+      updated_at: backendUser.updatedAt || backendUser.createdAt,
+      last_login: backendUser.lastLoginAt,
+      email_verified: true, // Backend doesn't provide this
+      usage_limits: {
+        linked_accounts: 0,
+        max_linked_accounts: 3,
+        ai_credits: 100,
+        max_ai_credits: 100,
+        scheduled_posts: 0,
+        max_scheduled_posts: 10,
+        media_storage_mb: 0,
+        max_media_storage_mb: 1000,
+      },
+      plan_features: {
+        basic_content_tools: true,
+        media_library: true,
+        smart_gallery: backendUser.plan !== 'FREE',
+        post_formatting: true,
+        basic_video_tools: true,
+        advanced_content: backendUser.plan === 'PRO',
+        analytics: backendUser.plan === 'FREE' ? 'basic' : 'enhanced',
+        team_collaboration: backendUser.plan === 'PRO',
+        custom_branding: backendUser.plan === 'PRO',
+        api_access: backendUser.plan !== 'FREE',
+        priority_support: backendUser.plan === 'PRO',
+      }
+    };
+  }
+
+  constructor(baseURL: string = API_BASE_URL) {
+    this.api = axios.create({
+      baseURL,
+      timeout: 60000,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    // Add interceptors to this instance as well
+    this.setupInterceptors();
+  }
+  
+  private setupInterceptors() {
+    // Add request interceptor for authentication
+    this.api.interceptors.request.use(
+      (config) => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
-      }
-    }
-  } catch (error) {
-    console.warn('Failed to get auth token:', error);
-    // Continue without token - API might not require authentication
-  }
-  return config;
-});
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
 
-// Response interceptor for error handling with cross-platform support
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Handle authentication errors
-    if (error.response?.status === 401) {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('authToken');
-        // Store current path for redirect after login
-        const currentPath = window.location.pathname;
-        if (currentPath !== '/auth/signin' && currentPath !== '/auth/signup') {
-          localStorage.setItem('redirectAfterLogin', currentPath);
+    // Add response interceptor for error handling
+    this.api.interceptors.response.use(
+      (response) => response,
+      (error: AxiosError) => {
+        if (error.response?.status === 401) {
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('auth_token');
+            window.location.href = '/auth/signin';
+          }
         }
-        window.location.href = '/auth/signin';
+        return Promise.reject(error);
       }
-    }
-    
-    // Handle network errors gracefully
-    if (!error.response && error.code === 'ECONNABORTED') {
-      console.error('Request timeout - please check your internet connection');
-    } else if (!error.response && error.message?.includes('Network Error')) {
-      console.error('Network error - please check your internet connection');
-    }
-    
-    return Promise.reject(error);
+    );
   }
-);
 
+  // =============================================================================
+  // AUTHENTICATION METHODS
+  // =============================================================================
+  
+  async register(userData: RegisterData): Promise<AuthResponse> {
+    try {
+      console.log('🔐 Attempting user registration...');
+      
+      // Map frontend RegisterData to backend expected format
+      const backendPayload = {
+        email: userData.email,
+        password: userData.password,
+        displayName: userData.name // Map 'name' to 'displayName'
+      };
+      
+      const response = await this.api.post('/auth/signup', backendPayload);
+      console.log('✅ Registration successful');
+      
+      // Transform backend response to match frontend expectations
+      if (response.data?.token && response.data?.user) {
+        return {
+          success: true,
+          data: {
+            access_token: response.data.token, // Map 'token' to 'access_token'
+            refresh_token: response.data.refreshToken || '', // Add refresh token if available
+            user: this.transformUser(response.data.user)
+          }
+        };
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Registration API failed:', error.message);
+      console.log('📊 Error details:', {
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        data: error?.response?.data
+      });
+      
+      // Return the error response from the API
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      
+      // Network or other errors
+      return {
+        success: false,
+        error: error.message || 'Registration failed'
+      };
+    }
+  }
+  
+  async login(credentials: LoginCredentials): Promise<AuthResponse> {
+    try {
+      console.log('🔐 Attempting user login...');
+      const response = await this.api.post('/api/v1/auth/login', credentials);
+      console.log('✅ Login successful');
+      
+      // Transform backend response to match frontend expectations
+      if (response.data?.token && response.data?.user) {
+        return {
+          success: true,
+          data: {
+            access_token: response.data.token, // Map 'token' to 'access_token'
+            refresh_token: response.data.refreshToken || '', // Add refresh token if available
+            user: this.transformUser(response.data.user)
+          }
+        };
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Login API failed:', error.message);
+      console.log('📊 Error details:', {
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        data: error?.response?.data
+      });
+      
+      // Return the error response from the API
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      
+      // Network or other errors
+      return {
+        success: false,
+        error: error.message || 'Login failed'
+      };
+    }
+  }
+  
+  async getCurrentUser(): Promise<APIResponse<User>> {
+    try {
+      console.log('👤 Fetching current user...');
+      const response = await this.api.get('/api/v1/auth/me');
+      console.log('✅ Current user fetched successfully');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      console.error('❌ getCurrentUser API failed:', error.message);
+      
+      // For unauthorized, throw error to trigger re-authentication
+      if (error.response?.status === 401) {
+        throw new Error('Unauthorized - token expired or invalid');
+      }
+      
+      throw error;
+    }
+  }
+  
+  async refreshToken(refreshToken: string): Promise<AxiosResponse<AuthResponse>> {
+    return this.api.post('/api/v1/auth/refresh', { refresh_token: refreshToken });
+  }
+  
+  async logout(): Promise<AxiosResponse> {
+    return this.api.post('/api/v1/auth/logout');
+  }
+  
+  async updateProfile(profileData: Partial<User>): Promise<AxiosResponse<User>> {
+    return this.api.put('/api/v1/users/me', profileData);
+  }
+
+  // =============================================================================
+  // HEALTH CHECK METHODS
+  // =============================================================================
+
+  // === HEALTH & STATUS ===
+  async healthCheck(): Promise<AxiosResponse> {
+    return this.api.get('/api/v1/health');
+  }
+
+  async testConnection(): Promise<AxiosResponse> {
+    return apiWithFallback(
+      () => this.api.get('/test'),
+      { status: 'ok', message: 'Test connection successful' },
+      'Test Connection'
+    );
+  }
+
+  // =============================================================================
+  // PLATFORM INTEGRATION METHODS
+  // =============================================================================
+  
+  async getPlatforms(): Promise<AxiosResponse<PlatformConnection[]>> {
+    const mockPlatforms: PlatformConnection[] = [
+      {
+        platform: 'instagram',
+        connected: false,
+        permissions: ['basic_info', 'content_publish']
+      },
+      {
+        platform: 'tiktok',
+        connected: false,
+        permissions: ['user.info.basic', 'video.publish']
+      },
+      {
+        platform: 'pinterest',
+        connected: false,
+        permissions: ['read_public', 'write_public']
+      }
+    ];
+    
+    return apiWithFallback(
+      () => this.api.get('/api/v1/platforms'),
+      mockPlatforms,
+      'Get Platforms'
+    );
+  }
+  
+  async connectPlatform(platform: string): Promise<AxiosResponse> {
+    return this.api.post(`/api/v1/platforms/${platform}/connect`);
+  }
+  
+  async disconnectPlatform(platform: string): Promise<AxiosResponse> {
+    return this.api.delete(`/api/v1/platforms/${platform}/disconnect`);
+  }
+  
+  async getPlatformStatus(platform: string): Promise<AxiosResponse<PlatformConnection>> {
+    const mockStatus: PlatformConnection = {
+      platform: platform as any,
+      connected: false,
+      permissions: []
+    };
+    
+    return apiWithFallback(
+      () => this.api.get(`/api/v1/platforms/${platform}/status`),
+      mockStatus,
+      `Get ${platform} Status`
+    );
+  }
+  
+  async postToPlatform(platform: string, postData: PostData): Promise<AxiosResponse> {
+    return this.api.post(`/api/v1/platforms/${platform}/post`, postData);
+  }
+
+  // =============================================================================
+  // SCHEDULING METHODS
+  // =============================================================================
+  
+  async getSchedules(): Promise<AxiosResponse<ScheduledPost[]>> {
+    const mockSchedules: ScheduledPost[] = [
+      {
+        id: 'sched1',
+        content: 'Sample scheduled post',
+        platforms: ['instagram', 'twitter'],
+        schedule_date: new Date(Date.now() + 86400000).toISOString(),
+        status: 'scheduled',
+        created_at: new Date().toISOString()
+      }
+    ];
+    
+    return apiWithFallback(
+      () => this.api.get('/api/v1/schedules'),
+      mockSchedules,
+      'Get Schedules'
+    );
+  }
+  
+  async createSchedule(scheduleData: Omit<ScheduledPost, 'id' | 'created_at' | 'status'>): Promise<AxiosResponse<ScheduledPost>> {
+    return this.api.post('/api/v1/schedules', scheduleData);
+  }
+  
+  async updateSchedule(scheduleId: string, scheduleData: Partial<ScheduledPost>): Promise<AxiosResponse<ScheduledPost>> {
+    return this.api.put(`/api/v1/schedules/${scheduleId}`, scheduleData);
+  }
+  
+  async deleteSchedule(scheduleId: string): Promise<AxiosResponse> {
+    return this.api.delete(`/api/v1/schedules/${scheduleId}`);
+  }
+  
+  async publishPost(postData: PostData): Promise<AxiosResponse> {
+    return this.api.post('/api/v1/posts/publish', postData);
+  }
+
+  // =============================================================================
+  // ANALYTICS METHODS
+  // =============================================================================
+  
+  async getAnalyticsOverview(dateRange?: { start: string; end: string }): Promise<AxiosResponse<AnalyticsOverview>> {
+    const mockOverview: AnalyticsOverview = {
+      total_posts: 45,
+      total_engagement: 2340,
+      reach: 15800,
+      impressions: 23400,
+      follower_growth: 127,
+      date_range: dateRange || {
+        start: new Date(Date.now() - 30 * 86400000).toISOString(),
+        end: new Date().toISOString()
+      }
+    };
+    
+    return apiWithFallback(
+      () => this.api.get('/api/v1/analytics/overview', { params: dateRange }),
+      mockOverview,
+      'Get Analytics Overview'
+    );
+  }
+  
+  async getPostAnalytics(): Promise<AxiosResponse<PostAnalytics[]>> {
+    const mockAnalytics: PostAnalytics[] = [
+      {
+        post_id: 'post1',
+        platform: 'instagram',
+        likes: 234,
+        comments: 45,
+        shares: 12,
+        reach: 1200,
+        impressions: 1800,
+        engagement_rate: 24.25,
+        published_at: new Date(Date.now() - 86400000).toISOString()
+      }
+    ];
+    
+    return apiWithFallback(
+      () => this.api.get('/api/v1/analytics/posts'),
+      mockAnalytics,
+      'Get Post Analytics'
+    );
+  }
+  
+  async getPlatformAnalytics(): Promise<AxiosResponse> {
+    const mockPlatformAnalytics = {
+      instagram: { followers: 1234, engagement_rate: 4.2 },
+      tiktok: { followers: 5678, engagement_rate: 6.8 }
+    };
+    
+    return apiWithFallback(
+      () => this.api.get('/api/v1/analytics/platforms'),
+      mockPlatformAnalytics,
+      'Get Platform Analytics'
+    );
+  }
+  
+  async exportAnalytics(format: 'pdf' | 'csv' | 'json', dateRange: { start: string; end: string }): Promise<AxiosResponse> {
+    return this.api.get('/api/v1/analytics/export', {
+      params: { format, ...dateRange }
+    });
+  }
+
+  // =============================================================================
+  // AI CONTENT GENERATION METHODS
+  // =============================================================================
+  
+  async generateCaption(request: AIGenerationRequest): Promise<AxiosResponse<AIGenerationResponse>> {
+    const mockResponse: AIGenerationResponse = {
+      generated_content: 'AI-generated caption based on your prompt',
+      alternatives: ['Alternative caption 1', 'Alternative caption 2'],
+      metadata: {
+        confidence_score: 0.85,
+        suggested_hashtags: ['#ai', '#generated', '#content'],
+        estimated_engagement: 75
+      }
+    };
+    
+    return apiWithFallback(
+      () => this.api.post('/api/v1/ai/generate-caption', request),
+      mockResponse,
+      'Generate Caption'
+    );
+  }
+  
+  async generateHashtags(request: AIGenerationRequest): Promise<AxiosResponse<AIGenerationResponse>> {
+    const mockResponse: AIGenerationResponse = {
+      generated_content: '#trending #viral #content #marketing #social',
+      alternatives: ['#alternative #hashtags #set1', '#another #hashtag #set2'],
+      metadata: {
+        confidence_score: 0.92,
+        suggested_hashtags: ['#trending', '#viral', '#content', '#marketing', '#social'],
+        estimated_engagement: 85
+      }
+    };
+    
+    return apiWithFallback(
+      () => this.api.post('/api/v1/ai/generate-hashtags', request),
+      mockResponse,
+      'Generate Hashtags'
+    );
+  }
+  
+  async enhanceImage(imageFile: File): Promise<AxiosResponse> {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    
+    return this.api.post('/api/v1/ai/enhance-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  }
+  
+  async optimizeContent(request: AIGenerationRequest): Promise<AxiosResponse<AIGenerationResponse>> {
+    const mockResponse: AIGenerationResponse = {
+      generated_content: 'Optimized content for better engagement',
+      metadata: {
+        confidence_score: 0.88,
+        estimated_engagement: 92
+      }
+    };
+    
+    return apiWithFallback(
+      () => this.api.post('/api/v1/ai/optimize-content', request),
+      mockResponse,
+      'Optimize Content'
+    );
+  }
+
+  // =============================================================================
+  // COMPLIANCE METHODS
+  // =============================================================================
+  
+  async checkCompliance(checkData: ComplianceCheck): Promise<AxiosResponse<ComplianceResult>> {
+    const mockResult: ComplianceResult = {
+      overall_score: 85,
+      platform_results: {
+        instagram: {
+          score: 90,
+          issues: [],
+          suggestions: ['Consider adding more relevant hashtags']
+        },
+        tiktok: {
+          score: 80,
+          issues: [
+            {
+              type: 'warning',
+              category: 'content',
+              message: 'Content might be too long for TikTok',
+              suggestion: 'Consider shortening the caption'
+            }
+          ],
+          suggestions: ['Use trending sounds', 'Add captions for accessibility']
+        }
+      }
+    };
+    
+    return apiWithFallback(
+      () => this.api.post('/api/v1/compliance/check', checkData),
+      mockResult,
+      'Check Compliance'
+    );
+  }
+  
+  async getComplianceRules(): Promise<AxiosResponse> {
+    const mockRules = {
+      instagram: {
+        max_caption_length: 2200,
+        max_hashtags: 30,
+        required_fields: ['content']
+      },
+      tiktok: {
+        max_caption_length: 150,
+        max_hashtags: 100,
+        required_fields: ['content', 'video']
+      }
+    };
+    
+    return apiWithFallback(
+      () => this.api.get('/api/v1/compliance/rules'),
+      mockRules,
+      'Get Compliance Rules'
+    );
+  }
+  
+  async validateContent(content: any): Promise<AxiosResponse> {
+    return this.api.post('/api/v1/compliance/validate', content);
+  }
+
+  // === GOOGLE PHOTOS INTEGRATION ===
+  async connectGooglePhotos(): Promise<AxiosResponse> {
+    return apiWithFallback(
+      () => this.api.post('/google-photos/auth'),
+      { authUrl: 'https://accounts.google.com/oauth2/auth?...' },
+      'Google Photos OAuth initiation'
+    );
+  }
+
+  async getGooglePhotosStatus(): Promise<AxiosResponse> {
+    return apiWithFallback(
+      () => this.api.get('/google-photos/status'),
+      mockData.googlePhotos.auth,
+      'Google Photos auth status'
+    );
+  }
+
+  async listGooglePhotosAlbums(): Promise<AxiosResponse> {
+    return apiWithFallback(
+      () => this.api.get('/google-photos/albums'),
+      mockData.googlePhotos.albums,
+      'Google Photos albums list'
+    );
+  }
+
+  async getAlbumMedia(albumId: string, pageToken?: string): Promise<AxiosResponse> {
+    const params = pageToken ? { pageToken } : {};
+    return apiWithFallback(
+      () => this.api.get(`/google-photos/albums/${albumId}/media`, { params }),
+      mockData.googlePhotos.mediaItems,
+      `Google Photos album ${albumId} media`
+    );
+  }
+
+  async importFromGooglePhotos(albumId: string, mediaIds: string[]): Promise<AxiosResponse> {
+    return apiWithFallback(
+      () => this.api.post('/google-photos/import', { albumId, mediaIds }),
+      { jobId: 'import-job-123', status: 'queued', itemCount: mediaIds.length },
+      'Google Photos media import'
+    );
+  }
+
+  async searchGooglePhotos(query: string): Promise<AxiosResponse> {
+    return apiWithFallback(
+      () => this.api.get('/google-photos/search', { params: { q: query } }),
+      mockData.googlePhotos.mediaItems.filter(item => 
+        item.filename.toLowerCase().includes(query.toLowerCase())
+      ),
+      'Google Photos search'
+    );
+  }
+
+  async syncGooglePhotos(): Promise<AxiosResponse> {
+    return apiWithFallback(
+      () => this.api.post('/google-photos/sync'),
+      { jobId: 'sync-job-456', status: 'queued' },
+      'Google Photos sync'
+    );
+  }
+
+  // === VIDEO PROCESSING & ANALYSIS ===
+  async generateHighlights(videoFile: File, options: VideoProcessingOptions = {}): Promise<AxiosResponse> {
+    const formData = new FormData();
+    formData.append('video', videoFile);
+    formData.append('options', JSON.stringify(options));
+
+    return apiWithFallback(
+      () => this.api.post('/video/highlights', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 300000 // 5 minutes for video processing
+      }),
+      { 
+        jobId: 'highlight-job-789', 
+        status: 'queued', 
+        estimatedDuration: 120,
+        message: 'Video highlight generation started'
+      },
+      'Video highlight generation'
+    );
+  }
+
+  async createStoryClips(videoFile: File, maxDuration: number = 60): Promise<AxiosResponse> {
+    const formData = new FormData();
+    formData.append('video', videoFile);
+    formData.append('maxDuration', maxDuration.toString());
+
+    return apiWithFallback(
+      () => this.api.post('/video/story-clips', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 300000
+      }),
+      { 
+        jobId: 'story-job-101', 
+        status: 'queued',
+        clipCount: 3,
+        message: 'Story clips generation started'
+      },
+      'Story clips creation'
+    );
+  }
+
+  async processLongForm(videoFile: File, targetDuration: number, prompt?: string): Promise<AxiosResponse> {
+    const formData = new FormData();
+    formData.append('video', videoFile);
+    formData.append('targetDuration', targetDuration.toString());
+    if (prompt) formData.append('prompt', prompt);
+
+    return apiWithFallback(
+      () => this.api.post('/video/long-form', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 600000 // 10 minutes for long-form processing
+      }),
+      { 
+        jobId: 'longform-job-202', 
+        status: 'queued',
+        estimatedCost: 2.50,
+        message: 'Long-form content processing started'
+      },
+      'Long-form video processing'
+    );
+  }
+
+  async generateThumbnails(videoFile: File, count: number = 5): Promise<AxiosResponse> {
+    const formData = new FormData();
+    formData.append('video', videoFile);
+    formData.append('count', count.toString());
+
+    return apiWithFallback(
+      () => this.api.post('/video/thumbnails', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      }),
+      { 
+        jobId: 'thumb-job-303', 
+        status: 'queued',
+        thumbnailCount: count,
+        message: 'Thumbnail generation started'
+      },
+      'Video thumbnail generation'
+    );
+  }
+
+  // === JOB MANAGEMENT ===
+  async getProcessingJob(jobId: string): Promise<AxiosResponse> {
+    return apiWithFallback(
+      () => this.api.get(`/jobs/${jobId}`),
+      mockData.processingJobs.find(job => job.id === jobId) || mockData.processingJobs[0],
+      `Processing job ${jobId} status`
+    );
+  }
+
+  async listProcessingJobs(userId?: string): Promise<AxiosResponse> {
+    const params = userId ? { userId } : {};
+    return apiWithFallback(
+      () => this.api.get('/jobs', { params }),
+      mockData.processingJobs,
+      'Processing jobs list'
+    );
+  }
+
+  async cancelProcessingJob(jobId: string): Promise<AxiosResponse> {
+    return apiWithFallback(
+      () => this.api.delete(`/jobs/${jobId}`),
+      { message: 'Job cancelled successfully' },
+      `Cancel processing job ${jobId}`
+    );
+  }
+
+  // === MEDIA MANAGEMENT ===
+  async uploadMedia(file: File, tags: string[] = []): Promise<AxiosResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('tags', JSON.stringify(tags));
+
+    return apiWithFallback(
+      () => this.api.post('/media/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      }),
+      {
+        id: `media-${Date.now()}`,
+        name: file.name,
+        content_type: file.type,
+        file_size: file.size,
+        created_at: new Date().toISOString(),
+        tags,
+        source: 'upload'
+      },
+      'Media upload'
+    );
+  }
+
+  async getMediaLibrary(page: number = 1, limit: number = 20): Promise<AxiosResponse> {
+    return apiWithFallback(
+      () => this.api.get('/media', { params: { page, limit } }),
+      {
+        media: mockData.media,
+        pagination: { page, limit, total: mockData.media.length, hasMore: false }
+      },
+      'Media library fetch'
+    );
+  }
+
+  async searchMedia(query: string): Promise<AxiosResponse> {
+    return apiWithFallback(
+      () => this.api.get('/media/search', { params: { q: query } }),
+      mockData.media.filter(item => 
+        item.name.toLowerCase().includes(query.toLowerCase()) ||
+        item.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
+      ),
+      'Media search'
+    );
+  }
+
+  async deleteMedia(mediaId: string): Promise<AxiosResponse> {
+    return apiWithFallback(
+      () => this.api.delete(`/media/${mediaId}`),
+      { message: 'Media deleted successfully' },
+      `Delete media ${mediaId}`
+    );
+  }
+
+  // === ANALYTICS & REPORTING ===
+  async getProcessingStats(dateRange?: { start: string; end: string }): Promise<AxiosResponse> {
+    const params = dateRange ? dateRange : {};
+    return apiWithFallback(
+      () => this.api.get('/analytics/processing', { params }),
+      {
+        totalJobs: 145,
+        completedJobs: 132,
+        failedJobs: 8,
+        activeJobs: 5,
+        processingTime: { average: 180, median: 120 },
+        storageUsed: '2.3GB',
+        apiCalls: 1847
+      },
+      'Processing statistics'
+    );
+  }
+
+  async getSystemHealth(): Promise<AxiosResponse> {
+    return apiWithFallback(
+      () => this.api.get('/analytics/health'),
+      {
+        status: 'healthy',
+        uptime: '99.8%',
+        responseTime: 145,
+        activeConnections: 23,
+        services: {
+          database: 'operational',
+          storage: 'operational',
+          processing: 'operational',
+          googlePhotos: 'operational'
+        }
+      },
+      'System health monitoring'
+    );
+  }
+
+  async exportReport(format: 'pdf' | 'csv' | 'json', dateRange: { start: string; end: string }): Promise<AxiosResponse> {
+    return apiWithFallback(
+      () => this.api.get('/analytics/export', { 
+        params: { format, ...dateRange },
+        responseType: format === 'json' ? 'json' : 'blob'
+      }),
+      { downloadUrl: `/reports/report-${Date.now()}.${format}` },
+      `Export ${format.toUpperCase()} report`
+    );
+  }
+
+  // =============================================================================
+  // MARKETING TOOL METHODS
+  // =============================================================================
+
+  async getMarketingToolStats(): Promise<AxiosResponse<MarketingToolStats>> {
+    return apiWithFallback(
+      () => this.api.get('/api/v1/marketing-tool/stats'),
+      {
+        totalPosts: 12,
+        scheduledPosts: 3,
+        aiGenerated: 8,
+        engagementRate: 4.2,
+        socialAccounts: 3,
+        mediaFiles: 24,
+        recentActivity: [
+          { id: '1', action: 'Post published to Instagram', timestamp: new Date().toISOString(), type: 'success' },
+          { id: '2', action: 'AI caption generated', timestamp: new Date().toISOString(), type: 'info' },
+          { id: '3', action: 'Schedule updated', timestamp: new Date().toISOString(), type: 'info' }
+        ],
+        subscriptionTier: 'free',
+        aiCreditsRemaining: 50,
+        aiEditsRemaining: 25
+      },
+      'Marketing tool stats'
+    );
+  }
+
+  async createMarketingPost(postData: CreatePostRequest): Promise<AxiosResponse<CreatePostResponse>> {
+    return apiWithFallback(
+      () => this.api.post('/api/v1/marketing-tool/posts', postData),
+      {
+        success: true,
+        postId: `post_${Date.now()}`
+      },
+      'Create marketing post'
+    );
+  }
+}
+
+// Legacy API service for backward compatibility
 export const apiService = {
-  // Health checks with enhanced error handling
+  // Health checks
   healthCheck: () => apiWithFallback(
-    () => api.get('/health'), 
+    () => api.get('/api/v1/health'), 
     mockData.health, 
     'Health check'
   ),
   
   apiHealthCheck: () => apiWithFallback(
-    () => api.get('/health'), 
+    () => api.get('/api/v1/health'), 
     mockData.health, 
     'API health check'
+  ),
+
+  // =============================================================================
+  // MARKETING TOOL METHODS
+  // =============================================================================
+
+  getMarketingToolStats: () => apiWithFallback(
+    () => api.get('/api/v1/marketing-tool/stats'),
+    {
+      totalPosts: 12,
+      scheduledPosts: 3,
+      aiGenerated: 8,
+      engagementRate: 4.2,
+      socialAccounts: 3,
+      mediaFiles: 24,
+      recentActivity: [
+        { id: '1', action: 'Post published to Instagram', timestamp: new Date().toISOString(), type: 'success' },
+        { id: '2', action: 'AI caption generated', timestamp: new Date().toISOString(), type: 'info' },
+        { id: '3', action: 'Schedule updated', timestamp: new Date().toISOString(), type: 'info' }
+      ],
+      subscriptionTier: 'free',
+      aiCreditsRemaining: 50,
+      aiEditsRemaining: 25
+    },
+    'Marketing tool stats'
+  ),
+
+  createMarketingPost: (postData: CreatePostRequest) => apiWithFallback(
+    () => api.post('/api/v1/marketing-tool/posts', postData),
+    {
+      success: true,
+      postId: `post_${Date.now()}`
+    },
+    'Create marketing post'
   ),
 
   // === AI CONTENT GENERATION (Updated to match backend) ===
@@ -206,7 +1442,7 @@ export const apiService = {
     platform: 'instagram' | 'facebook' | 'tiktok' | 'youtube';
     auto_apply?: boolean;
   }) => apiWithFallback(
-    () => api.post('/ai/captions/generate-from-media', data), 
+    () => api.post('/api/v1/ai/captions/generate-from-media', data), 
     { captions: ['🌟 Amazing content coming your way! #exciting #demo'] },
     'Caption generation'
   ),
@@ -218,7 +1454,7 @@ export const apiService = {
     audience?: string;
     brand_voice?: string;
   }) => apiWithFallback(
-    () => api.post('/ai/captions/generate-custom', data), 
+    () => api.post('/api/v1/ai/captions/generate-custom', data), 
     { captions: ['✨ Custom caption generated for your content! #AI #creative'] },
     'Custom caption generation'
   ),
@@ -231,7 +1467,7 @@ export const apiService = {
     count?: number;
     trending?: boolean;
   }) => apiWithFallback(
-    () => api.post('/ai/hashtags/generate', data), 
+    () => api.post('/api/v1/ai/hashtags/generate', data), 
     { hashtags: ['#content', '#social', '#marketing', '#demo', '#AI'] },
     'Hashtag generation'
   ),
@@ -243,7 +1479,7 @@ export const apiService = {
     variation_count?: number;
     improvement_focus?: string;
   }) => apiWithFallback(
-    () => api.post('/ai/content/suggestions', data), 
+    () => api.post('/api/v1/ai/content/suggestions', data), 
     { suggestions: ['Try adding more emojis!', 'Consider a call-to-action', 'Include trending hashtags'] },
     'Content suggestions'
   ),
@@ -257,7 +1493,7 @@ export const apiService = {
     brand_voice?: string;
     count?: number;
   }) => apiWithFallback(
-    () => api.post('/ai/content/ideas', data), 
+    () => api.post('/api/v1/ai/content/ideas', data), 
     { ideas: ['Behind-the-scenes content', 'User-generated content campaign', 'Tutorial series'] },
     'Content ideas generation'
   ),
@@ -269,7 +1505,7 @@ export const apiService = {
     aspect_ratio?: string;
     count?: number;
   }) => apiWithFallback(
-    () => api.post('/ai/images/generate', data), 
+    () => api.post('/api/v1/ai/images/generate', data), 
     { images: [{ url: '/images/placeholder-generated.jpg', prompt: data.prompt }] },
     'Image generation'
   ),
@@ -281,7 +1517,7 @@ export const apiService = {
     style?: string;
     aspect_ratio?: string;
     fps?: number;
-  }) => apiWithFallback(() => api.post('/ai/videos/generate', data), {
+  }) => apiWithFallback(() => api.post('/api/v1/ai/videos/generate', data), {
     videos: [{ url: '/videos/placeholder-video.mp4', id: 'generated-video-1' }]
   }),
 
@@ -300,7 +1536,7 @@ export const apiService = {
       end_time?: number;
       description?: string;
     };
-  }) => apiWithFallback(() => api.post('/ai/highlights/generate', data), {
+  }) => apiWithFallback(() => api.post('/api/v1/ai/highlights/generate', data), {
     highlight: { url: '/videos/highlight-reel.mp4', id: 'highlight-1' }
   }),
 
@@ -313,8 +1549,8 @@ export const apiService = {
     console.log('🌐 API Base URL:', API_BASE_URL);
     
     const uploadCall = () => {
-      console.log('📤 Making actual API call to /media/upload');
-      return api.post('/media/upload', formData, {
+      console.log('📤 Making actual API call to /api/v1/media/upload');
+      return api.post('/api/v1/media/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 30000, // 30 second timeout for uploads
         onUploadProgress: (progressEvent) => {
@@ -382,12 +1618,12 @@ export const apiService = {
   },
 
   // Get Media (Updated to match backend)
-  getMedia: (mediaId: string) => apiWithFallback(() => api.get(`/media/${mediaId}`), 
+  getMedia: (mediaId: string) => apiWithFallback(() => api.get(`/api/v1/media/${mediaId}`), 
     mockData.media.find(m => m.id === mediaId) || mockData.media[0]
   ),
   
   // Get All Media/Library (New method)
-  getMediaLibrary: () => apiWithFallback(() => api.get('/media'), mockData.media),
+  getMediaLibrary: () => apiWithFallback(() => api.get('/api/v1/media'), mockData.media),
 
   // Video Processing (Updated to match backend)
   processVideo: (data: {
@@ -398,14 +1634,14 @@ export const apiService = {
     }>;
     output_format: 'mp4' | 'webm' | 'mov';
     quality?: string;
-  }) => api.post('/media/video/process', data),
+  }) => api.post('/api/v1/media/video/process', data),
 
   // Media Tags Generation (Updated to match new backend naming)
   generateMediaTags: (mediaId: string, data?: {
     auto_detect?: boolean;
     custom_tags?: string[];
     confidence_threshold?: number;
-  }) => api.post(`/ai/media/${mediaId}/tags/generate`, data),
+  }) => api.post(`/api/v1/ai/media/${mediaId}/tags/generate`, data),
 
   // Bulk Media Tags Generation (Updated to match new backend naming)
   generateBulkMediaTags: (data: {
@@ -413,7 +1649,7 @@ export const apiService = {
     auto_detect?: boolean;
     custom_tags?: string[];
     confidence_threshold?: number;
-  }) => api.post('/ai/media/tags/bulk-generate', data),
+  }) => api.post('/api/v1/ai/media/tags/bulk-generate', data),
 
   // Thumbnail Generation (Updated to match backend)
   generateThumbnails: (data: {
@@ -421,7 +1657,7 @@ export const apiService = {
     timestamp?: number;
     count?: number;
     style?: 'auto' | 'cinematic' | 'bright';
-  }) => api.post('/media/thumbnails/generate', data),
+  }) => api.post('/api/v1/media/thumbnails/generate', data),
 
   // === ANALYTICS & PERFORMANCE (Updated to match backend) ===
   
@@ -439,8 +1675,8 @@ export const apiService = {
     if (params?.platform) queryParams.append('platform', params.platform);
     
     const endpoint = params?.platform 
-      ? `/analytics/performance/${params.platform}`
-      : '/analytics/performance';
+      ? `/api/v1/analytics/performance/${params.platform}`
+      : '/api/v1/analytics/performance';
     
     return api.get(`${endpoint}?${queryParams.toString()}`);
   },
@@ -452,7 +1688,7 @@ export const apiService = {
     content_id?: string;
     engagement_type?: string;
     timestamp?: string;
-  }) => api.post('/analytics/track', data),
+  }) => api.post('/api/v1/analytics/track', data),
 
   // === BULK OPERATIONS (Updated to match backend) ===
   
@@ -466,7 +1702,7 @@ export const apiService = {
     folder_path?: string;
     auto_process?: boolean;
     processing_options?: Record<string, any>;
-  }) => api.post('/bulk/upload', data),
+  }) => api.post('/api/v1/bulk/upload', data),
 
   // Bulk Schedule (Updated to match backend)
   bulkSchedule: (data: {
@@ -479,10 +1715,10 @@ export const apiService = {
       auto_optimize?: boolean;
     };
     platforms?: string[];
-  }) => api.post('/bulk/schedule', data),
+  }) => api.post('/api/v1/bulk/schedule', data),
 
   // Bulk Job Status (Updated to match backend)
-  getBulkJobStatus: (jobId: string) => api.get(`/bulk/status/${jobId}`),
+  getBulkJobStatus: (jobId: string) => api.get(`/api/v1/bulk/status/${jobId}`),
 
   // === PLATFORM PREVIEWS (Updated to match backend) ===
   
@@ -496,36 +1732,36 @@ export const apiService = {
     };
     platforms: string[];
     preview_type?: 'post' | 'story';
-  }) => api.post('/previews/generate', data),
+  }) => api.post('/api/v1/previews/generate', data),
 
   // Get Preview (Updated to match backend)
   getPreview: (previewId: string, platform?: string) => {
     const params = platform ? `?platform=${platform}` : '';
-    return api.get(`/previews/${previewId}${params}`);
+    return api.get(`/api/v1/previews/${previewId}${params}`);
   },
 
   // === LEGACY ENDPOINTS (keeping for backward compatibility) ===
   
   // Post management (existing functionality)
-  createPost: (post: any) => api.post('/posts', post),
+  createPost: (post: any) => api.post('/api/v1/posts', post),
   getPosts: (params?: { page?: number; limit?: number; status?: string; platform?: string }) => 
-    api.get('/posts', { params }),
-  updatePost: (id: string, updates: any) => api.patch(`/posts/${id}`, updates),
-  deletePost: (id: string) => api.delete(`/posts/${id}`),
+    api.get('/api/v1/posts', { params }),
+  updatePost: (id: string, updates: any) => api.patch(`/api/v1/posts/${id}`, updates),
+  deletePost: (id: string) => api.delete(`/api/v1/posts/${id}`),
   schedulePost: (id: string, scheduledFor: Date) => 
-    api.post(`/posts/${id}/schedule`, { scheduledFor }),
-  publishPost: (id: string) => api.post(`/posts/${id}/publish`),
+    api.post(`/api/v1/posts/${id}/schedule`, { scheduledFor }),
+  publishPost: (id: string) => api.post(`/api/v1/posts/${id}/publish`),
 
   // Platform integrations (existing functionality)
   connectPlatform: (platform: string, credentials: any) => 
-    api.post(`/integrations/${platform}/connect`, credentials),
+    api.post(`/api/v1/platforms/${platform}/connect`, credentials),
   disconnectPlatform: (platform: string) => 
-    api.delete(`/integrations/${platform}`),
-  getPlatformStatus: () => api.get('/integrations/status'),
+    api.delete(`/api/v1/platforms/${platform}`),
+  getPlatformStatus: () => api.get('/api/v1/platforms/status'),
 
   // User settings (existing functionality)
-  getUserSettings: () => api.get('/settings'),
-  updateUserSettings: (settings: any) => api.patch('/settings', settings),
+  getUserSettings: () => api.get('/api/v1/users/settings'),
+  updateUserSettings: (settings: any) => api.patch('/api/v1/users/settings', settings),
 
   // === COMPLIANCE & PLATFORM REQUIREMENTS ===
   

@@ -183,20 +183,21 @@ export function useMediaLibrary() {
         
         apiResponse = await apiService.uploadMedia(formData);
         console.log('API upload successful:', apiResponse);
-        console.log('API response data:', JSON.stringify(apiResponse.data, null, 2));
+        console.log('API response data:', JSON.stringify((apiResponse as any)?.data, null, 2));
         
         // Create item from API response
+        const responseData = (apiResponse as any)?.data;
         uploadedItem = {
-          id: apiResponse.data.id,
-          name: apiResponse.data.name || file.name,
-          type: (apiResponse.data.content_type?.startsWith('image/') ? 'image' : 
-                apiResponse.data.content_type?.startsWith('video/') ? 'video' : 'audio') as 'image' | 'video' | 'audio',
-          url: apiResponse.data.url,
-          thumbnail: apiResponse.data.thumbnail_url || apiResponse.data.thumbnail,
-          size: apiResponse.data.file_size || file.size,
-          createdAt: apiResponse.data.created_at || new Date().toISOString(),
-          tags: apiResponse.data.tags || ['uploaded'],
-          platforms: apiResponse.data.platforms || []
+          id: responseData?.id,
+          name: responseData?.name || file.name,
+          type: (responseData?.content_type?.startsWith('image/') ? 'image' : 
+                responseData?.content_type?.startsWith('video/') ? 'video' : 'audio') as 'image' | 'video' | 'audio',
+          url: responseData?.url,
+          thumbnail: responseData?.thumbnail_url || responseData?.thumbnail,
+          size: responseData?.file_size || file.size,
+          createdAt: responseData?.created_at || new Date().toISOString(),
+          tags: responseData?.tags || ['uploaded'],
+          platforms: responseData?.platforms || []
         };
       } catch (apiError) {
         console.warn('API upload failed, creating local item:', apiError);

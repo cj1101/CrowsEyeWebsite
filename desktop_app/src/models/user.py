@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 
 class SubscriptionTier(Enum):
     """Subscription tier enumeration."""
-    FREE = "free"             # $0/month - Users trying out Crow's Eye
-    CREATOR = "creator"       # $19/month - Individuals and content creators
-    PRO = "pro"               # $50/month - Professionals, marketers, small businesses
+    PAYG = "payg"             # Pay-as-you-go - Usage-based pricing
+    CREATOR = "creator"       # $15/month - Individuals and content creators
+    PRO = "pro"               # $30/month - Professionals, marketers, small businesses
     BUSINESS = "business"     # Custom - Agencies, larger teams, high-volume needs
 
 @dataclass
@@ -178,7 +178,7 @@ class User:
     
     def is_subscription_active(self) -> bool:
         """Check if subscription is currently active."""
-        if self.subscription.tier == SubscriptionTier.FREE:
+        if self.subscription.tier == SubscriptionTier.PAYG:
             return True
         
         if self.subscription.end_date:
@@ -189,8 +189,8 @@ class User:
     
     def get_subscription_status(self) -> str:
         """Get human-readable subscription status."""
-        if self.subscription.tier == SubscriptionTier.FREE:
-            return "Free Plan"
+        if self.subscription.tier == SubscriptionTier.PAYG:
+            return "Pay-as-you-Go Plan"
         
         if self.is_subscription_active():
             if self.subscription.end_date:
@@ -270,8 +270,28 @@ class UserManager:
         return self.authenticate_user(email, password)
     
     def authenticate_user(self, email: str, password: str) -> bool:
-        """Authenticate user with email and password - deprecated, use Firebase authentication instead."""
-        logger.warning("Local authentication is deprecated. Please use Firebase authentication.")
+        """Authenticate user with email and password - uses existing JSON data as fallback."""
+        logger.warning("Local authentication is deprecated. Checking existing user data as fallback.")
+        
+        # Check if this email matches the current user in the JSON files
+        if self.current_user and self.current_user.email == email:
+            logger.info(f"Authenticated existing user from JSON: {email}")
+            return True
+        
+        # Try to load user from users.json
+        users = self._load_users()
+        for user_id, user_data in users.items():
+            if user_data.get('email') == email:
+                try:
+                    # Load this user as current user
+                    self.current_user = User.from_dict(user_data)
+                    self._save_current_user()
+                    logger.info(f"Authenticated user from JSON storage: {email}")
+                    return True
+                except Exception as e:
+                    logger.error(f"Error loading user from JSON: {e}")
+        
+        logger.warning(f"No user found for email: {email}")
         return False
     
     def logout(self) -> None:

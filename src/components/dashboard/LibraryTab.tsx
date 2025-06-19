@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useMediaLibrary, MediaItem } from '@/hooks/api/useMediaLibrary';
 import MediaUpload from '@/components/media/MediaUpload';
+import GooglePhotosBrowser from '@/components/google-photos/GooglePhotosBrowser';
 import { 
   PhotoIcon, 
   VideoCameraIcon, 
@@ -32,12 +33,30 @@ export default function LibraryTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showProcessModal, setShowProcessModal] = useState(false);
+  const [showGooglePhotosBrowser, setShowGooglePhotosBrowser] = useState(false);
+  const [googlePhotosConnected, setGooglePhotosConnected] = useState(false);
 
   // Debug: Log media changes
   React.useEffect(() => {
     console.log('Media library updated:', media.length, 'items');
     console.log('Media items:', media);
   }, [media]);
+
+  // Check Google Photos connection status
+  React.useEffect(() => {
+    checkGooglePhotosConnection();
+  }, []);
+
+  const checkGooglePhotosConnection = async () => {
+    try {
+      const response = await fetch('/api/google-photos/connection');
+      const data = await response.json();
+      setGooglePhotosConnected(data.isConnected);
+    } catch (error) {
+      console.error('Failed to check Google Photos connection:', error);
+      setGooglePhotosConnected(false);
+    }
+  };
 
   // Filter media based on dashboard mode
   const dashboardMedia = media.filter((item: MediaItem) => {
@@ -90,6 +109,25 @@ export default function LibraryTab() {
     } catch (error) {
       console.error('Upload failed:', error);
       // You could add error handling/toast here
+    }
+  };
+
+  const handleGooglePhotosImport = async (items: any[]) => {
+    try {
+      console.log('Google Photos import completed:', items.length, 'items');
+      // Refresh the media library to show imported items
+      await refetch();
+    } catch (error) {
+      console.error('Failed to handle Google Photos import:', error);
+    }
+  };
+
+  const handleOpenGooglePhotos = () => {
+    if (!googlePhotosConnected) {
+      // Redirect to compliance page to connect Google Photos
+      window.location.href = '/account#google-photos';
+    } else {
+      setShowGooglePhotosBrowser(true);
     }
   };
 
@@ -282,13 +320,28 @@ export default function LibraryTab() {
         
         <div className="flex items-center gap-3">
           {dashboardMode === 'unedited' && (
-            <button 
-              onClick={() => setShowUploadModal(true)}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg hover:from-purple-600 hover:to-pink-600 flex items-center gap-2 transition-all"
-            >
-              <PlusIcon className="h-4 w-4" />
-              Upload Media
-            </button>
+            <>
+              <button 
+                onClick={() => setShowUploadModal(true)}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg hover:from-purple-600 hover:to-pink-600 flex items-center gap-2 transition-all"
+              >
+                <PlusIcon className="h-4 w-4" />
+                Upload Media
+              </button>
+              
+              <button 
+                onClick={handleOpenGooglePhotos}
+                className={`${
+                  googlePhotosConnected 
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700' 
+                    : 'bg-gray-600 hover:bg-gray-700'
+                } text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all`}
+                title={googlePhotosConnected ? 'Import from Google Photos' : 'Connect Google Photos first'}
+              >
+                <span className="text-lg">📷</span>
+                {googlePhotosConnected ? 'Google Photos' : 'Connect Photos'}
+              </button>
+            </>
           )}
           
           {selectedItems.length > 0 && (
@@ -459,6 +512,13 @@ export default function LibraryTab() {
           </div>
         </div>
       )}
+
+      {/* Google Photos Browser */}
+      <GooglePhotosBrowser
+        isOpen={showGooglePhotosBrowser}
+        onClose={() => setShowGooglePhotosBrowser(false)}
+        onImportComplete={handleGooglePhotosImport}
+      />
     </div>
   );
 } 

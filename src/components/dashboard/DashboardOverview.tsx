@@ -17,7 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useMediaStore } from '@/stores/mediaStore';
 import { usePostStore } from '@/stores/postStore';
-import { apiService } from '@/services/api';
+import { apiService, RecentActivity } from '@/services/api';
 
 interface QuickStats {
   totalMedia: number;
@@ -74,14 +74,29 @@ export default function DashboardOverview() {
   const fetchDashboardStats = async () => {
     setLoading(true);
     try {
-      // In a real app, this would fetch from the API
-      // For now, we'll simulate with local data and some mock API calls
-      const mockStats: QuickStats = {
-        totalMedia: files.length,
-        totalPosts: posts.length,
-        scheduledPosts: posts.filter(p => p.status === 'scheduled').length,
-        totalEngagement: 7500, // Use fixed value to avoid hydration issues
-        recentActivity: [
+      console.log('🚀 Fetching marketing tool stats from API...');
+      
+      // Fetch real stats from the marketing tool API
+      const response = await apiService.getMarketingToolStats();
+      const marketingStats = response.data;
+      
+      console.log('✅ Marketing tool stats fetched:', marketingStats);
+      
+      // Transform the marketing tool stats to match our QuickStats interface
+      const transformedStats: QuickStats = {
+        totalMedia: marketingStats.mediaFiles || files.length,
+        totalPosts: marketingStats.totalPosts || posts.length,
+        scheduledPosts: marketingStats.scheduledPosts || posts.filter(p => p.status === 'scheduled').length,
+        totalEngagement: Math.round(marketingStats.engagementRate * 1000) || 7500, // Convert rate to count estimate
+                 recentActivity: marketingStats.recentActivity?.map((activity: RecentActivity) => ({
+          id: activity.id,
+          type: activity.action.toLowerCase().includes('upload') ? 'upload' :
+                activity.action.toLowerCase().includes('schedule') ? 'schedule' :
+                activity.action.toLowerCase().includes('ai') ? 'ai_generation' : 'post',
+          title: activity.action,
+          timestamp: new Date(activity.timestamp),
+          details: `${activity.action} - ${formatTimeAgo(new Date(activity.timestamp))}`
+        })) || [
           {
             id: '1',
             type: 'upload',
@@ -112,9 +127,36 @@ export default function DashboardOverview() {
           }
         ]
       };
-      setStats(mockStats);
+      
+      setStats(transformedStats);
+      console.log('📊 Dashboard stats updated:', transformedStats);
     } catch (error) {
-      console.error('Failed to fetch dashboard stats:', error);
+      console.error('❌ Failed to fetch marketing tool stats, using fallback:', error);
+      
+      // Fallback to local data if API fails
+      const fallbackStats: QuickStats = {
+        totalMedia: files.length,
+        totalPosts: posts.length,
+        scheduledPosts: posts.filter(p => p.status === 'scheduled').length,
+        totalEngagement: 7500,
+        recentActivity: [
+          {
+            id: '1',
+            type: 'upload',
+            title: 'New video uploaded',
+            timestamp: new Date(Date.now() - 1000 * 60 * 30),
+            details: 'vacation-highlights.mp4 (45MB)'
+          },
+          {
+            id: '2',
+            type: 'ai_generation',
+            title: 'AI highlight generated',
+            timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
+            details: 'Created 30s highlight from beach-day.mp4'
+          }
+        ]
+      };
+      setStats(fallbackStats);
     } finally {
       setLoading(false);
     }
