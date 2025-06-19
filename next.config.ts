@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://crows-eye-website.uc.r.appspot.com'
   },
   // Cross-platform compatibility settings
-  trailingSlash: false,
+  trailingSlash: true,
   reactStrictMode: true,
   
   // Enhanced webpack configuration for cross-platform compatibility
@@ -102,8 +102,9 @@ const nextConfig: NextConfig = {
     pagesBufferLength: 2,
   },
   
-  // Output configuration for better compatibility
-  output: 'standalone',
+  // Output configuration for static export
+  output: 'export',
+  distDir: 'out',
   
   // Static optimization
   generateEtags: false,
