@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     platform: string;
-  };
+  }>;
 }
 
 const PLATFORM_NAMES = {
@@ -14,7 +14,7 @@ const PLATFORM_NAMES = {
 };
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  const { platform } = params;
+  const { platform } = await params;
   const platformName = PLATFORM_NAMES[platform as keyof typeof PLATFORM_NAMES] || platform;
   
   try {
