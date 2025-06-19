@@ -1,24 +1,95 @@
 {
-  "name": "functions",
-  "description": "Cloud Functions for Firebase",
-  "scripts": {
-    "serve": "firebase emulators:start --only functions",
-    "shell": "firebase functions:shell",
-    "start": "npm run shell",
-    "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+  "name": "crowseyewebsite",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Official website for Crow's Eye Marketing Suite - AI-powered social media management platform with Google's Gemini integration",
+  "keywords": [
+    "social media",
+    "marketing",
+    "ai",
+    "gemini",
+    "content creation",
+    "instagram",
+    "facebook",
+    "nextjs",
+    "typescript",
+    "tailwindcss"
+  ],
+  "homepage": "https://crowseyeapp.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cj1101/CrowsEyeWebsite.git"
   },
+  "author": {
+    "name": "Crow's Eye Team",
+    "email": "help@crowseye.tech",
+    "url": "https://crowseye.tech"
+  },
+  "license": "MIT",
+  "copyright": "Copyright © 2024 Crow's Eye Marketing Suite. All rights reserved.",
   "engines": {
-    "node": "18"
+    "node": "20"
   },
-  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "export": "next build",
+    "clean-build": "next build",
+    "deploy": "firebase deploy --only hosting",
+    "deploy:full": "firebase deploy",
+    "deploy:functions": "firebase deploy --only functions",
+    "firebase:serve": "npm run build && firebase serve",
+    "translate": "node scripts/translate.js",
+    "translate:force": "node scripts/translate.js --force",
+    "translate:check": "node scripts/translate.js --check",
+    "translate:stats": "node scripts/translate.js --stats",
+    "translate:validate": "node scripts/translate.js --validate",
+    "prebuild": "npm run translate:check"
+  },
   "dependencies": {
-    "firebase-admin": "^12.0.0",
-    "firebase-functions": "^5.0.0",
-    "next": "^15.3.2"
+    "@google-cloud/translate": "^9.1.0",
+    "@google/generative-ai": "^0.24.1",
+    "@headlessui/react": "^2.2.4",
+    "@heroicons/react": "^2.2.0",
+    "@hookform/resolvers": "^5.0.1",
+    "@radix-ui/react-slot": "^1.2.3",
+    "@stripe/stripe-js": "^7.3.1",
+    "@tanstack/react-query": "^5.80.6",
+    "@tanstack/react-query-devtools": "^5.80.6",
+    "autoprefixer": "^10.4.21",
+    "axios": "^1.9.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "firebase": "^11.8.1",
+    "firebase-admin": "^13.4.0",
+    "firebase-functions": "^6.3.2",
+    "framer-motion": "^12.12.2",
+    "lucide-react": "^0.511.0",
+    "next": "^15.3.2",
+    "openai": "^5.1.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-dropzone": "^14.3.8",
+    "react-hook-form": "^7.56.4",
+    "recharts": "^2.15.3",
+    "stripe": "^18.1.1",
+    "swr": "^2.3.0",
+    "tailwind-merge": "^3.3.0",
+    "zod": "^3.25.30",
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
-    "firebase-functions-test": "^3.1.0"
-  },
-  "private": true
-} 
+    "@eslint/eslintrc": "^3",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.1.8",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}
