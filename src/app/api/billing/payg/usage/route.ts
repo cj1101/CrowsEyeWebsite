@@ -7,46 +7,92 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { stripe, USAGE_PRICING_CONFIG } from '@/lib/stripe'
+
+export async function POST(request: NextRequest) {
+  try {
+    const { customerId, meterType, value, userId } = await request.json()
+
+    if (!customerId || !meterType || value === undefined) {
+      return NextResponse.json(
+        { error: 'Missing required fields: customerId, meterType, value' }, 
+        { status: 400 }
+      )
+    }
+
+    // Validate meter type
+    if (!(meterType in USAGE_PRICING_CONFIG.meters)) {
+      return NextResponse.json(
+        { error: `Invalid meter type: ${meterType}. Valid types: ${Object.keys(USAGE_PRICING_CONFIG.meters).join(', ')}` }, 
+        { status: 400 }
+      )
+    }
+
+    // Report usage to Stripe meter
+    await stripe.billing.meterEvents.create({
+      event_name: meterType,
+      payload: {
+        stripe_customer_id: customerId,
+        value: value.toString()
+      },
+      timestamp: Math.floor(Date.now() / 1000)
+    })
+
+    // Calculate current usage cost for response
+    const meterConfig = USAGE_PRICING_CONFIG.meters[meterType as keyof typeof USAGE_PRICING_CONFIG.meters]
+    const cost = value * meterConfig.price_per_unit
+
+    return NextResponse.json({ 
+      success: true,
+      meterType,
+      value,
+      unitCost: meterConfig.price_per_unit,
+      totalCost: cost,
+      message: `Tracked ${value} ${meterConfig.unit}(s) for ${meterConfig.display_name}`
+    })
+  } catch (error) {
+    console.error('Usage reporting error:', error)
+    return NextResponse.json(
+      { error: 'Failed to report usage', details: error instanceof Error ? error.message : 'Unknown error' }, 
+      { status: 500 }
+    )
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
-    // Get current month date range
-    const now = new Date()
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    const url = new URL(request.url)
+    const customerId = url.searchParams.get('customerId')
+    const userId = url.searchParams.get('userId')
 
-    // TODO: Replace with actual database query for user's usage
-    // For now, return mock usage data
-    const mockUsageData = {
-      ai_credits: Math.floor(Math.random() * 25), // 0-25 credits used
-      scheduled_posts: Math.floor(Math.random() * 10), // 0-10 posts scheduled
-      storage_gb: parseFloat((Math.random() * 2).toFixed(2)), // 0-2 GB used
-      current_month_cost: 0, // Will be calculated
-      billing_period: {
-        start: startOfMonth.toISOString(),
-        end: endOfMonth.toISOString()
-      }
+    if (!customerId && !userId) {
+      return NextResponse.json(
+        { error: 'Missing required parameter: customerId or userId' }, 
+        { status: 400 }
+      )
     }
 
-    // Calculate current month cost
-    const aiCreditsCost = mockUsageData.ai_credits * 0.15
-    const postsCost = mockUsageData.scheduled_posts * 0.25
-    const storageCost = mockUsageData.storage_gb * 2.99
-    const subtotal = aiCreditsCost + postsCost + storageCost
-    
-    // Apply minimum charge of $5
-    mockUsageData.current_month_cost = Math.max(subtotal, 5.00)
+    // For now, return a basic usage structure
+    // In a real implementation, you'd query your database for stored usage data
+    const currentMonth = new Date()
+    const usage = {
+      ai_credits: 0,
+      scheduled_posts: 0,
+      storage_gb: 0,
+      billing_period: {
+        start: new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).toISOString(),
+        end: new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).toISOString()
+      },
+      estimated_cost: 0,
+      minimum_threshold: USAGE_PRICING_CONFIG.minimum_billing_threshold,
+      will_be_charged: false
+    }
 
-    return NextResponse.json({
-      success: true,
-      data: mockUsageData,
-      message: 'Usage data retrieved successfully'
-    })
-
+    return NextResponse.json(usage)
   } catch (error) {
     console.error('Usage retrieval error:', error)
     return NextResponse.json(
-      { error: 'Failed to retrieve usage data' },
+      { error: 'Failed to get usage', details: error instanceof Error ? error.message : 'Unknown error' }, 
       { status: 500 }
     )
   }
