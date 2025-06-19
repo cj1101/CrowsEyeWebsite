@@ -102,8 +102,8 @@ const nextConfig: NextConfig = {
     pagesBufferLength: 2,
   },
   
-  // Output configuration for static export
-  output: 'export',
+  // Output configuration - remove static export to enable API routes
+  // output: 'export', // Commented out to enable API routes for PAYG functionality
   distDir: 'out',
   
   // Static optimization
