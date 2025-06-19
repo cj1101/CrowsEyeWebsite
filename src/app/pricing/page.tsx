@@ -346,33 +346,9 @@ export default function PricingPage() {
       // If promo code is applied, redirect to signup with free access
       router.push(`/auth/signup?plan=${plan.paymentType}&promo=true`);
     } else if (plan.paymentType === 'payg') {
-      try {
-        // Create PAYG subscription checkout
-        const response = await fetch('/api/billing/payg/subscribe', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: 'user@example.com', // Replace with actual user email
-            plan_type: 'payg'
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success && data.checkout_url) {
-          // Redirect to Stripe checkout
-          window.location.href = data.checkout_url;
-        } else {
-          // Fallback to signup page
-          router.push('/auth/signup?plan=payg');
-        }
-      } catch (error) {
-        console.error('PAYG checkout error:', error);
-        // Fallback to signup page
-        router.push('/auth/signup?plan=payg');
-      }
+      // For PAYG, redirect to signup page first - user needs to be authenticated
+      // The PAYG Stripe setup will happen after user creates account
+      router.push('/auth/signup?plan=payg');
     } else {
       const url = billingPeriod === 'monthly' ? plan.monthlyUrl : plan.yearlyUrl;
       if (url) {
@@ -492,23 +468,23 @@ export default function PricingPage() {
                     </div>
                     <div className="flex justify-between">
                       <span>Storage:</span>
-                      <span className="font-medium">$2.99 per GB</span>
+                      <span className="font-medium">$2.99 per GB/month</span>
                     </div>
                     <div className="flex justify-between border-t pt-2 text-blue-600 font-medium">
-                      <span>Charges start at:</span>
-                      <span>$5.00 threshold</span>
+                      <span>Minimum threshold:</span>
+                      <span>$5.00/month</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Value Examples */}
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-blue-800 mb-2">Use freely until $5:</h4>
+                  <h4 className="font-medium text-blue-800 mb-2">Free usage until you hit $5:</h4>
                   <ul className="text-sm text-blue-700 space-y-1">
-                    <li>• 33 AI credits for content generation</li>
-                    <li>• 20 scheduled posts across all platforms</li>
-                    <li>• 1.6 GB of media storage</li>
-                    <li>• Or any combination under $5 - no charges!</li>
+                    <li>• 33 AI credits (~$5.00)</li>
+                    <li>• 20 scheduled posts (~$5.00)</li>
+                    <li>• 1.68 GB storage (~$5.00)</li>
+                    <li>• Mix and match - only pay when total reaches $5!</li>
                   </ul>
                 </div>
 
