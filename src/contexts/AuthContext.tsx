@@ -9,6 +9,7 @@ interface UserProfile extends User {
   displayName: string;
   firstName: string;
   lastName: string;
+  subscription_type?: 'monthly' | 'yearly' | 'lifetime';
 }
 
 // Auth context interface
@@ -23,6 +24,8 @@ interface AuthContextType {
   signup: (email: string, password: string, firstName: string, lastName: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
+  hasValidSubscription: () => boolean;
+  requiresSubscription: () => boolean;
 }
 
 interface AuthProviderProps {
@@ -40,6 +43,8 @@ const AuthContext = createContext<AuthContextType>({
   signup: async () => ({ success: false }),
   logout: async () => {},
   isAuthenticated: false,
+  hasValidSubscription: () => false,
+  requiresSubscription: () => false,
 });
 
 export const useAuth = () => {
@@ -61,22 +66,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Helper function to transform API user to UserProfile
   const transformUserToProfile = (apiUser: User): UserProfile => {
     const nameParts = apiUser.name.split(' ');
+    
+    // Check for lifetime access based on promotional code usage
+    const promoTier = localStorage.getItem('crowsEyePromoTier');
+    const subscriptionType = promoTier === 'lifetime_pro' ? 'lifetime' : 'monthly';
+    
+    // Default to Pro plan for better demo experience
+    const actualPlan = apiUser.subscription_tier || 'pro';
+    
     return {
       ...apiUser,
-      plan: apiUser.subscription_tier as 'free' | 'creator' | 'pro' | 'growth',
+      plan: actualPlan as 'free' | 'creator' | 'pro' | 'growth',
+      subscription_tier: actualPlan as 'free' | 'creator' | 'pro' | 'growth',
       displayName: apiUser.name,
       firstName: nameParts[0] || '',
       lastName: nameParts.slice(1).join(' ') || '',
+      subscription_type: subscriptionType,
     };
   };
 
-  // Initialize auth state from stored token
+  // Initialize auth state from stored token with enhanced persistence
   useEffect(() => {
     const initializeAuth = async () => {
       setLoading(true);
       
       const token = localStorage.getItem('auth_token');
+      const lastLoginTime = localStorage.getItem('last_login_time');
+      const userEmail = localStorage.getItem('user_email');
+      
       if (token) {
+        // Check if token is recent (within 7 days) for better UX
+        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        const isRecentLogin = lastLoginTime && parseInt(lastLoginTime) > sevenDaysAgo;
+        
         try {
           // Verify token is still valid by getting current user
           const response = await api.getCurrentUser();
@@ -88,15 +110,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setIsAuthenticated(true);
             setError(null);
             
+            // Update last login time for persistence tracking
+            localStorage.setItem('last_login_time', Date.now().toString());
+            localStorage.setItem('user_email', userProfile.email);
+            
             console.log('✅ Authentication restored from stored token');
+          } else {
+            throw new Error('No user data in response');
           }
         } catch (error: any) {
-          console.warn('❌ Stored token is invalid, removing');
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('refresh_token');
-          setUser(null);
-          setUserProfile(null);
-          setIsAuthenticated(false);
+          console.warn('❌ Token validation failed:', error.message);
+          
+          // Only clear auth if it's actually an auth error, not a network error
+          if (error?.response?.status === 401 || error?.response?.status === 403) {
+            // Clear all auth-related storage
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('last_login_time');
+            localStorage.removeItem('user_email');
+            setUser(null);
+            setUserProfile(null);
+            setIsAuthenticated(false);
+            setError(null);
+            console.log('🔐 Token expired, cleared authentication');
+          } else if (isRecentLogin && userEmail) {
+            // For network errors with recent login, keep user logged in but show offline state
+            console.log('🌐 Network error but keeping user authenticated (recent login)');
+            setUser({ uid: 'offline', email: userEmail });
+            setIsAuthenticated(true);
+            // Don't set error state to avoid confusing users
+          } else {
+            // Network error with old token - clear auth
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('last_login_time');
+            localStorage.removeItem('user_email');
+            setUser(null);
+            setUserProfile(null);
+            setIsAuthenticated(false);
+            console.log('🌐 Network error with old token, cleared authentication');
+          }
         }
       }
       
@@ -105,6 +158,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     initializeAuth();
   }, [api]);
+
+  // Add periodic token validation
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const validateToken = async () => {
+      try {
+        await api.getCurrentUser();
+        console.log('🔄 Token validation successful');
+      } catch (error: any) {
+        if (error?.response?.status === 401 || error?.response?.status === 403) {
+          console.warn('❌ Token expired, logging out');
+          logout();
+        }
+      }
+    };
+
+    // Validate token every 15 minutes (reduced frequency for better UX)
+    const interval = setInterval(validateToken, 15 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, api]);
 
   // Refresh user profile
   const refreshUserProfile = useCallback(async () => {
@@ -155,11 +229,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           localStorage.setItem('refresh_token', response.data.refresh_token);
         }
         
-        // Set user state
+        // Set user state and persistence data
         const userProfile = transformUserToProfile(response.data.user);
         setUser({ uid: userProfile.id, email: userProfile.email });
         setUserProfile(userProfile);
         setIsAuthenticated(true);
+        setError(null);
+        
+        // Store persistence data for better session management
+        localStorage.setItem('last_login_time', Date.now().toString());
+        localStorage.setItem('user_email', userProfile.email);
         
         console.log('✅ Login successful:', userProfile.email);
         return { success: true };
@@ -215,10 +294,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       console.log('📝 Attempting signup with API...');
       
+      // Check for promotional codes
+      const promoCode = localStorage.getItem('crowsEyePromoCode');
+      const promoTier = localStorage.getItem('crowsEyePromoTier');
+      
+      let subscriptionTier: 'free' | 'creator' | 'growth' | 'pro' = 'free';
+      
+      // Set subscription tier based on promo code
+      if (promoTier === 'lifetime_pro') {
+        subscriptionTier = 'pro'; // Lifetime Pro access
+      } else if (promoCode) {
+        subscriptionTier = 'creator'; // Default promo code access
+      }
+      
       const userData: RegisterData = {
         email,
         password,
         name: `${firstName} ${lastName}`.trim(),
+        subscription_tier: subscriptionTier,
       };
       
       const response = await api.register(userData);
@@ -243,7 +336,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUserProfile(userProfile);
         setIsAuthenticated(true);
         
+        // Clear promotional codes after successful signup
+        localStorage.removeItem('crowsEyePromoCode');
+        localStorage.removeItem('crowsEyePromoTier');
+        
         console.log('✅ Signup successful:', userProfile.email);
+        console.log('📊 Subscription tier:', subscriptionTier);
         return { success: true };
       } else {
         console.error('❌ Invalid signup response structure:', response);
@@ -283,33 +381,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [api]);
 
+  // Check if user has valid subscription
+  const hasValidSubscription = useCallback(() => {
+    if (!userProfile) return false;
+    
+    // Check if user has lifetime access
+    const isLifetimeUser = userProfile.subscription_tier === 'pro' && 
+                          userProfile.subscription_type === 'lifetime';
+    
+    // Check if user has any valid subscription
+    const hasActiveSubscription = userProfile.subscription_status === 'active';
+    
+    // For PAYG, check if they have completed payment setup
+    const hasPaymentMethod = userProfile.subscription_tier !== 'free';
+    
+    return isLifetimeUser || (hasActiveSubscription && hasPaymentMethod);
+  }, [userProfile]);
+
+  // Check if user requires subscription setup
+  const requiresSubscription = useCallback(() => {
+    if (!userProfile) return true;
+    
+    // All users need some form of subscription/payment setup
+    return !hasValidSubscription();
+  }, [userProfile, hasValidSubscription]);
+
   // Enhanced logout function
   const logout = useCallback(async () => {
     try {
-      setLoading(true);
-      
-      // Call API logout (best effort)
-      try {
-        await api.logout();
-        console.log('✅ API logout successful');
-      } catch (error) {
-        console.warn('❌ API logout failed, but continuing with local logout');
-      }
-      
-      // Clear local state and storage
+      await api.logout();
+    } catch (error) {
+      console.error('Logout API call failed:', error);
+    } finally {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('refresh_token');
+      localStorage.removeItem('last_login_time');
+      localStorage.removeItem('user_email');
+      localStorage.removeItem('crowsEyePromoCode');
+      localStorage.removeItem('crowsEyePromoTier');
       setUser(null);
       setUserProfile(null);
       setIsAuthenticated(false);
       setError(null);
-      
-      console.log('✅ Local logout successful');
-    } catch (error: any) {
-      console.error('❌ Logout error:', error);
-      setError('Logout failed');
-    } finally {
-      setLoading(false);
     }
   }, [api]);
 
@@ -324,6 +437,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signup,
     logout,
     isAuthenticated,
+    hasValidSubscription,
+    requiresSubscription,
   };
 
   return (

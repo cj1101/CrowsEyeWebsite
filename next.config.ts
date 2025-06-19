@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: false
   },
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://us-central1-crows-eye-website.cloudfunctions.net'
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://crows-eye-website.uc.r.appspot.com'
   },
   // Cross-platform compatibility settings
   trailingSlash: false,

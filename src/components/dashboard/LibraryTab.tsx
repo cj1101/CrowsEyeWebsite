@@ -22,6 +22,7 @@ import {
   FilmIcon,
   PlayIcon
 } from '@heroicons/react/24/outline';
+import { Button } from '@/components/ui/button';
 
 type DashboardMode = 'completed' | 'unedited';
 
@@ -35,6 +36,8 @@ export default function LibraryTab() {
   const [showProcessModal, setShowProcessModal] = useState(false);
   const [showGooglePhotosBrowser, setShowGooglePhotosBrowser] = useState(false);
   const [googlePhotosConnected, setGooglePhotosConnected] = useState(false);
+  const [showMediaModal, setShowMediaModal] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
 
   // Debug: Log media changes
   React.useEffect(() => {
@@ -49,9 +52,20 @@ export default function LibraryTab() {
 
   const checkGooglePhotosConnection = async () => {
     try {
-      const response = await fetch('/api/google-photos/connection');
-      const data = await response.json();
-      setGooglePhotosConnected(data.isConnected);
+      // Check localStorage for connection status (demo implementation)
+      const isConnected = localStorage.getItem('googlePhotosConnected') === 'true';
+      const tokens = localStorage.getItem('googlePhotosTokens');
+      
+      if (isConnected && tokens) {
+        const tokenData = JSON.parse(tokens);
+        // Check if token is expired
+        if (tokenData.expires_at > Date.now()) {
+          setGooglePhotosConnected(true);
+          return;
+        }
+      }
+      
+      setGooglePhotosConnected(false);
     } catch (error) {
       console.error('Failed to check Google Photos connection:', error);
       setGooglePhotosConnected(false);
@@ -122,10 +136,44 @@ export default function LibraryTab() {
     }
   };
 
-  const handleOpenGooglePhotos = () => {
+  const handleOpenGooglePhotos = async () => {
     if (!googlePhotosConnected) {
-      // Redirect to compliance page to connect Google Photos
-      window.location.href = '/account#google-photos';
+      // Start Google Photos connection process
+      try {
+        // Initiate OAuth flow
+        const response = await fetch('/api/google-photos/auth', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        const data = await response.json();
+        
+        if (data.authUrl) {
+          // Open OAuth URL in new window
+          const authWindow = window.open(
+            data.authUrl,
+            'googlePhotosAuth',
+            'width=500,height=600,scrollbars=yes,resizable=yes'
+          );
+          
+          // Listen for auth completion
+          const checkClosed = setInterval(() => {
+            if (authWindow?.closed) {
+              clearInterval(checkClosed);
+              // Recheck connection status
+              checkGooglePhotosConnection();
+            }
+          }, 1000);
+        } else {
+          console.error('Failed to get auth URL');
+          alert('Failed to initiate Google Photos connection. Please try again.');
+        }
+      } catch (error) {
+        console.error('Google Photos connection error:', error);
+        alert('Failed to connect to Google Photos. Please try again.');
+      }
     } else {
       setShowGooglePhotosBrowser(true);
     }
@@ -159,7 +207,36 @@ export default function LibraryTab() {
     >
       {/* Media Preview */}
       <div className="aspect-video bg-gray-800 rounded-lg mb-3 flex items-center justify-center overflow-hidden relative">
-        {item.thumbnail ? (
+        {item.type === 'image' && item.url ? (
+          <>
+            <img 
+              src={item.url} 
+              alt={item.name} 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // Fallback to placeholder if image fails to load
+                (e.target as HTMLImageElement).src = '/images/placeholder-image.jpg';
+              }}
+            />
+          </>
+        ) : item.type === 'video' && item.url ? (
+          <>
+            <video 
+              src={item.url}
+              className="w-full h-full object-cover"
+              muted
+              preload="metadata"
+              onError={(e) => {
+                console.error('Video preview error:', e);
+              }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="bg-black/60 backdrop-blur-sm rounded-full p-4 hover:bg-black/80 transition-colors">
+                <PlayIcon className="h-8 w-8 text-white" />
+              </div>
+            </div>
+          </>
+        ) : item.thumbnail ? (
           <>
             <img src={item.thumbnail} alt={item.name} className="w-full h-full object-cover" />
             {(item.type === 'video' || item.subtype === 'reel' || item.subtype === 'short') && (
@@ -196,7 +273,7 @@ export default function LibraryTab() {
           <span>{(item.size / 1024 / 1024).toFixed(1)} MB</span>
         </div>
 
-        {item.dimensions && (
+        {item.dimensions && item.dimensions.width > 0 && (
           <p className="text-xs text-gray-500">{item.dimensions.width} × {item.dimensions.height}</p>
         )}
 
@@ -234,21 +311,82 @@ export default function LibraryTab() {
 
       {/* Action buttons */}
       <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/10">
-        <button className="text-gray-400 hover:text-white transition-colors">
+        <button 
+          className="text-gray-400 hover:text-white transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleViewMedia(item);
+          }}
+          title="View media"
+        >
           <EyeIcon className="h-4 w-4" />
         </button>
-        <button className="text-gray-400 hover:text-white transition-colors">
+        <button 
+          className="text-gray-400 hover:text-white transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleEditMedia(item);
+          }}
+          title="Edit/Process media"
+        >
           <PencilIcon className="h-4 w-4" />
         </button>
-        <button className="text-gray-400 hover:text-white transition-colors">
+        <button 
+          className="text-gray-400 hover:text-white transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDownloadMedia(item);
+          }}
+          title="Download media"
+        >
           <ArrowDownTrayIcon className="h-4 w-4" />
         </button>
-        <button className="text-gray-400 hover:text-red-400 transition-colors">
+        <button 
+          className="text-gray-400 hover:text-red-400 transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDeleteMedia(item);
+          }}
+          title="Delete media"
+        >
           <TrashIcon className="h-4 w-4" />
         </button>
       </div>
     </div>
   );
+
+  const handleViewMedia = (item: MediaItem) => {
+    setSelectedMedia(item);
+    setShowMediaModal(true);
+  };
+
+  const handleDownloadMedia = (item: MediaItem) => {
+    if (item.url) {
+      const link = document.createElement('a');
+      link.href = item.url;
+      link.download = item.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleDeleteMedia = async (item: MediaItem) => {
+    if (confirm(`Are you sure you want to delete "${item.name}"?`)) {
+      try {
+        await deleteMedia(item.id);
+        console.log('Media deleted successfully');
+      } catch (error) {
+        console.error('Failed to delete media:', error);
+      }
+    }
+  };
+
+  const handleEditMedia = (item: MediaItem) => {
+    // For now, just select the item for processing
+    setSelectedItems([item.id]);
+    setShowProcessModal(true);
+  };
 
   if (loading) {
     return (
@@ -260,27 +398,7 @@ export default function LibraryTab() {
 
   return (
     <div className="space-y-6">
-      {/* API Status Banner */}
-      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-yellow-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <h3 className="text-sm font-medium text-yellow-200 mb-1">
-              Development Mode - Local Storage Active
-            </h3>
-            <p className="text-sm text-yellow-300/80">
-              The backend API is not fully implemented yet. Uploaded files are stored locally in your browser 
-              and will persist across sessions, but won't be available on other devices or after clearing browser data.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Dashboard Mode Selector */}
+      {/* Header Controls */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div className="flex items-center gap-4">
           <div className="flex bg-white/10 rounded-lg p-1">
@@ -313,154 +431,173 @@ export default function LibraryTab() {
               {dashboardMode === 'completed' ? 'Completed Posts' : 'Unedited Media'}
             </h2>
             <p className="text-sm text-gray-400">
-              Videos: {filteredVideoContent.length} • Other: {filteredOtherContent.length}
+              Total: {dashboardMedia.length} items • Videos: {filteredVideoContent.length} • Other: {filteredOtherContent.length}
             </p>
           </div>
         </div>
         
         <div className="flex items-center gap-3">
-          {dashboardMode === 'unedited' && (
-            <>
-              <button 
-                onClick={() => setShowUploadModal(true)}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg hover:from-purple-600 hover:to-pink-600 flex items-center gap-2 transition-all"
-              >
-                <PlusIcon className="h-4 w-4" />
-                Upload Media
-              </button>
-              
-              <button 
-                onClick={handleOpenGooglePhotos}
-                className={`${
-                  googlePhotosConnected 
-                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700' 
-                    : 'bg-gray-600 hover:bg-gray-700'
-                } text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all`}
-                title={googlePhotosConnected ? 'Import from Google Photos' : 'Connect Google Photos first'}
-              >
-                <span className="text-lg">📷</span>
-                {googlePhotosConnected ? 'Google Photos' : 'Connect Photos'}
-              </button>
-            </>
-          )}
-          
-          {selectedItems.length > 0 && (
-            <button 
-              onClick={() => setShowProcessModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-all"
-            >
-              <SparklesIcon className="h-4 w-4" />
-              AI Process ({selectedItems.length})
-            </button>
-          )}
-
-          {/* Refresh Button */}
-          <button 
-            onClick={() => {
-              console.log('Manual refresh triggered');
-              refetch();
-            }}
-            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center gap-2 transition-all"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Refresh
-          </button>
+          {/* Search */}
+          <div className="relative">
+            <MagnifyingGlassIcon className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search media..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-white/10 border border-white/20 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 w-64"
+            />
+          </div>
 
           {/* View Mode Toggle */}
           <div className="flex bg-white/10 rounded-lg p-1">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded ${viewMode === 'grid' ? 'bg-purple-500 text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`p-2 rounded transition-all ${
+                viewMode === 'grid' 
+                  ? 'bg-purple-500 text-white' 
+                  : 'text-gray-400 hover:text-white'
+              }`}
             >
               <Squares2X2Icon className="h-4 w-4" />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded ${viewMode === 'list' ? 'bg-purple-500 text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`p-2 rounded transition-all ${
+                viewMode === 'list' 
+                  ? 'bg-purple-500 text-white' 
+                  : 'text-gray-400 hover:text-white'
+              }`}
             >
               <ListBulletIcon className="h-4 w-4" />
             </button>
           </div>
+
+          {/* Upload Button */}
+          <Button
+            onClick={() => setShowUploadModal(true)}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+          >
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Upload Media
+          </Button>
+
+          {/* Google Photos Button */}
+          <Button
+            onClick={handleOpenGooglePhotos}
+            variant="outline"
+            className="border-blue-500 text-blue-400 hover:bg-blue-500/10"
+          >
+            <PhotoIcon className="h-4 w-4 mr-2" />
+            {googlePhotosConnected ? 'Browse Google Photos' : 'Connect Google Photos'}
+          </Button>
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
-        <div className="relative">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder={`Search ${dashboardMode === 'completed' ? 'completed posts' : 'unedited media'}...`}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-          />
-        </div>
-      </div>
-
-      {/* Split Layout: Video Content (Left) | Other Content (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Panel: Video Content */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 border-b border-white/10 pb-2">
-            <FilmIcon className="h-5 w-5 text-red-400" />
-            <h3 className="text-lg font-semibold text-white">
-              Video Content ({filteredVideoContent.length})
-            </h3>
-          </div>
-          
-          {filteredVideoContent.length === 0 ? (
-            <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
-              <VideoCameraIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-400">
+      {/* Combined Media Display */}
+      <div className="space-y-6">
+        {/* All Media in One Area */}
+        {(filteredVideoContent.length === 0 && filteredOtherContent.length === 0) ? (
+          <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="flex justify-center mb-6">
+                <div className="relative">
+                  <VideoCameraIcon className="h-16 w-16 text-gray-400" />
+                  <PhotoIcon className="h-12 w-12 text-gray-500 absolute -bottom-2 -right-2" />
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">
                 {dashboardMode === 'completed' 
-                  ? 'No completed video content yet' 
-                  : 'No unedited video content yet'}
-              </p>
-            </div>
-          ) : (
-            <div className={viewMode === 'grid' 
-              ? "grid grid-cols-1 xl:grid-cols-2 gap-4" 
-              : "space-y-4"
-            }>
-              {filteredVideoContent.map((item) => (
-                <MediaCard key={item.id} item={item} />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Right Panel: Other Content */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 border-b border-white/10 pb-2">
-            <PhotoIcon className="h-5 w-5 text-blue-400" />
-            <h3 className="text-lg font-semibold text-white">
-              Other Media ({filteredOtherContent.length})
-            </h3>
-          </div>
-          
-          {filteredOtherContent.length === 0 ? (
-            <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
-              <PhotoIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-400">
+                  ? 'No completed content yet' 
+                  : 'No media uploaded yet'}
+              </h3>
+              <p className="text-gray-400 mb-6">
                 {dashboardMode === 'completed' 
-                  ? 'No completed media yet' 
-                  : 'No unedited media yet'}
+                  ? 'Complete some posts to see them here' 
+                  : 'Upload your first images, videos, or audio files to get started'}
               </p>
+              <div className="flex justify-center gap-3">
+                <Button
+                  onClick={() => setShowUploadModal(true)}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                >
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Upload Media
+                </Button>
+                <Button
+                  onClick={handleOpenGooglePhotos}
+                  variant="outline"
+                  className="border-blue-500 text-blue-400 hover:bg-blue-500/10"
+                >
+                  <PhotoIcon className="h-4 w-4 mr-2" />
+                  Import from Google Photos
+                </Button>
+              </div>
             </div>
-          ) : (
-            <div className={viewMode === 'grid' 
-              ? "grid grid-cols-1 xl:grid-cols-2 gap-4" 
-              : "space-y-4"
-            }>
-              {filteredOtherContent.map((item) => (
-                <MediaCard key={item.id} item={item} />
-              ))}
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Video Content Section */}
+            {filteredVideoContent.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+                  <FilmIcon className="h-5 w-5 text-red-400" />
+                  <h3 className="text-lg font-semibold text-white">
+                    Video Content ({filteredVideoContent.length})
+                  </h3>
+                </div>
+                
+                <div className={viewMode === 'grid' 
+                  ? "grid grid-cols-1 xl:grid-cols-2 gap-4" 
+                  : "space-y-4"
+                }>
+                  {filteredVideoContent.map((item) => (
+                    <MediaCard key={item.id} item={item} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Divider - Only show if both sections have content */}
+            {filteredVideoContent.length > 0 && filteredOtherContent.length > 0 && (
+              <div className="relative py-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+                </div>
+                <div className="relative flex justify-center">
+                  <div className="bg-gray-900 px-4 py-2 rounded-full border border-white/10">
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                      <span>Other Media</span>
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Other Media Section */}
+            {filteredOtherContent.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+                  <PhotoIcon className="h-5 w-5 text-blue-400" />
+                  <h3 className="text-lg font-semibold text-white">
+                    Other Media ({filteredOtherContent.length})
+                  </h3>
+                </div>
+                
+                <div className={viewMode === 'grid' 
+                  ? "grid grid-cols-1 xl:grid-cols-2 gap-4" 
+                  : "space-y-4"
+                }>
+                  {filteredOtherContent.map((item) => (
+                    <MediaCard key={item.id} item={item} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Upload Modal */}
@@ -519,6 +656,140 @@ export default function LibraryTab() {
         onClose={() => setShowGooglePhotosBrowser(false)}
         onImportComplete={handleGooglePhotosImport}
       />
+
+      {/* Media View Modal */}
+      {showMediaModal && selectedMedia && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-white">{selectedMedia.name}</h3>
+              <button
+                onClick={() => setShowMediaModal(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Media Display */}
+            <div className="bg-gray-900 rounded-lg p-4 mb-4">
+              {selectedMedia.type === 'image' && selectedMedia.url ? (
+                <img
+                  src={selectedMedia.url}
+                  alt={selectedMedia.name}
+                  className="w-full h-auto max-h-[60vh] object-contain rounded"
+                  onError={(e) => {
+                    // Fallback to placeholder if image fails to load
+                    (e.target as HTMLImageElement).src = '/images/placeholder-image.jpg';
+                  }}
+                />
+              ) : selectedMedia.type === 'video' && selectedMedia.url ? (
+                <video
+                  src={selectedMedia.url}
+                  controls
+                  autoPlay={false}
+                  preload="metadata"
+                  className="w-full h-auto max-h-[60vh] object-contain rounded"
+                  onError={(e) => {
+                    console.error('Video playback error:', e);
+                  }}
+                >
+                  Your browser does not support the video tag.
+                </video>
+              ) : selectedMedia.type === 'audio' && selectedMedia.url ? (
+                <audio
+                  src={selectedMedia.url}
+                  controls
+                  preload="metadata"
+                  className="w-full"
+                  onError={(e) => {
+                    console.error('Audio playback error:', e);
+                  }}
+                >
+                  Your browser does not support the audio element.
+                </audio>
+              ) : (
+                <div className="flex items-center justify-center h-64 text-gray-400">
+                  <div className="text-center">
+                    <div className="text-4xl mb-2">
+                      {selectedMedia.type === 'image' ? '🖼️' : 
+                       selectedMedia.type === 'video' ? '🎥' : '🎵'}
+                    </div>
+                    <p>Media preview not available</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Media Info */}
+            <div className="space-y-3 text-gray-300">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-gray-400">Type:</span>
+                  <span className="ml-2">{selectedMedia.subtype || selectedMedia.type}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Size:</span>
+                  <span className="ml-2">{(selectedMedia.size / 1024 / 1024).toFixed(2)} MB</span>
+                </div>
+                {selectedMedia.dimensions && selectedMedia.dimensions.width > 0 && (
+                  <div>
+                    <span className="text-gray-400">Dimensions:</span>
+                    <span className="ml-2">{selectedMedia.dimensions.width} × {selectedMedia.dimensions.height}</span>
+                  </div>
+                )}
+                {selectedMedia.duration && (
+                  <div>
+                    <span className="text-gray-400">Duration:</span>
+                    <span className="ml-2">{selectedMedia.duration}s</span>
+                  </div>
+                )}
+              </div>
+              
+              {selectedMedia.tags && selectedMedia.tags.length > 0 && (
+                <div>
+                  <span className="text-gray-400">Tags:</span>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {selectedMedia.tags.map((tag, index) => (
+                      <span key={index} className="text-xs bg-purple-600/30 text-purple-200 px-2 py-1 rounded">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div>
+                <span className="text-gray-400">Created:</span>
+                <span className="ml-2">{new Date(selectedMedia.createdAt).toLocaleString()}</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => handleDownloadMedia(selectedMedia)}
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2"
+              >
+                <ArrowDownTrayIcon className="h-4 w-4" />
+                Download
+              </button>
+              <button
+                onClick={() => {
+                  setShowMediaModal(false);
+                  handleEditMedia(selectedMedia);
+                }}
+                className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 flex items-center gap-2"
+              >
+                <PencilIcon className="h-4 w-4" />
+                Edit/Process
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

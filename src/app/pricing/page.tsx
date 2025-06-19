@@ -42,7 +42,7 @@
 
 import React, { useState } from 'react'
 import { Check, X, Gift, Calculator, CreditCard } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -69,13 +69,13 @@ const pricingPlans = [
       mediaLibrary: true,
       smartGallery: true,
       postFormatting: true,
-      basicVideoTools: false,
-      advancedContent: false,
-      analytics: "Basic Reports",
+      basicVideoTools: true,
+      advancedContent: true,
+      analytics: "Full Analytics",
       teamCollaboration: false,
       support: "Email Support",
       customBranding: false,
-      apiAccess: false,
+      apiAccess: true,
       prioritySupport: false
     },
     buttonText: "Start Free - No Credit Card",
@@ -87,7 +87,7 @@ const pricingPlans = [
     benefits: [
       "No monthly minimums",
       "Start completely free", 
-      "No credit card required",
+      "Credit card required at $5 usage",
       "Pay only for what you use",
       "Scale up or down anytime"
     ]
@@ -296,10 +296,14 @@ const PAYGBenefits = ({ plan }: { plan: typeof pricingPlans[0] }) => {
 
 export default function PricingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoError, setPromoError] = useState('');
+  
+  // Check if subscription is required
+  const isRequired = searchParams?.get('required') === 'true';
 
   const handleFounderClick = () => {
     const passcode = prompt("What's the founder passcode?");
@@ -317,11 +321,14 @@ export default function PricingPage() {
       setPromoError('');
       // Store promo code for signup process
       localStorage.setItem('crowsEyePromoCode', promoCode.toUpperCase());
+      localStorage.setItem('crowsEyePromoTier', 'free_trial');
     } else {
       setPromoError('Invalid promotion code');
       setPromoApplied(false);
     }
   };
+
+
 
   const getDisplayPrice = (plan: typeof pricingPlans[0]) => {
     if (plan.paymentType === 'payg') return 'Pay-as-you-Go';
@@ -363,14 +370,35 @@ export default function PricingPage() {
       <div className="relative overflow-hidden py-20 px-4 sm:px-6 lg:px-8">
         <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 blur-3xl" />
         
+        {/* Subscription Required Banner */}
+        {isRequired && (
+          <div className="relative max-w-4xl mx-auto mb-8">
+            <div className="bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 rounded-lg p-6 text-center">
+              <div className="flex items-center justify-center mb-4">
+                <CreditCard className="h-8 w-8 text-red-400 mr-3" />
+                <h3 className="text-2xl font-bold text-red-300">Subscription Required</h3>
+              </div>
+              <p className="text-red-200 text-lg mb-4">
+                Access to Crow's Eye requires an active subscription with payment method on file.
+              </p>
+              <p className="text-red-100 text-base">
+                Choose a plan below to continue. Even our Pay-as-you-Go option requires a card for billing when you reach the $5 minimum.
+              </p>
+            </div>
+          </div>
+        )}
+        
         <div className="relative max-w-7xl mx-auto text-center">
           <h1 className="text-5xl md:text-7xl font-bold mb-6">
             <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              Choose Your Plan
+              {isRequired ? 'Complete Your Setup' : 'Choose Your Plan'}
             </span>
           </h1>
           <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
-            Unlock the full potential of AI-powered social media marketing with plans designed for every creator and business
+            {isRequired 
+              ? 'Set up your subscription to access all the powerful AI-driven social media tools'
+              : 'Unlock the full potential of AI-powered social media marketing with plans designed for every creator and business'
+            }
           </p>
 
           {/* Promotion Code Section */}
@@ -395,7 +423,9 @@ export default function PricingPage() {
                 <p className="text-red-400 text-sm mt-2">{promoError}</p>
               )}
               {promoApplied && (
-                <p className="text-green-400 text-sm mt-2">🎉 Promotion code applied! Free access granted.</p>
+                <p className="text-green-400 text-sm mt-2">
+                  🎉 Promotion code applied! Free access granted.
+                </p>
               )}
             </div>
           </div>
@@ -433,97 +463,147 @@ export default function PricingPage() {
 
       {/* Pricing Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Pay-as-you-Go Plan */}
-          <Card className="relative border-2 border-blue-500 shadow-lg">
-            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-              <Badge className="bg-blue-500 text-white px-3 py-1">
-                <Gift className="h-3 w-3 mr-1" />
-                No Charges Until $5
-              </Badge>
-            </div>
-            <CardHeader className="text-center pt-8">
-              <CardTitle className="text-2xl">Pay-as-you-Go</CardTitle>
-              <div className="text-3xl font-bold text-blue-600">Card + $5 Threshold</div>
-              <CardDescription className="text-base">
-                Perfect for trying out the platform. Add your card, use freely until you hit $5, then billing starts.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Pricing Breakdown */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-3 flex items-center">
-                    <Calculator className="h-4 w-4 mr-2" />
-                    Simple Pricing
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>AI Credits:</span>
-                      <span className="font-medium">$0.15 each</span>
+        {/* Pay-as-you-Go Plan - Featured */}
+        <div className="mb-12">
+          <div className="max-w-2xl mx-auto">
+            {/* Pay-as-you-Go Plan - Standalone */}
+            <Card className="relative border-2 border-green-500 shadow-xl bg-gradient-to-br from-green-50 to-blue-50">
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                <Badge className="bg-green-500 text-white px-4 py-2 text-sm font-semibold">
+                  <Gift className="h-4 w-4 mr-1" />
+                  Start Free - $5 Minimum
+                </Badge>
+              </div>
+              <CardHeader className="text-center pt-8">
+                <CardTitle className="text-3xl font-bold text-gray-900">Pay-as-you-Go</CardTitle>
+                <div className="text-4xl font-bold text-green-600 mb-2">Simple & Fair</div>
+                <CardDescription className="text-lg text-gray-700">
+                  Perfect for everyone - pay only for what you use with a generous $5 minimum threshold
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* How It Works */}
+                  <div className="bg-white p-4 rounded-lg border border-green-200">
+                    <h4 className="font-bold text-green-800 mb-3 text-lg">🎯 How It Works:</h4>
+                    <div className="space-y-2 text-gray-700">
+                      <div className="flex items-center space-x-2">
+                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">1</span>
+                        <span>Sign up and add your payment method</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">2</span>
+                        <span>Use the platform freely - no charges yet!</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">3</span>
+                        <span>Get charged only when you reach $5 in usage</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">4</span>
+                        <span>Then pay monthly for actual usage</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Scheduled Posts:</span>
-                      <span className="font-medium">$0.25 each</span>
+                  </div>
+
+                  {/* Pricing Breakdown */}
+                  <div className="bg-gray-50 p-4 rounded-lg border">
+                    <h4 className="font-bold text-gray-900 mb-3 flex items-center text-lg">
+                      <Calculator className="h-5 w-5 mr-2" />
+                      Simple Pricing Structure
+                    </h4>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                        <span className="font-medium text-black">AI Credits:</span>
+                        <span className="font-bold text-green-600 text-lg">$0.15 each</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                        <span className="font-medium text-black">Scheduled Posts:</span>
+                        <span className="font-bold text-green-600 text-lg">$0.25 each</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
+                        <span className="font-medium text-black">Storage:</span>
+                        <span className="font-bold text-green-600 text-lg">$2.99/GB/month</span>
+                      </div>
+                      <div className="flex justify-between items-center py-3 bg-green-100 px-3 rounded border-2 border-green-300">
+                        <span className="font-bold text-green-800">Minimum monthly charge:</span>
+                        <span className="font-bold text-green-800 text-xl">$5.00</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Storage:</span>
-                      <span className="font-medium">$2.99 per GB/month</span>
+                  </div>
+
+                  {/* Usage Examples */}
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h4 className="font-bold text-blue-800 mb-3 text-lg">💡 Usage Examples:</h4>
+                    <div className="grid grid-cols-1 gap-3 text-sm">
+                      <div className="bg-white p-3 rounded border">
+                        <div className="font-medium text-blue-800 mb-1">Light User:</div>
+                        <div className="text-gray-600">10 AI credits + 3 posts + 1GB = $4.24</div>
+                        <div className="text-green-600 font-medium">💸 Charged: $0 (under $5)</div>
+                      </div>
+                      <div className="bg-white p-3 rounded border">
+                        <div className="font-medium text-blue-800 mb-1">Medium User:</div>
+                        <div className="text-gray-600">25 AI credits + 10 posts + 2GB = $12.23</div>
+                        <div className="text-blue-600 font-medium">💳 Charged: $12.23</div>
+                      </div>
+                      <div className="bg-white p-3 rounded border">
+                        <div className="font-medium text-blue-800 mb-1">Power User:</div>
+                        <div className="text-gray-600">100 AI credits + 50 posts + 10GB = $57.40</div>
+                        <div className="text-purple-600 font-medium">🚀 Charged: $57.40</div>
+                      </div>
                     </div>
-                    <div className="flex justify-between border-t pt-2 text-blue-600 font-medium">
-                      <span>Minimum threshold:</span>
-                      <span>$5.00/month</span>
-                    </div>
+                  </div>
+
+                  {/* Key Benefits */}
+                  <div className="space-y-3">
+                    <h4 className="font-bold text-gray-900 text-lg">✨ Key Benefits:</h4>
+                    <ul className="space-y-3">
+                      {[
+                        '🆓 True free start - no upfront costs',
+                        '💳 Card required but no charges until $5',
+                        '📊 Transparent pricing - know exactly what you pay',
+                        '📈 Scale naturally with your business',
+                        '🔄 No long-term commitments',
+                        '⚡ All features included from day one',
+                        '🛡️ Fair usage protection for light users'
+                      ].map((feature, index) => (
+                        <li key={index} className="flex items-center text-sm font-medium text-gray-700">
+                          <Check className="h-4 w-4 text-green-500 mr-3 flex-shrink-0" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </div>
 
-                {/* Value Examples */}
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-medium text-blue-800 mb-2">Free usage until you hit $5:</h4>
-                  <ul className="text-sm text-blue-700 space-y-1">
-                    <li>• 33 AI credits (~$5.00)</li>
-                    <li>• 20 scheduled posts (~$5.00)</li>
-                    <li>• 1.68 GB storage (~$5.00)</li>
-                    <li>• Mix and match - only pay when total reaches $5!</li>
-                  </ul>
+                <div className="mt-8">
+                  <Button 
+                    className="w-full text-lg py-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold shadow-lg" 
+                    size="lg"
+                    onClick={() => router.push('/auth/signup?plan=payg')}
+                  >
+                    {isRequired ? '💳 Setup PAYG & Access Platform' : '🚀 Start Free with PAYG'}
+                  </Button>
+                  <p className="text-sm text-gray-600 text-center mt-3 font-medium">
+                    {isRequired 
+                      ? 'Required: Add payment method to access the platform'
+                      : 'Add payment method • No charges until $5 usage • Cancel anytime'
+                    }
+                  </p>
                 </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
 
-                {/* Features List */}
-                <ul className="space-y-3">
-                  {[
-                    'All social platforms supported',
-                    'AI-powered content creation',
-                    'Advanced scheduling & automation',
-                    'Analytics & insights dashboard',
-                    'Cloud storage for media',
-                    'API access for integrations',
-                    'Email & chat support'
-                  ].map((feature, index) => (
-                    <li key={index} className="flex items-center text-sm">
-                      <Check className="h-4 w-4 text-green-500 mr-3 flex-shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+        {/* Traditional Plans Header */}
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-white mb-2">Traditional Monthly Plans</h2>
+          <p className="text-gray-400">Fixed pricing with set limits - perfect for consistent usage</p>
+        </div>
 
-              <div className="mt-6">
-                <Button 
-                  className="w-full text-lg py-3 bg-blue-600 hover:bg-blue-700" 
-                  size="lg"
-                  onClick={() => router.push('/auth/signup?plan=payg')}
-                >
-                  <CreditCard className="h-5 w-5 mr-2" />
-                  Start with $5 Threshold
-                </Button>
-                <p className="text-xs text-gray-500 text-center mt-2">
-                  Card required • No charges until $5 usage • Cancel anytime
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {pricingPlans.map((plan) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {pricingPlans.filter(plan => plan.id !== 'payg').map((plan) => (
             <Card 
               key={plan.id}
               className={`relative bg-gray-900/50 backdrop-blur-sm border-gray-800 text-white hover:border-purple-500/50 transition-all duration-300 ${
@@ -736,7 +816,7 @@ export default function PricingPage() {
                 Start 7-Day Free Trial
               </Button>
               <Button 
-                onClick={() => router.push('/demo')}
+                onClick={() => router.push('/features')}
                 variant="outline"
                 className="border-purple-500 text-purple-300 hover:bg-purple-500/10"
               >
@@ -755,6 +835,9 @@ export default function PricingPage() {
             ··· ··· ···
           </button>
         </div>
+
+
+
       </div>
     </div>
   );

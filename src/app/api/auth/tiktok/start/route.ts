@@ -3,43 +3,63 @@ import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
-const CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY ?? '';
-// Allow env override; otherwise build from current origin (works in dev)
-let REDIRECT_URI = process.env.TIKTOK_REDIRECT_URI || '';
-
-// Comma separated scopes - only using valid TikTok API scopes
-// Removed comment.list and comment.reply as they don't exist in TikTok's official API
-const SCOPES = process.env.TIKTOK_SCOPES ?? 'user.info.basic,video.list';
+const TIKTOK_CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY;
+const TIKTOK_REDIRECT_URI = process.env.TIKTOK_REDIRECT_URI || `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/tiktok/callback`;
 
 export async function GET(request: NextRequest) {
-  if (!REDIRECT_URI) {
-    REDIRECT_URI = `${request.nextUrl.origin}/api/auth/tiktok/redirect`;
+  try {
+    if (!TIKTOK_CLIENT_KEY) {
+      return NextResponse.json(
+        { error: 'TikTok OAuth not configured. App verification pending.' },
+        { status: 503 }
+      );
+    }
+
+    // TikTok OAuth scopes
+    const scopes = [
+      'user.info.basic',
+      'video.publish',
+      'video.upload'
+    ].join(',');
+
+    const state = crypto.randomUUID();
+    
+    // TikTok OAuth URL
+    const authUrl = new URL('https://www.tiktok.com/v2/auth/authorize/');
+    authUrl.searchParams.set('client_key', TIKTOK_CLIENT_KEY);
+    authUrl.searchParams.set('scope', scopes);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('redirect_uri', TIKTOK_REDIRECT_URI);
+    authUrl.searchParams.set('state', state);
+
+    const response = NextResponse.redirect(authUrl.toString());
+
+    // Set state cookie for verification
+    response.cookies.set('tiktok_oauth_state', state, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 600 // 10 minutes
+    });
+
+    return response;
+  } catch (error) {
+    console.error('TikTok OAuth start error:', error);
+    
+    return new NextResponse(`
+      <html>
+        <body>
+          <script>
+            alert('TikTok connection failed. App verification is still pending.');
+            window.close();
+          </script>
+        </body>
+      </html>
+    `, {
+      headers: { 'Content-Type': 'text/html' },
+      status: 503
+    });
   }
-
-  //----- PKCE -----
-  const codeVerifier = crypto.randomBytes(32).toString('base64url');
-  const hashed = crypto.createHash('sha256').update(codeVerifier).digest();
-  const codeChallenge = Buffer.from(hashed).toString('base64url');
-
-  const state = cryptoRandomString();
-  const authUrl = new URL('https://www.tiktok.com/v2/auth/authorize/');
-  authUrl.searchParams.set('client_key', CLIENT_KEY);
-  authUrl.searchParams.set('response_type', 'code');
-  authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
-  authUrl.searchParams.set('scope', SCOPES);
-  authUrl.searchParams.set('state', state);
-  authUrl.searchParams.set('code_challenge', codeChallenge);
-  authUrl.searchParams.set('code_challenge_method', 'S256');
-
-  const resp = NextResponse.redirect(authUrl.toString());
-  resp.cookies.set('tiktok_pkce', codeVerifier, {
-    httpOnly: true,
-    path: '/api/auth/tiktok',
-    maxAge: 10 * 60, // 10 min
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-  });
-  return resp;
 }
 
 function cryptoRandomString(): string {

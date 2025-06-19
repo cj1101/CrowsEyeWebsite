@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "crows-eye",
     "public": "out",
     "ignore": [
       "firebase.json",
