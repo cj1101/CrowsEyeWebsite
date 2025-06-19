@@ -19,7 +19,14 @@ export const STRIPE_PRICE_IDS = {
   creator_yearly: process.env.STRIPE_CREATOR_YEARLY_PRICE_ID || 'price_creator_yearly_placeholder',
   pro_monthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID || 'price_pro_monthly_placeholder',
   pro_yearly: process.env.STRIPE_PRO_YEARLY_PRICE_ID || 'price_pro_yearly_placeholder',
+  // PAYG Price IDs
+  ai_credits: process.env.STRIPE_AI_CREDITS_PRICE_ID || 'price_1RbmLgGU2Wb0yZINUBfTAq0m',
+  scheduled_posts: process.env.STRIPE_POSTS_PRICE_ID || 'price_1RbmMAGU2Wb0yZINY9JkdqEw',
+  storage_gb: process.env.STRIPE_STORAGE_PRICE_ID || 'price_1RbmL2GU2Wb0yZIN6BrcrrV7',
 } as const
+
+// PAYG Product ID
+export const STRIPE_PAYG_PRODUCT_ID = process.env.STRIPE_PAYG_PRODUCT_ID || 'prod_SWq0XFsm6MYTzX'
 
 export type PricingPlan = 'creator' | 'growth' | 'pro'
 export type BillingInterval = 'monthly' | 'yearly'
@@ -218,6 +225,21 @@ export const createPAYGSubscription = async (params: {
       }
     })
 
+    // Create subscription with the three PAYG price IDs
+    const subscription = await stripe.subscriptions.create({
+      customer: customer.id,
+      items: [
+        { price: STRIPE_PRICE_IDS.ai_credits },
+        { price: STRIPE_PRICE_IDS.scheduled_posts },
+        { price: STRIPE_PRICE_IDS.storage_gb }
+      ],
+      metadata: {
+        userId: params.userId,
+        plan: 'payg',
+        product_id: STRIPE_PAYG_PRODUCT_ID
+      }
+    })
+
     // Create checkout session to collect payment method
     const session = await stripe.checkout.sessions.create({
       mode: 'setup',
@@ -227,7 +249,8 @@ export const createPAYGSubscription = async (params: {
       cancel_url: params.cancelUrl,
       metadata: {
         userId: params.userId,
-        plan: 'payg'
+        plan: 'payg',
+        subscription_id: subscription.id
       }
     })
 
@@ -235,6 +258,7 @@ export const createPAYGSubscription = async (params: {
       sessionId: session.id,
       url: session.url,
       customerId: customer.id,
+      subscriptionId: subscription.id,
       message: 'Card required - no charges until you reach $5 in usage!'
     }
   } catch (error) {
