@@ -5,7 +5,7 @@ import { CrowsEyeAPI, type User, type LoginCredentials, type RegisterData } from
 
 // Enhanced user profile interface that matches our API
 interface UserProfile extends User {
-  plan: 'free' | 'creator' | 'pro' | 'growth';
+  plan: 'free' | 'creator' | 'pro' | 'growth' | 'payg';
   displayName: string;
   firstName: string;
   lastName: string;
@@ -26,6 +26,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   hasValidSubscription: () => boolean;
   requiresSubscription: () => boolean;
+  needsPAYGSetup: () => boolean;
 }
 
 interface AuthProviderProps {
@@ -45,6 +46,7 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   hasValidSubscription: () => false,
   requiresSubscription: () => false,
+  needsPAYGSetup: () => false,
 });
 
 export const useAuth = () => {
@@ -76,8 +78,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     return {
       ...apiUser,
-      plan: actualPlan as 'free' | 'creator' | 'pro' | 'growth',
-      subscription_tier: actualPlan as 'free' | 'creator' | 'pro' | 'growth',
+      plan: actualPlan as 'free' | 'creator' | 'pro' | 'growth' | 'payg',
+      subscription_tier: actualPlan as 'free' | 'creator' | 'pro' | 'growth' | 'payg',
       displayName: apiUser.name,
       firstName: nameParts[0] || '',
       lastName: nameParts.slice(1).join(' ') || '',
@@ -389,22 +391,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const isLifetimeUser = userProfile.subscription_tier === 'pro' && 
                           userProfile.subscription_type === 'lifetime';
     
-    // Check if user has any valid subscription
-    const hasActiveSubscription = userProfile.subscription_status === 'active';
+    // Check if user has any valid subscription (active monthly/yearly plans)
+    const hasActiveSubscription = userProfile.subscription_status === 'active' &&
+                                 ['creator', 'growth', 'pro'].includes(userProfile.subscription_tier);
     
-    // For PAYG, check if they have completed payment setup
-    const hasPaymentMethod = userProfile.subscription_tier !== 'free';
+    // For PAYG, check if they have completed payment setup (has stripe_customer_id)
+    const hasPAYGSetup = userProfile.subscription_tier === 'payg' && 
+                        userProfile.subscription_status === 'active';
     
-    return isLifetimeUser || (hasActiveSubscription && hasPaymentMethod);
+    return isLifetimeUser || hasActiveSubscription || hasPAYGSetup;
   }, [userProfile]);
 
   // Check if user requires subscription setup
   const requiresSubscription = useCallback(() => {
     if (!userProfile) return true;
     
-    // All users need some form of subscription/payment setup
-    return !hasValidSubscription();
+    // If user has valid subscription, no setup required
+    if (hasValidSubscription()) return false;
+    
+    // If user is on 'free' tier, they need to choose a plan
+    if (userProfile.subscription_tier === 'free') return true;
+    
+    // If user selected PAYG but hasn't completed setup, they need PAYG setup (not full subscription)
+    if (userProfile.subscription_tier === 'payg' && userProfile.subscription_status !== 'active') {
+      return false; // Allow access to setup PAYG, don't block completely
+    }
+    
+    // Other cases require subscription
+    return true;
   }, [userProfile, hasValidSubscription]);
+
+  // Check if user needs PAYG setup specifically
+  const needsPAYGSetup = useCallback(() => {
+    if (!userProfile) return false;
+    
+    return userProfile.subscription_tier === 'payg' && 
+           userProfile.subscription_status !== 'active';
+  }, [userProfile]);
 
   // Enhanced logout function
   const logout = useCallback(async () => {

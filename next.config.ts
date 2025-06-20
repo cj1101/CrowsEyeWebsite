@@ -102,8 +102,8 @@ const nextConfig: NextConfig = {
     pagesBufferLength: 2,
   },
   
-  // Output configuration - enable static export for Firebase hosting
-  output: 'export', // Enable static export - API routes will be handled differently
+  // Output configuration - disable static export for local development
+  // output: 'export', // Commented out for local development to enable API routes
   distDir: 'out',
   
   // Static optimization

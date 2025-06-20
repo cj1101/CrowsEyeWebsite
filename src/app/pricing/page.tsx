@@ -353,9 +353,8 @@ function PricingContent() {
       // If promo code is applied, redirect to signup with free access
       router.push(`/auth/signup?plan=${plan.paymentType}&promo=true`);
     } else if (plan.paymentType === 'payg') {
-      // For PAYG, redirect to signup page first - user needs to be authenticated
-      // The PAYG Stripe setup will happen after user creates account
-      router.push('/auth/signup?plan=payg');
+      // For PAYG, redirect to signup with PAYG setup redirect
+      router.push('/auth/signup?plan=payg&redirect=/payg-setup');
     } else {
       const url = billingPeriod === 'monthly' ? plan.monthlyUrl : plan.yearlyUrl;
       if (url) {

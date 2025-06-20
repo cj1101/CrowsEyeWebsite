@@ -384,6 +384,13 @@ export default function MarketingToolPage() {
       return;
     }
     
+    // Check if user needs PAYG setup specifically (using string comparison to avoid type issues)
+    if ((userProfile.subscription_tier as string) === 'payg' && userProfile.subscription_status !== 'active') {
+      console.log('🔒 User needs PAYG setup, redirecting to PAYG setup page');
+      router.push('/payg-setup');
+      return;
+    }
+    
     // Check if user needs to set up subscription
     if (requiresSubscription()) {
       console.log('🔒 User requires subscription setup, redirecting to pricing');
