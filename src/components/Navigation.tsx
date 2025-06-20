@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Bars3Icon, XMarkIcon, UserIcon, ChevronDownIcon, ArrowRightOnRectangleIcon, CreditCardIcon } from '@heroicons/react/24/outline'
 import { useAuth } from '@/contexts/AuthContext'
+import { Badge } from '@/components/ui/badge'
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -33,6 +34,22 @@ const Navigation = () => {
     ...navigation,
     { name: 'Dashboard', href: '/dashboard' }
   ]
+
+  // Helper to format plan label
+  const getPlanLabel = (tier?: string) => {
+    switch (tier) {
+      case 'payg':
+        return 'Pay-as-you-Go';
+      case 'creator':
+        return 'Creator';
+      case 'growth':
+        return 'Growth';
+      case 'pro':
+        return 'Pro';
+      default:
+        return 'Free';
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -277,7 +294,9 @@ const Navigation = () => {
                       className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-vision-purple/20 transition-all duration-300"
                       onClick={() => setIsOpen(false)}
                     >
-                      Subscription
+                      <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30">
+                        {getPlanLabel(userProfile?.subscription_tier)} Plan
+                      </Badge>
                     </Link>
                     <button
                       onClick={() => {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { calculateUsageCost } from '@/lib/stripe'
 
+export const dynamic = 'force-static'
+
 export async function GET(request: NextRequest) {
   try {
     // Mock usage data for demonstration

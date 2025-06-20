@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { loadEnvVariables, getEnvVar } from '@/lib/env-loader'
 
+export const dynamic = 'force-static'
+
 export async function GET() {
   try {
     // Load environment variables manually

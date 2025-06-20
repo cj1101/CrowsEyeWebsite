@@ -207,16 +207,37 @@ export class PAYGUsageService {
    */
   async createPAYGAccount(userEmail: string, userId: string): Promise<{ sessionId?: string; url?: string | null; customerId: string; message: string }> {
     try {
-      const result = await createPAYGSubscription({
-        customerEmail: userEmail,
-        userId: userId,
-        successUrl: `${window.location.origin}/success?plan=payg`,
-        cancelUrl: `${window.location.origin}/pricing`
+      console.log('🚀 Creating PAYG account via API route...')
+      
+      const response = await fetch('/api/billing/payg/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customerEmail: userEmail,
+          userId: userId,
+          successUrl: `${window.location.origin}/success?plan=payg`,
+          cancelUrl: `${window.location.origin}/pricing`
+        })
       })
       
-      return result
+      const result = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create PAYG subscription')
+      }
+      
+      console.log('✅ PAYG account created successfully:', result)
+      
+      return {
+        sessionId: result.sessionId,
+        url: result.url,
+        customerId: result.customerId,
+        message: result.message
+      }
     } catch (error) {
-      console.error('Failed to create PAYG account:', error)
+      console.error('❌ Failed to create PAYG account:', error)
       throw new Error('Unable to create pay-as-you-go account')
     }
   }

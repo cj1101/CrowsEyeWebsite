@@ -5,24 +5,36 @@ import { UserCircleIcon, CogIcon, CreditCardIcon, ArrowRightOnRectangleIcon, Cha
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function AccountPage() {
-  const { userProfile, logout } = useAuth();
-  
-  const [user] = useState({
-    name: userProfile?.displayName || 'Guest User',
-    email: userProfile?.email || 'guest@example.com',
-    plan: userProfile?.plan || 'Free',
-    joinDate: userProfile?.created_at || '2024-01-01'
-  });
+  const { userProfile, logout, loading, isAuthenticated } = useAuth();
 
-  const [usage] = useState({
-    postsCreated: 25,
-    mediaUploaded: 150,
-    aiCreditsUsed: 75,
-    storageUsed: 2.5,
-    aiCreditsRemaining: 225,
-    socialAccountsConnected: 3,
-    totalScheduledPosts: 12
-  });
+  // Show loading state if user profile is not loaded yet
+  if (loading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen darker-gradient-bg logo-bg-overlay flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading account information...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  const user = {
+    name: userProfile?.displayName || userProfile?.firstName || 'Loading...',
+    email: userProfile?.email || 'Loading...',
+    plan: userProfile?.subscription_tier || userProfile?.plan || 'Free',
+    joinDate: userProfile?.created_at || new Date().toISOString()
+  };
+
+  const usage = {
+    postsCreated: userProfile?.usage_limits?.scheduled_posts || 0,
+    mediaUploaded: 0, // Could be calculated from actual data
+    aiCreditsUsed: userProfile?.usage_limits?.ai_credits || 0,
+    storageUsed: Math.round((userProfile?.usage_limits?.media_storage_mb || 0) / 1024 * 100) / 100, // Convert MB to GB
+    aiCreditsRemaining: Math.max(0, (userProfile?.usage_limits?.max_ai_credits || 0) - (userProfile?.usage_limits?.ai_credits || 0)),
+    socialAccountsConnected: userProfile?.usage_limits?.linked_accounts || 0,
+    totalScheduledPosts: userProfile?.usage_limits?.scheduled_posts || 0
+  };
 
   const handleManageSubscription = () => {
     // Redirect to subscription management page
@@ -41,14 +53,27 @@ export default function AccountPage() {
     }
   };
 
-  const planColors = {
-    'Pay-as-you-Go': 'from-emerald-500 to-teal-500',
-    Creator: 'from-purple-500 to-pink-500',
-    Growth: 'from-blue-500 to-cyan-500',
-    Pro: 'from-yellow-500 to-orange-500'
+  // Format plan name for display
+  const formatPlanName = (plan: string) => {
+    if (plan === 'payg') return 'Pay-as-you-Go';
+    if (plan === 'creator') return 'Creator';
+    if (plan === 'growth') return 'Growth';
+    if (plan === 'pro') return 'Pro';
+    if (plan === 'free') return 'Free';
+    return plan.charAt(0).toUpperCase() + plan.slice(1);
   };
 
-  const currentPlanColor = planColors[user.plan as keyof typeof planColors] || planColors['Pay-as-you-Go'];
+  const displayPlan = formatPlanName(user.plan);
+
+  const planColors = {
+    'Pay-as-you-Go': 'from-emerald-500 to-teal-500',
+    'Creator': 'from-purple-500 to-pink-500',
+    'Growth': 'from-blue-500 to-cyan-500',
+    'Pro': 'from-yellow-500 to-orange-500',
+    'Free': 'from-gray-500 to-gray-600'
+  };
+
+  const currentPlanColor = planColors[displayPlan as keyof typeof planColors] || planColors['Free'];
 
   return (
     <div className="min-h-screen darker-gradient-bg logo-bg-overlay">
@@ -121,12 +146,12 @@ export default function AccountPage() {
                   Subscription & Billing
                 </h3>
                 <div className={`bg-gradient-to-r ${currentPlanColor} text-white px-4 py-2 rounded-full text-sm font-bold tech-subheading`}>
-                  {user.plan} Plan
+                  {displayPlan} Plan
                 </div>
               </div>
               
               <p className="text-gray-300 mb-6 tech-body">
-                You are currently on the <strong className="text-white">{user.plan}</strong> plan. 
+                You are currently on the <strong className="text-white">{displayPlan}</strong> plan. 
                 Manage your subscription, update payment methods, or view billing history.
               </p>
               

@@ -8,7 +8,7 @@ export interface UserProfile {
   firstName: string;
   lastName: string;
   avatar?: string;
-  plan: 'free' | 'creator' | 'pro';
+  plan: 'free' | 'creator' | 'pro' | 'payg';
   createdAt: string;
   lastLoginAt: string;
 }
@@ -27,11 +27,18 @@ export interface SignupRequest {
   email: string;
   password: string;
   displayName: string;
+  subscription_tier?: 'free' | 'creator' | 'growth' | 'pro' | 'payg';
 }
 
 export interface AuthResponse {
-  token: string;
-  user: UserProfile;
+  success?: boolean;
+  error?: string;
+  data?: {
+    access_token: string;
+    refresh_token: string;
+    user: any;
+    expires_in?: number;
+  };
 }
 
 export interface AuthenticatedRequest extends Request {
@@ -178,7 +185,7 @@ export interface ApiResponse<T = any> {
 }
 
 // Database Types (internal)
-export type UserPlan = 'FREE' | 'CREATOR' | 'PRO';
+export type UserPlan = 'FREE' | 'CREATOR' | 'GROWTH' | 'PRO' | 'PAYG';
 export type MediaType = 'IMAGE' | 'VIDEO' | 'AUDIO';
 export type ActivityType = 'SUCCESS' | 'INFO' | 'WARNING' | 'ERROR';
 

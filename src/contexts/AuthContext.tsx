@@ -10,6 +10,7 @@ interface UserProfile extends User {
   firstName: string;
   lastName: string;
   subscription_type?: 'monthly' | 'yearly' | 'lifetime';
+  stripe_customer_id?: string;
 }
 
 // Auth context interface
@@ -25,8 +26,11 @@ interface AuthContextType {
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   hasValidSubscription: () => boolean;
+  hasValidSubscriptionAsync: () => Promise<boolean>;
   requiresSubscription: () => boolean;
   needsPAYGSetup: () => boolean;
+  needsPAYGSetupAsync: () => Promise<boolean>;
+  updateUserSubscription: (stripeCustomerId: string, subscriptionId?: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 interface AuthProviderProps {
@@ -45,8 +49,11 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {},
   isAuthenticated: false,
   hasValidSubscription: () => false,
+  hasValidSubscriptionAsync: async () => false,
   requiresSubscription: () => false,
   needsPAYGSetup: () => false,
+  needsPAYGSetupAsync: async () => false,
+  updateUserSubscription: async () => ({ success: false }),
 });
 
 export const useAuth = () => {
@@ -73,13 +80,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const promoTier = localStorage.getItem('crowsEyePromoTier');
     const subscriptionType = promoTier === 'lifetime_pro' ? 'lifetime' : 'monthly';
     
-    // Default to Pro plan for better demo experience
-    const actualPlan = apiUser.subscription_tier || 'pro';
+    // Start with the backend's subscription_tier as the source of truth
+    let actualPlan: 'free' | 'creator' | 'pro' | 'growth' | 'payg' = apiUser.subscription_tier || 'free';
+    
+    console.log('🔍 Plan Detection Debug:', {
+      backendTier: apiUser.subscription_tier,
+      hasStripeCustomerId: !!apiUser.stripe_customer_id,
+      subscriptionStatus: apiUser.subscription_status,
+      promoTier,
+      initialPlan: actualPlan,
+      fullUserData: apiUser
+    });
+
+    // Enhanced plan detection logic
+    if (promoTier === 'lifetime_pro') {
+      console.log('🎁 Detected lifetime Pro user via promo code');
+      actualPlan = 'pro';
+    } else if ((actualPlan === 'free' || !actualPlan) && apiUser.stripe_customer_id) {
+      console.log('🎯 User has Stripe customer ID but marked as free - likely PAYG user');
+      actualPlan = 'payg';
+    } else if (apiUser.subscription_status === 'active' && ['creator', 'growth', 'pro'].includes(actualPlan)) {
+      console.log('✅ User has active subscription:', actualPlan);
+    } else if (actualPlan === 'free' && apiUser.subscription_status === 'active') {
+      console.log('⚠️ User marked as free but has active subscription - data mismatch');
+      // This suggests the backend data is out of sync
+    }
+    
+    console.log('✅ Final plan assigned:', actualPlan);
     
     return {
       ...apiUser,
-      plan: actualPlan as 'free' | 'creator' | 'pro' | 'growth' | 'payg',
-      subscription_tier: actualPlan as any, // Allow payg to be added to subscription_tier
+      plan: actualPlan,
+      subscription_tier: actualPlan as any,
       displayName: apiUser.name,
       firstName: nameParts[0] || '',
       lastName: nameParts.slice(1).join(' ') || '',
@@ -117,6 +149,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             localStorage.setItem('user_email', userProfile.email);
             
             console.log('✅ Authentication restored from stored token');
+            
+            // Sync subscription status to ensure data is up to date
+            try {
+              await api.syncSubscriptionStatus();
+              console.log('🔄 Subscription sync completed');
+              // Refresh user profile after sync
+              const updatedResponse = await api.getCurrentUser();
+              if (updatedResponse.data) {
+                const updatedProfile = transformUserToProfile(updatedResponse.data);
+                setUserProfile(updatedProfile);
+                console.log('✅ User profile refreshed after sync');
+              }
+            } catch (syncError) {
+              console.warn('⚠️ Subscription sync failed (non-critical):', syncError);
+            }
           } else {
             throw new Error('No user data in response');
           }
@@ -199,6 +246,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setError('Failed to refresh user profile');
     }
   }, [api, isAuthenticated]);
+
+  // Sync subscription status with backend when data seems incorrect
+  const syncSubscriptionStatus = useCallback(async () => {
+    if (!userProfile || !isAuthenticated) return;
+    
+    try {
+      console.log('🔄 Syncing subscription status with backend...');
+      const response = await api.getSubscriptionStatus();
+      
+      if (response.data.success && response.data.data) {
+        const backendData = response.data.data;
+        
+        console.log('📊 Backend subscription data:', backendData);
+        
+        // If backend data shows different plan than what we have locally
+        if (backendData.plan !== userProfile.subscription_tier) {
+          console.log('🔄 Plan mismatch detected, refreshing user profile...');
+          await refreshUserProfile();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to sync subscription status:', error);
+    }
+  }, [userProfile, isAuthenticated, api, refreshUserProfile]);
 
   // Enhanced API login function
   const login = useCallback(async (email?: string, password?: string) => {
@@ -389,7 +460,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [api]);
 
-  // Check if user has valid subscription
+  // Check if user has valid subscription - sync version for backward compatibility
   const hasValidSubscription = useCallback(() => {
     if (!userProfile) return false;
     
@@ -403,37 +474,107 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     // For PAYG, check if they have completed payment setup (has stripe_customer_id)
     const hasPAYGSetup = (userProfile.subscription_tier as string) === 'payg' && 
-                        userProfile.subscription_status === 'active';
+                        !!userProfile.stripe_customer_id;
     
     return isLifetimeUser || hasActiveSubscription || hasPAYGSetup;
   }, [userProfile]);
 
-  // Check if user requires subscription setup
+  // Check if user has valid subscription - async version using API
+  const hasValidSubscriptionAsync = useCallback(async () => {
+    if (!userProfile || !isAuthenticated) return false;
+    
+    try {
+      // Use API to get real-time subscription status
+      const response = await api.getSubscriptionStatus();
+      
+      if (response.data.success && response.data.data) {
+        const subscriptionData = response.data.data;
+        
+        // Check various valid subscription states
+        const isLifetimeUser = subscriptionData.plan === 'pro' && 
+                              localStorage.getItem('crowsEyePromoTier') === 'lifetime_pro';
+        
+        const hasActiveSubscription = subscriptionData.subscriptionStatus === 'active' &&
+                                     ['creator', 'growth', 'pro'].includes(subscriptionData.plan);
+        
+        const hasPAYGSetup = subscriptionData.plan === 'payg' && 
+                            !!subscriptionData.stripeCustomerId;
+        
+        return isLifetimeUser || hasActiveSubscription || hasPAYGSetup;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Failed to check subscription status:', error);
+      // Fallback to local check if API fails
+      return hasValidSubscription();
+    }
+  }, [userProfile, isAuthenticated, api, hasValidSubscription]);
+
+  // Check if user requires subscription setup - simplified
   const requiresSubscription = useCallback(() => {
     if (!userProfile) return true;
     
-    // If user has valid subscription, no setup required
-    if (hasValidSubscription()) return false;
-    
-    // If user is on 'free' tier, they need to choose a plan
-    if ((userProfile.subscription_tier as string) === 'free') return true;
-    
-    // If user selected PAYG but hasn't completed setup, they need PAYG setup (not full subscription)
-    if ((userProfile.subscription_tier as string) === 'payg' && userProfile.subscription_status !== 'active') {
-      return false; // Allow access to setup PAYG, don't block completely
+    // For PAYG users without stripe_customer_id, they need setup but not full subscription
+    if (userProfile.subscription_tier === 'payg' && !userProfile.stripe_customer_id) {
+      return false; // Allow access to setup PAYG
     }
     
-    // Other cases require subscription
-    return true;
-  }, [userProfile, hasValidSubscription]);
+    // All other free tier users need subscription
+    return userProfile.subscription_tier === 'free';
+  }, [userProfile]);
 
-  // Check if user needs PAYG setup specifically
+  // Check if user needs PAYG setup specifically - sync version
   const needsPAYGSetup = useCallback(() => {
     if (!userProfile) return false;
     
-    return (userProfile.subscription_tier as string) === 'payg' && 
-           userProfile.subscription_status !== 'active';
+    return userProfile.subscription_tier === 'payg' && !userProfile.stripe_customer_id;
   }, [userProfile]);
+
+  // Check if user needs PAYG setup specifically - async version using API
+  const needsPAYGSetupAsync = useCallback(async () => {
+    if (!userProfile || !isAuthenticated) return false;
+    
+    try {
+      const response = await api.getSubscriptionStatus();
+      
+      if (response.data.success && response.data.data) {
+        const subscriptionData = response.data.data;
+        return subscriptionData.plan === 'payg' && !subscriptionData.stripeCustomerId;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Failed to check PAYG setup status:', error);
+      // Fallback to local check
+      return needsPAYGSetup();
+    }
+  }, [userProfile, isAuthenticated, api, needsPAYGSetup]);
+
+  // Update user subscription after PAYG setup
+  const updateUserSubscription = useCallback(async (stripeCustomerId: string, subscriptionId?: string) => {
+    try {
+      console.log('🔄 Updating user subscription with API...');
+      
+      const response = await api.updatePAYGCustomer(stripeCustomerId, subscriptionId);
+      
+      if (response.data.success) {
+        // Refresh user profile to get updated subscription data
+        await refreshUserProfile();
+        
+        console.log('✅ User subscription updated successfully');
+        return { success: true };
+      } else {
+        throw new Error(response.data.error || 'Failed to update subscription');
+      }
+    } catch (error: any) {
+      console.error('❌ Update user subscription failed:', error);
+      return { 
+        success: false, 
+        error: error?.response?.data?.error || error.message || 'Failed to update subscription'
+      };
+    }
+  }, [api, refreshUserProfile]);
 
   // Enhanced logout function
   const logout = useCallback(async () => {
@@ -467,8 +608,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     isAuthenticated,
     hasValidSubscription,
+    hasValidSubscriptionAsync: hasValidSubscriptionAsync,
     requiresSubscription,
     needsPAYGSetup,
+    needsPAYGSetupAsync: needsPAYGSetupAsync,
+    updateUserSubscription,
   };
 
   return (

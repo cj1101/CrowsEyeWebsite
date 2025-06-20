@@ -60,7 +60,7 @@ export const authenticateToken = async (
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       avatar: user.avatar || undefined,
-      plan: user.plan.toLowerCase() as 'free' | 'creator' | 'pro',
+      plan: user.plan.toLowerCase() as 'free' | 'creator' | 'pro' | 'payg',
       createdAt: user.createdAt.toISOString(),
       lastLoginAt: user.lastLoginAt?.toISOString() || user.createdAt.toISOString(),
     };
@@ -127,7 +127,7 @@ export const optionalAuth = async (
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         avatar: user.avatar || undefined,
-        plan: user.plan.toLowerCase() as 'free' | 'creator' | 'pro',
+        plan: user.plan.toLowerCase() as 'free' | 'creator' | 'pro' | 'payg',
         createdAt: user.createdAt.toISOString(),
         lastLoginAt: user.lastLoginAt?.toISOString() || user.createdAt.toISOString(),
       };

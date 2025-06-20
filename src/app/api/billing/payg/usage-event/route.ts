@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { reportUsageToStripe, USAGE_PRICING_CONFIG } from '@/lib/stripe'
 
+export const dynamic = 'force-static'
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
