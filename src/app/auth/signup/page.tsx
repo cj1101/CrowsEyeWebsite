@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeftIcon, EyeIcon, EyeSlashIcon, UserIcon, ExclamationTriangleIcon, CheckCircleIcon, ShieldCheckIcon, GiftIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
@@ -29,6 +29,7 @@ export default function SignUpPage() {
   
   const { signup, loading: authLoading, isConfigured, isAuthenticated } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -177,9 +178,16 @@ export default function SignUpPage() {
           setSuccessMessage('Account created successfully! Welcome to Crow\'s Eye Marketing Suite. Redirecting to your dashboard...');
         }
         
-        // Redirect to dashboard after a short delay
+        // Check for redirect parameter (for PAYG setup)
+        const redirectTo = searchParams.get('redirect');
+        
+        // Redirect after a short delay
         setTimeout(() => {
-          router.push('/marketing-tool');
+          if (redirectTo) {
+            router.push(redirectTo);
+          } else {
+            router.push('/marketing-tool');
+          }
         }, 3000);
       } else {
         // Handle specific error cases
