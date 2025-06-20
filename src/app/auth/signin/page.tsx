@@ -32,9 +32,13 @@ export default function SignInPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      const redirectPath = localStorage.getItem('redirectAfterLogin') || '/marketing-tool';
-      localStorage.removeItem('redirectAfterLogin');
-      router.push(redirectPath);
+      const redirectPath = localStorage.getItem('redirectAfterLogin');
+      if (redirectPath) {
+        localStorage.removeItem('redirectAfterLogin');
+        router.push(redirectPath);
+      }
+      // Don't automatically redirect to marketing-tool to avoid loops
+      // Let user stay on signin page or navigate manually
     }
   }, [isAuthenticated, router]);
 
@@ -93,16 +97,19 @@ export default function SignInPage() {
           localStorage.removeItem('rememberedEmail');
         }
 
-        setSuccessMessage('Login successful! Redirecting...');
+        setSuccessMessage('Login successful! Please navigate to your desired page.');
         
-        // Check for stored redirect path, otherwise go to marketing tool
-        const redirectPath = localStorage.getItem('redirectAfterLogin') || '/marketing-tool';
-        localStorage.removeItem('redirectAfterLogin');
-        
-        // Small delay for success message visibility
-        setTimeout(() => {
-          router.push(redirectPath);
-        }, 1500);
+        // Check for stored redirect path only
+        const redirectPath = localStorage.getItem('redirectAfterLogin');
+        if (redirectPath) {
+          localStorage.removeItem('redirectAfterLogin');
+          
+          // Small delay for success message visibility
+          setTimeout(() => {
+            router.push(redirectPath);
+          }, 1500);
+        }
+        // Don't auto-redirect to marketing-tool to avoid loops
       } else {
         // Handle specific error cases
         const errorMessage = result.error || 'Login failed. Please try again.';

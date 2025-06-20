@@ -79,7 +79,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return {
       ...apiUser,
       plan: actualPlan as 'free' | 'creator' | 'pro' | 'growth' | 'payg',
-      subscription_tier: actualPlan as 'free' | 'creator' | 'pro' | 'growth' | 'payg',
+      subscription_tier: actualPlan as any, // Allow payg to be added to subscription_tier
       displayName: apiUser.name,
       firstName: nameParts[0] || '',
       lastName: nameParts.slice(1).join(' ') || '',
@@ -300,20 +300,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const promoCode = localStorage.getItem('crowsEyePromoCode');
       const promoTier = localStorage.getItem('crowsEyePromoTier');
       
-      let subscriptionTier: 'free' | 'creator' | 'growth' | 'pro' = 'free';
+      let subscriptionTier: 'free' | 'creator' | 'growth' | 'pro' | 'payg' = 'free';
       
-      // Set subscription tier based on promo code
+      // Check if user selected PAYG plan from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const planParam = urlParams.get('plan');
+      
+      // Set subscription tier based on promo code or plan selection
       if (promoTier === 'lifetime_pro') {
         subscriptionTier = 'pro'; // Lifetime Pro access
       } else if (promoCode) {
         subscriptionTier = 'creator'; // Default promo code access
+      } else if (planParam === 'payg') {
+        subscriptionTier = 'payg'; // Pay-as-you-go plan
       }
       
       const userData: RegisterData = {
         email,
         password,
         name: `${firstName} ${lastName}`.trim(),
-        subscription_tier: subscriptionTier,
+        subscription_tier: subscriptionTier as any, // Allow PAYG to be set
       };
       
       const response = await api.register(userData);
@@ -396,7 +402,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                                  ['creator', 'growth', 'pro'].includes(userProfile.subscription_tier);
     
     // For PAYG, check if they have completed payment setup (has stripe_customer_id)
-    const hasPAYGSetup = userProfile.subscription_tier === 'payg' && 
+    const hasPAYGSetup = (userProfile.subscription_tier as string) === 'payg' && 
                         userProfile.subscription_status === 'active';
     
     return isLifetimeUser || hasActiveSubscription || hasPAYGSetup;
@@ -410,10 +416,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (hasValidSubscription()) return false;
     
     // If user is on 'free' tier, they need to choose a plan
-    if (userProfile.subscription_tier === 'free') return true;
+    if ((userProfile.subscription_tier as string) === 'free') return true;
     
     // If user selected PAYG but hasn't completed setup, they need PAYG setup (not full subscription)
-    if (userProfile.subscription_tier === 'payg' && userProfile.subscription_status !== 'active') {
+    if ((userProfile.subscription_tier as string) === 'payg' && userProfile.subscription_status !== 'active') {
       return false; // Allow access to setup PAYG, don't block completely
     }
     
@@ -425,7 +431,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const needsPAYGSetup = useCallback(() => {
     if (!userProfile) return false;
     
-    return userProfile.subscription_tier === 'payg' && 
+    return (userProfile.subscription_tier as string) === 'payg' && 
            userProfile.subscription_status !== 'active';
   }, [userProfile]);
 
@@ -462,6 +468,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated,
     hasValidSubscription,
     requiresSubscription,
+    needsPAYGSetup,
   };
 
   return (

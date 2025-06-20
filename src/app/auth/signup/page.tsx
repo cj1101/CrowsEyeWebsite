@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { ArrowLeftIcon, EyeIcon, EyeSlashIcon, UserIcon, ExclamationTriangleIcon, CheckCircleIcon, ShieldCheckIcon, GiftIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function SignUpPage() {
+function SignUpForm() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -34,7 +34,9 @@ export default function SignUpPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/marketing-tool');
+      // Don't redirect to marketing-tool automatically - let them access signup
+      // if they need to change plans or they'll get stuck in redirect loops
+      return;
     }
   }, [isAuthenticated, router]);
 
@@ -551,4 +553,16 @@ export default function SignUpPage() {
       `}</style>
     </div>
   );
-} 
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+      </div>
+    }>
+      <SignUpForm />
+    </Suspense>
+  );
+}
