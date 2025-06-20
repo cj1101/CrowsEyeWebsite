@@ -102,8 +102,8 @@ const nextConfig: NextConfig = {
     pagesBufferLength: 2,
   },
   
-  // Output configuration - remove static export to enable API routes
-  // output: 'export', // Commented out to enable API routes for PAYG functionality
+  // Output configuration - enable static export for Firebase hosting
+  output: 'export', // Enable static export - API routes will be handled differently
   distDir: 'out',
   
   // Static optimization
