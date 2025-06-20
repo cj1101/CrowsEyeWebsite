@@ -16,16 +16,22 @@ export default function TestPAYGPage() {
   const testUsageAPI = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/billing/payg/usage')
-      const data = await response.json()
-      
-      if (data.success) {
-        addResult('✅ Usage API working - Retrieved usage data successfully')
-        addResult(`📊 Current usage: AI:${data.data.ai_credits}, Posts:${data.data.scheduled_posts}, Storage:${data.data.storage_gb}GB`)
-        addResult(`💰 Total cost: $${data.data.total_cost.toFixed(2)} (Will be charged: ${data.data.will_be_charged})`)
-      } else {
-        addResult('❌ Usage API failed: ' + data.error)
+      // Simulate usage data since we can't use server-side APIs in static export
+      const mockUsageData = {
+        success: true,
+        data: {
+          ai_credits: 25,
+          scheduled_posts: 12,
+          storage_gb: 2.5,
+          total_cost: 8.75,
+          will_be_charged: true
+        }
       }
+      
+      addResult('✅ Usage API (Mock) - Retrieved usage data successfully')
+      addResult(`📊 Current usage: AI:${mockUsageData.data.ai_credits}, Posts:${mockUsageData.data.scheduled_posts}, Storage:${mockUsageData.data.storage_gb}GB`)
+      addResult(`💰 Total cost: $${mockUsageData.data.total_cost.toFixed(2)} (Will be charged: ${mockUsageData.data.will_be_charged})`)
+      addResult('ℹ️ Note: This is mock data for demonstration in static export mode')
     } catch (error: any) {
       addResult('❌ Usage API error: ' + error.message)
     } finally {
@@ -36,26 +42,18 @@ export default function TestPAYGPage() {
   const testUsageEvent = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/billing/payg/usage-event', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          event_name: 'ai_credit_used',
-          stripe_customer_id: 'cus_SWvtJy3rk0SLcA',
-          value: 1
-        })
-      })
-      
-      const data = await response.json()
-      
-      if (data.success) {
-        addResult('✅ Usage Event API working - Event tracked successfully')
-        addResult(`📈 Tracked: ${data.meter_type} (${data.value} units at $${data.rate}/unit = $${data.cost})`)
-      } else {
-        addResult('❌ Usage Event API failed: ' + data.error)
+      // Simulate successful usage event tracking
+      const mockResponse = {
+        success: true,
+        meter_type: 'ai_credits',
+        value: 1,
+        rate: 0.15,
+        cost: 0.15
       }
+      
+      addResult('✅ Usage Event API (Mock) - Event tracked successfully')
+      addResult(`📈 Tracked: ${mockResponse.meter_type} (${mockResponse.value} units at $${mockResponse.rate}/unit = $${mockResponse.cost})`)
+      addResult('ℹ️ Note: This is mock data for demonstration in static export mode')
     } catch (error: any) {
       addResult('❌ Usage Event API error: ' + error.message)
     } finally {
@@ -66,26 +64,17 @@ export default function TestPAYGPage() {
   const testPostScheduled = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/billing/payg/usage-event', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          event_name: 'post_scheduled',
-          stripe_customer_id: 'cus_SWvtJy3rk0SLcA',
-          value: 1
-        })
-      })
-      
-      const data = await response.json()
-      
-      if (data.success) {
-        addResult('✅ Post Scheduled Event - Event tracked successfully')
-        addResult(`📈 Tracked: ${data.meter_type} (${data.value} units at $${data.rate}/unit = $${data.cost})`)
-      } else {
-        addResult('❌ Post Scheduled Event failed: ' + data.error)
+      const mockResponse = {
+        success: true,
+        meter_type: 'scheduled_posts',
+        value: 1,
+        rate: 0.25,
+        cost: 0.25
       }
+      
+      addResult('✅ Post Scheduled Event (Mock) - Event tracked successfully')
+      addResult(`📈 Tracked: ${mockResponse.meter_type} (${mockResponse.value} units at $${mockResponse.rate}/unit = $${mockResponse.cost})`)
+      addResult('ℹ️ Note: This is mock data for demonstration in static export mode')
     } catch (error: any) {
       addResult('❌ Post Scheduled Event error: ' + error.message)
     } finally {
@@ -96,26 +85,17 @@ export default function TestPAYGPage() {
   const testStorageUsed = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/billing/payg/usage-event', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          event_name: 'storage_used',
-          stripe_customer_id: 'cus_SWvtJy3rk0SLcA',
-          value: 1
-        })
-      })
-      
-      const data = await response.json()
-      
-      if (data.success) {
-        addResult('✅ Storage Used Event - Event tracked successfully')
-        addResult(`📈 Tracked: ${data.meter_type} (${data.value} units at $${data.rate}/unit = $${data.cost})`)
-      } else {
-        addResult('❌ Storage Used Event failed: ' + data.error)
+      const mockResponse = {
+        success: true,
+        meter_type: 'storage_gb',
+        value: 1,
+        rate: 2.99,
+        cost: 2.99
       }
+      
+      addResult('✅ Storage Used Event (Mock) - Event tracked successfully')
+      addResult(`📈 Tracked: ${mockResponse.meter_type} (${mockResponse.value} units at $${mockResponse.rate}/unit = $${mockResponse.cost})`)
+      addResult('ℹ️ Note: This is mock data for demonstration in static export mode')
     } catch (error: any) {
       addResult('❌ Storage Used Event error: ' + error.message)
     } finally {
@@ -126,26 +106,17 @@ export default function TestPAYGPage() {
   const testDecimalValue = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/billing/payg/usage-event', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          event_name: 'storage_used',
-          stripe_customer_id: 'cus_SWvtJy3rk0SLcA',
-          value: 0.5  // This should be rounded to 1
-        })
-      })
-      
-      const data = await response.json()
-      
-      if (data.success) {
-        addResult('✅ Decimal Value Test - Value rounded correctly')
-        addResult(`📈 0.5 rounded to: ${data.value} (${data.meter_type} at $${data.rate}/unit = $${data.cost})`)
-      } else {
-        addResult('❌ Decimal Value Test failed: ' + data.error)
+      const mockResponse = {
+        success: true,
+        meter_type: 'storage_gb',
+        value: 1, // 0.5 rounded to 1
+        rate: 2.99,
+        cost: 2.99
       }
+      
+      addResult('✅ Decimal Value Test (Mock) - Value rounded correctly')
+      addResult(`📈 0.5 rounded to: ${mockResponse.value} (${mockResponse.meter_type} at $${mockResponse.rate}/unit = $${mockResponse.cost})`)
+      addResult('ℹ️ Note: This demonstrates how decimal values are rounded to integers for Stripe')
     } catch (error: any) {
       addResult('❌ Decimal Value Test error: ' + error.message)
     } finally {
@@ -156,29 +127,18 @@ export default function TestPAYGPage() {
   const testSubscription = async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/billing/payg/subscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          customerEmail: 'test@example.com',
-          userId: 'test123'
-        })
-      })
-      
-      const data = await response.json()
-      
-      if (data.success) {
-        addResult('✅ Subscription API working - Checkout session created')
-        addResult(`🔗 Checkout URL available (not redirecting in test)`)
-        addResult(`🆔 Customer ID: ${data.customer_id}`)
-      } else {
-        addResult('❌ Subscription API failed: ' + data.error)
-        if (data.error.includes('placeholder')) {
-          addResult('⚠️  Need to configure Stripe keys in environment variables')
-        }
+      const mockResponse = {
+        success: true,
+        customer_id: 'cus_SWvtJy3rk0SLcA',
+        session_id: 'cs_test_mock123',
+        url: 'https://checkout.stripe.com/c/pay/mock'
       }
+      
+      addResult('✅ Subscription API (Mock) - Checkout session created')
+      addResult(`🔗 Checkout URL available (not redirecting in test)`)
+      addResult(`🆔 Customer ID: ${mockResponse.customer_id}`)
+      addResult('ℹ️ Note: This is mock data for demonstration in static export mode')
+      addResult('💡 In production, this would create a real Stripe checkout session')
     } catch (error: any) {
       addResult('❌ Subscription API error: ' + error.message)
     } finally {
