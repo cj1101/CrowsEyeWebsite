@@ -64,6 +64,15 @@ body {
     #2f2f45 100%);
 }
 
+/* New Subtle Grid Background */
+.grid-bg {
+  background-color: #000008;
+  background-image:
+    linear-gradient(to right, rgba(139, 92, 246, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(139, 92, 246, 0.1) 1px, transparent 1px);
+  background-size: 4rem 4rem;
+}
+
 /* Logo Background Effect */
 .logo-bg-overlay {
   position: relative;
@@ -77,14 +86,14 @@ body {
   left: -20%;
   width: 140%;
   height: 140%;
-  background-image: url('/icon.png');
+  background-image: url('/crows_eye_logo_transparent.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
-  opacity: 0.03;
+  opacity: 0.02;
   z-index: 0;
-  transform: scale(1.5);
-  filter: blur(1px);
+  transform: scale(1.5) rotate(-15deg);
+  filter: blur(2px);
 }
 
 .logo-bg-overlay > * {
@@ -239,6 +248,36 @@ body {
 
 .vision-card:hover::before {
   left: 100%;
+}
+
+/* Text Glow for Readability */
+.text-glow {
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Glowing Line for Feature Connector */
+.glowing-line {
+    position: relative;
+    display: inline-block;
+}
+
+.glowing-line::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #8b5cf6, transparent);
+    box-shadow: 0 0 10px #8b5cf6, 0 0 20px #8b5cf6;
+    animation: glowing-line-anim 3s ease-in-out infinite;
+}
+
+@keyframes glowing-line-anim {
+    0% { transform: scaleX(0); transform-origin: left; }
+    50% { transform: scaleX(1); transform-origin: left; }
+    50.1% { transform-origin: right; }
+    100% { transform: scaleX(0); transform-origin: right; }
 }
 
 /* Enhanced Feature Cards */

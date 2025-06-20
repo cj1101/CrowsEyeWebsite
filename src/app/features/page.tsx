@@ -1,240 +1,217 @@
 'use client'
 
-import React from 'react'
-import { Eye, Zap, Edit3, Film, Layers, Globe, BarChart2, Settings, Bot, ArrowRight } from 'lucide-react'
+import React, { useState, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useInView } from 'react-intersection-observer'
+import { Eye, Star } from 'lucide-react'
+import Link from 'next/link'
 
 const features = [
   {
-    icon: <Bot className="h-8 w-8 text-purple-400" />,
+    id: 'ai-generation',
     title: "Advanced AI Content Generation",
     subtitle: "Powered by Google's Gemini",
-    description: "Deep analysis of images/videos for context-aware captions, posts, and narratives. Identifies subjects, settings, mood, and themes with unmatched precision.",
-    category: "AI & Content Creation"
+    description: "Deep analysis of images and videos for context-aware captions, posts, and narratives that resonate with your audience.",
+    visual: {
+      colors: ['#8B5CF6', '#EC4899'],
+      position: { top: '5%', left: '5%' },
+      scale: 1.2,
+    }
   },
   {
-    icon: <Edit3 className="h-8 w-8 text-blue-400" />,
+    id: 'ai-editing',
     title: "AI-Instructed Media Editing",
     subtitle: "Natural Language Commands",
-    description: "Transform your visuals using simple text commands. No complex software needed—just describe what you want, and our AI handles the rest.",
-    category: "AI & Content Creation"
+    description: "Transform your visuals using simple text commands. No complex software needed—just describe the change, and our AI handles the rest.",
+    visual: {
+      colors: ['#3B82F6', '#67E8F9'],
+      position: { top: '20%', left: '60%' },
+      scale: 1.0,
+    }
   },
   {
-    icon: <Film className="h-8 w-8 text-green-400" />,
+    id: 'video-suite',
     title: "Video Processing Suite",
     subtitle: "Professional-Grade Tools",
-    description: "Generate highlight reels, overlay audio, and select optimal thumbnails. Turn raw footage into engaging content that captivates your audience.",
-    category: "AI & Content Creation"
+    description: "Generate highlight reels, overlay audio, and select optimal thumbnails. Turn raw footage into captivating content.",
+    visual: {
+      colors: ['#22C55E', '#A3E635'],
+      position: { top: '50%', left: '10%' },
+      scale: 1.3,
+    }
   },
   {
-    icon: <Layers className="h-8 w-8 text-orange-400" />,
+    id: 'multi-platform',
     title: "Multi-Platform Management",
     subtitle: "Unified Dashboard",
-          description: "Direct posting and management for Instagram & Facebook. Full support for BlueSky, Snapchat & Pinterest, with seamless expansion capabilities.",
-    category: "Platform Management"
+    description: "Direct posting and management for Instagram, Facebook, BlueSky, Snapchat & Pinterest, with seamless expansion capabilities.",
+    visual: {
+      colors: ['#F97316', '#F43F5E'],
+      position: { top: '70%', left: '70%' },
+      scale: 1.1,
+    }
   },
   {
-    icon: <BarChart2 className="h-8 w-8 text-red-400" />,
+    id: 'analytics',
     title: "Performance Analytics",
     subtitle: "Data-Driven Insights",
-    description: "Track your content performance with integrated Meta Insights. Make informed decisions with real-time analytics and engagement metrics.",
-    category: "Platform Management"
+    description: "Track your content performance with integrated Meta Insights. Make informed decisions with real-time analytics.",
+    visual: {
+      colors: ['#EF4444', '#FBBF24'],
+      position: { top: '85%', left: '25%' },
+      scale: 0.9,
+    }
   },
-  {
-    icon: <Zap className="h-8 w-8 text-yellow-400" />,
-    title: "Streamlined Workflow",
-    subtitle: "Maximum Productivity",
-    description: "Utilize the Preset Manager and Context Files to maintain brand consistency. Automated workflows that save time and ensure quality.",
-    category: "Workflow & Productivity"
-  },
-  {
-    icon: <Eye className="h-8 w-8 text-indigo-400" />,
-    title: "Comprehensive Media Library",
-    subtitle: "Smart Organization",
-    description: "AI-assisted tagging, intelligent organization, and instant preview capabilities. Find and manage your media assets effortlessly.",
-    category: "Workflow & Productivity"
-  },
-  {
-    icon: <Globe className="h-8 w-8 text-teal-400" />,
-    title: "Global Reach",
-    subtitle: "10 Languages Supported",
-    description: "Connect with audiences worldwide in English, Arabic, German, Spanish, French, Hindi, Japanese, Portuguese, Russian, and Chinese.",
-    category: "General"
-  },
-  {
-    icon: <Settings className="h-8 w-8 text-pink-400" />,
-    title: "Secure Desktop Application",
-    subtitle: "Privacy-First Approach",
-    description: "Robust local processing for enhanced security and performance. Complete control over your data with enterprise-grade protection.",
-    category: "General"
-  }
 ];
 
-const categories = [
-  {
-    name: "AI & Content Creation",
-    description: "Cutting-edge artificial intelligence tools",
-    color: "from-purple-500 to-pink-500"
-  },
-  {
-    name: "Platform Management", 
-    description: "Multi-platform social media control",
-    color: "from-blue-500 to-cyan-500"
-  },
-  {
-    name: "Workflow & Productivity",
-    description: "Streamlined content workflows",
-    color: "from-green-500 to-emerald-500"
-  },
-  {
-    name: "General",
-    description: "Core platform capabilities",
-    color: "from-orange-500 to-red-500"
+type FeatureProps = (typeof features)[0] & {
+    setActiveFeatureId: (id: string) => void;
+};
+
+const FeatureSection = ({ title, subtitle, description, id, setActiveFeatureId }: FeatureProps) => {
+  const { ref, inView } = useInView({
+    threshold: 0.6,
+    triggerOnce: false,
+  });
+
+  React.useEffect(() => {
+    if (inView) {
+      setActiveFeatureId(id);
+    }
+  }, [inView, id, setActiveFeatureId]);
+  
+  const variants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
   }
-];
+
+  return (
+    <motion.section 
+        ref={ref}
+        variants={variants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.6 }}
+        className="h-screen flex flex-col justify-center max-w-3xl mx-auto px-4"
+    >
+      <h2 className="text-4xl md:text-5xl font-bold tech-heading mb-4 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent text-glow">{title}</h2>
+      <h3 className="text-xl md:text-2xl font-semibold text-purple-300 mb-6 tech-subheading text-glow">{subtitle}</h3>
+      <p className="text-lg md:text-xl text-gray-400 leading-relaxed tech-body text-glow">{description}</p>
+    </motion.section>
+  );
+};
+
+// Fix nested anchor issue by wrapping Next.js Link with Framer Motion (cast to any to satisfy TS)
+const MotionLink = motion(Link as any);
 
 export default function FeaturesPage() {
+  const [activeFeatureId, setActiveFeatureId] = useState(features[0].id);
+  
+  const activeFeature = useMemo(
+    () => features.find(f => f.id === activeFeatureId), 
+    [activeFeatureId]
+  );
+
   return (
-    <div className="min-h-screen darker-gradient-bg logo-bg-overlay">
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5"></div>
-        
-        {/* Logo Header */}
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-16">
-          <div className="flex items-center justify-center gap-4 mb-8">
-            <img 
-              src="/icon.png" 
-              alt="Crow's Eye Logo" 
-              className="h-16 w-16 md:h-20 md:w-20 opacity-90"
-            />
-            <div className="text-left">
-              <h1 className="text-2xl md:text-4xl font-bold tech-heading gradient-text-animated">
-                CROW'S EYE
+    <div className="min-h-screen bg-[#02020A] text-white">
+      {/* Background Visual */}
+      <div className="fixed inset-0 w-full h-full overflow-hidden" style={{zIndex: 0}}>
+        <AnimatePresence>
+            {activeFeature && (
+                <motion.div
+                    key={activeFeature.id}
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ 
+                        opacity: 1, 
+                        scale: activeFeature.visual.scale,
+                        top: activeFeature.visual.position.top, 
+                        left: activeFeature.visual.position.left
+                    }}
+                    exit={{ opacity: 0 }}
+                    transition={{ type: 'spring', damping: 20, stiffness: 80 }}
+                    style={{
+                        position: 'absolute',
+                        width: '50vw',
+                        height: '50vw',
+                        maxWidth: '600px',
+                        maxHeight: '600px',
+                        background: `radial-gradient(circle, ${activeFeature.visual.colors[0]} 0%, ${activeFeature.visual.colors[1]} 100%)`,
+                        filter: 'blur(100px)',
+                        transform: 'translate(-50%, -50%)',
+                    }}
+                />
+            )}
+        </AnimatePresence>
+      </div>
+      
+      {/* Content */}
+      <div className="relative" style={{zIndex: 1}}>
+          {/* Simplified Hero Section */}
+          <header className="h-screen flex flex-col justify-center items-center text-center px-4">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7 }}
+              className="flex flex-col items-center"
+            >
+              <h1 className="text-6xl md:text-8xl font-bold tech-heading gradient-text-animated text-glow">
+                The Future of Marketing
               </h1>
-              <p className="text-purple-300 text-sm md:text-base tech-subheading">
-                AI Marketing Suite
+              <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto tech-body text-glow mt-4 mb-12">
+                Explore the powerful, AI-driven tools designed to elevate your social media strategy and streamline your creative workflow.
               </p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 vision-card rounded-full px-6 py-3 mb-8">
-            <Eye className="h-5 w-5 text-purple-400" />
-            <span className="text-sm font-medium text-gray-300 tech-body">The Crow's Eye Advantage</span>
-          </div>
-          
-          <h2 className="text-5xl md:text-7xl font-bold mb-6 tech-heading">
-            <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-              Powerful Features
-            </span>
-            <br />
-            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Built for Creators
-            </span>
-          </h2>
-          
-          <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed tech-body">
-            Unlock the full potential of AI-powered marketing with Google's Gemini integration. 
-            Every feature is designed to amplify your creative vision and streamline your workflow.
-          </p>
-        </div>
-      </section>
+              <motion.img 
+                  src="/crows_eye_logo_transparent.png" 
+                  alt="Crow's Eye Logo" 
+                  className="h-48 w-48 md:h-64 md:w-64"
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+              />
+            </motion.div>
+          </header>
 
-      {/* Features Grid */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <div 
-                key={feature.title}
-                className="group relative vision-card rounded-2xl p-8 hover:bg-white/5 transition-all duration-500 hover:scale-105"
+          {/* Interactive Features Showcase */}
+          <main>
+              {features.map((feature) => (
+                  <FeatureSection 
+                      key={feature.id} 
+                      {...feature} 
+                      setActiveFeatureId={setActiveFeatureId} 
+                  />
+              ))}
+          </main>
+
+          {/* CTA Section */}
+          <footer className="h-screen flex flex-col justify-center items-center">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 0.5 }}
+                className="relative p-10 md:p-12 rounded-2xl overflow-hidden bg-black/30 backdrop-blur-md border border-white/10"
               >
-
-                
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="p-3 vision-card rounded-xl group-hover:bg-white/10 transition-colors">
-                    {feature.icon}
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white mb-1 tech-subheading">{feature.title}</h3>
-                    <p className="text-sm text-purple-300 font-medium tech-body">{feature.subtitle}</p>
-                  </div>
-                </div>
-                
-                <p className="text-gray-300 leading-relaxed mb-6 tech-body">
-                  {feature.description}
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 tech-heading">
+                  Ready to Revolutionize Your Content?
+                </h2>
+                <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto tech-body">
+                  Get started with a 7-day free trial and experience the future of social media management.
                 </p>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-300 tech-body">
-                    {feature.category}
-                  </span>
+                <div className="flex justify-center">
+                  <MotionLink 
+                    href="/pricing"
+                    className="inline-flex items-center gap-2 vision-button bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105 tech-subheading"
+                    whileHover={{ scale: 1.05, boxShadow: "0px 10px 30px rgba(139, 92, 246, 0.4)" }}
+                  >
+                    <Star className="h-5 w-5" />
+                    Start Free Trial
+                  </MotionLink>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Categories Overview */}
-      <section className="py-20 bg-black/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4 tech-heading">Feature Categories</h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto tech-body">
-              Organized by purpose, designed for impact
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categories.map((category, index) => (
-              <div 
-                key={category.name}
-                className="vision-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300"
-              >
-                <div className={`w-12 h-12 bg-gradient-to-r ${category.color} rounded-lg mb-4 flex items-center justify-center`}>
-                  <span className="text-white font-bold text-xl tech-heading">
-                    {features.filter(f => f.category === category.name).length}
-                  </span>
-                </div>
-                <h3 className="text-lg font-bold text-white mb-2 tech-subheading">{category.name}</h3>
-                <p className="text-gray-400 text-sm tech-body">{category.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 vision-card rounded-3xl p-12">
-            <h2 className="text-4xl font-bold text-white mb-6 tech-heading">
-              Ready to Experience the Power?
-            </h2>
-            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto tech-body">
-              Join thousands of creators who have already transformed their social media strategy with Crow's Eye.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a 
-                href="/marketing-tool" 
-                className="inline-flex items-center gap-2 vision-button text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105 tech-subheading"
-              >
-                <Eye className="h-5 w-5" />
-                Try Live Demo
-              </a>
-              <a 
-                href="/download" 
-                className="inline-flex items-center gap-2 vision-card text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/10 transition-all duration-300 tech-subheading"
-              >
-                <ArrowRight className="h-5 w-5" />
-                Download Now
-              </a>
+              </motion.div>
             </div>
-          </div>
-        </div>
-      </section>
+          </footer>
+      </div>
     </div>
   )
 } 
