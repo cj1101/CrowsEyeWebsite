@@ -1,13 +1,13 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CreditCard, Calculator, Check, ArrowRight, AlertCircle } from 'lucide-react'
 
-export default function PAYGSetupPage() {
+function PAYGSetupContent() {
   const { user, userProfile, isAuthenticated, hasValidSubscription, updateUserSubscription } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -269,5 +269,17 @@ export default function PAYGSetupPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function PAYGSetupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-purple-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    }>
+      <PAYGSetupContent />
+    </Suspense>
   )
 } 

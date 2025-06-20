@@ -15,7 +15,9 @@ export function loadEnvVariables(): EnvVars {
   if (typeof window === 'undefined') {
     try {
       // Dynamic import to avoid bundling fs in the browser
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { readFileSync } = require('fs')
+      // eslint-disable-next-line @typescript-eslint/no-require-imports  
       const { join } = require('path')
       
       // Try to read .env.local file directly
