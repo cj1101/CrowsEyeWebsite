@@ -680,22 +680,17 @@ export class CrowsEyeAPI {
   
   async register(userData: RegisterData): Promise<AuthResponse> {
     try {
-      console.log('🔐 Attempting user registration...');
+      console.log('📝 Attempting user registration...');
       
-      // Map frontend RegisterData to backend expected format
-      const backendPayload = {
+      // Map frontend data to backend format
+      const requestData = {
         email: userData.email,
         password: userData.password,
-        displayName: userData.name, // Map 'name' to 'displayName'
-        subscriptionTier: userData.subscription_tier || 'free',
-        metadata: {
-          promo_applied: userData.subscription_tier && userData.subscription_tier !== 'free',
-          original_promo_code: typeof window !== 'undefined' ? localStorage.getItem('crowsEyePromoCode') : null,
-          promo_tier: typeof window !== 'undefined' ? localStorage.getItem('crowsEyePromoTier') : null
-        }
+        name: userData.name,
+        subscription_tier: userData.subscription_tier || 'free'
       };
       
-      const response = await this.api.post('/api/v1/auth/register', backendPayload);
+      const response = await this.api.post('/auth/register', requestData);
       console.log('✅ Registration successful');
       
       // Transform backend response to match frontend expectations
@@ -735,7 +730,7 @@ export class CrowsEyeAPI {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
       console.log('🔐 Attempting user login...');
-      const response = await this.api.post('/api/v1/auth/login', credentials);
+      const response = await this.api.post('/auth/login', credentials);
       console.log('✅ Login successful');
       
       // Transform backend response to match frontend expectations
@@ -804,7 +799,7 @@ export class CrowsEyeAPI {
 
   async requestPasswordReset(email: string): Promise<AxiosResponse> {
     try {
-      const response = await this.api.post('/api/v1/auth/forgot-password', { email });
+      const response = await this.api.post('/auth/forgot-password', { email });
       console.log('✅ Password reset requested:', email);
       return response;
     } catch (error: any) {
@@ -815,7 +810,7 @@ export class CrowsEyeAPI {
 
   async resetPassword(token: string, newPassword: string): Promise<AxiosResponse> {
     try {
-      const response = await this.api.post('/api/v1/auth/reset-password', { token, password: newPassword });
+      const response = await this.api.post('/auth/reset-password', { token, password: newPassword });
       console.log('✅ Password reset successful');
       return response;
     } catch (error: any) {
