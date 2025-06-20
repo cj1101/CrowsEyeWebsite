@@ -1,100 +1,175 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
-import Link from 'next/link'
-import { CheckCircle, ArrowRight, Home, User } from 'lucide-react'
-
-function SuccessContent() {
-  const searchParams = useSearchParams()
-  const [sessionId, setSessionId] = useState<string | null>(null)
-
-  useEffect(() => {
-    const sessionIdParam = searchParams?.get('session_id')
-    if (sessionIdParam) {
-      setSessionId(sessionIdParam)
-    }
-  }, [searchParams])
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-        <div className="mb-6">
-          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle className="w-8 h-8 text-green-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Payment Successful!
-          </h1>
-          <p className="text-gray-600">
-            Thank you for your subscription. Your payment has been processed successfully.
-          </p>
-        </div>
-
-        {sessionId && (
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
-            <p className="text-sm text-gray-600 mb-1">Session ID:</p>
-            <p className="text-xs font-mono text-gray-800 break-all">{sessionId}</p>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-semibold text-blue-900 mb-2">What's Next?</h3>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Check your email for a receipt</li>
-              <li>• Access your account dashboard</li>
-              <li>• Start using your new features</li>
-            </ul>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Link
-              href="/account"
-              className="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-            >
-              <User className="w-4 h-4" />
-              Go to Account
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/"
-              className="flex-1 inline-flex items-center justify-center gap-2 bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-            >
-              <Home className="w-4 h-4" />
-              Home
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <p className="text-xs text-gray-500">
-            Need help? <Link href="/contact" className="text-blue-600 hover:text-blue-700">Contact support</Link>
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function LoadingFallback() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-        <div className="animate-pulse">
-          <div className="mx-auto w-16 h-16 bg-gray-200 rounded-full mb-4"></div>
-          <div className="h-6 bg-gray-200 rounded mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded"></div>
-        </div>
-      </div>
-    </div>
-  )
-}
+import React, { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { CheckCircle, CreditCard, ArrowRight, Calculator } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function SuccessPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { refreshUserProfile } = useAuth()
+  const [isProcessing, setIsProcessing] = useState(true)
+  
+  const sessionId = searchParams?.get('session_id')
+  const customerId = searchParams?.get('customer_id')
+  const plan = searchParams?.get('plan')
+
+  useEffect(() => {
+    // Refresh user profile to update subscription status
+    const handleSuccess = async () => {
+      try {
+        await refreshUserProfile()
+        console.log('✅ User profile refreshed after successful payment setup')
+      } catch (error) {
+        console.error('❌ Failed to refresh user profile:', error)
+      } finally {
+        setIsProcessing(false)
+      }
+    }
+
+    if (sessionId) {
+      handleSuccess()
+    } else {
+      setIsProcessing(false)
+    }
+  }, [sessionId, refreshUserProfile])
+
+  const handleGoToDashboard = () => {
+    router.push('/marketing-tool')
+  }
+
+  const handleViewUsage = () => {
+    router.push('/account/subscription')
+  }
+
+  if (isProcessing) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <p>Processing your payment setup...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <Suspense fallback={<LoadingFallback />}>
-      <SuccessContent />
-    </Suspense>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 text-white">
+      <div className="container mx-auto px-4 py-20">
+        <div className="max-w-2xl mx-auto">
+          {/* Success Header */}
+          <div className="text-center mb-8">
+            <div className="mx-auto mb-6 p-4 bg-green-100 rounded-full w-fit">
+              <CheckCircle className="h-16 w-16 text-green-600" />
+            </div>
+            <h1 className="text-4xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+                Payment Method Added Successfully!
+              </span>
+            </h1>
+            <p className="text-xl text-gray-300">
+              {plan === 'payg' 
+                ? "Your pay-as-you-go account is now active and ready to use"
+                : "Your subscription is now active and ready to use"
+              }
+            </p>
+          </div>
+
+          {/* Success Card */}
+          <Card className="border-green-500/30 bg-gradient-to-br from-green-50 to-blue-50 mb-6">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 p-3 bg-green-100 rounded-full w-fit">
+                <CreditCard className="h-8 w-8 text-green-600" />
+              </div>
+              <CardTitle className="text-2xl text-gray-900">
+                {plan === 'payg' ? 'Pay-as-you-Go Active' : 'Subscription Active'}
+              </CardTitle>
+              <CardDescription className="text-lg text-gray-700">
+                {plan === 'payg' 
+                  ? "Start using Crow's Eye - you'll only be charged when you reach $5 in usage"
+                  : "Start using all the features of your subscription"
+                }
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="space-y-6">
+              {plan === 'payg' && (
+                <>
+                  {/* PAYG-specific content */}
+                  <div className="bg-white p-4 rounded-lg border border-green-200">
+                    <h3 className="font-bold text-green-800 mb-3 flex items-center">
+                      <Calculator className="h-5 w-5 mr-2" />
+                      How Pay-as-you-Go Works
+                    </h3>
+                    <div className="space-y-2 text-gray-700 text-sm">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        <span>Your payment method is saved securely</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        <span>No charges until you reach $5 in usage</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        <span>AI Credits: $0.15 each • Posts: $0.25 each • Storage: $2.99/GB</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        <span>Track your usage anytime in your account settings</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h3 className="font-bold text-blue-800 mb-3">🚀 Next Steps</h3>
+                    <div className="space-y-2 text-blue-700 text-sm">
+                      <p>• Start creating and scheduling content</p>
+                      <p>• Use AI features to enhance your posts</p>
+                      <p>• Upload media to your library</p>
+                      <p>• Monitor your usage in account settings</p>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Session details for debugging */}
+              {sessionId && (
+                <div className="bg-gray-50 p-3 rounded border text-xs">
+                  <p className="text-gray-600">
+                    Session ID: {sessionId}
+                    {customerId && <span className="ml-4">Customer ID: {customerId}</span>}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button 
+              onClick={handleGoToDashboard}
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white text-lg py-4"
+            >
+              Start Using Crow's Eye
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            
+            {plan === 'payg' && (
+              <Button 
+                onClick={handleViewUsage}
+                variant="outline"
+                className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 text-lg py-4"
+              >
+                View Usage & Billing
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 } 

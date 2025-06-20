@@ -9,9 +9,19 @@ import { useAuth } from '@/contexts/AuthContext'
 
 export default function PAYGTermsPage() {
   const router = useRouter()
-  const { isAuthenticated, userProfile } = useAuth()
+  const { isAuthenticated, userProfile, loading } = useAuth()
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false)
+
+  // Debug auth state
+  console.log('🔍 PAYG Terms - Auth State:', {
+    loading,
+    isAuthenticated,
+    hasUserProfile: !!userProfile,
+    userEmail: userProfile?.email,
+    firstName: userProfile?.firstName,
+    displayName: userProfile?.displayName
+  })
 
   const handleContinue = () => {
     if (acceptedTerms && acceptedPrivacy) {
@@ -25,6 +35,18 @@ export default function PAYGTermsPage() {
         router.push('/payg-enrollment')
       }
     }
+  }
+
+  // Show loading while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p>Loading authentication...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -156,26 +178,53 @@ export default function PAYGTermsPage() {
               </div>
               <CardTitle className="text-2xl text-gray-900">What happens next?</CardTitle>
               <CardDescription className="text-lg text-gray-700">
-                After accepting these terms, you'll proceed to enrollment
+                {isAuthenticated && userProfile 
+                  ? "After accepting these terms, you'll proceed to payment setup"
+                  : "After accepting these terms, you'll proceed to enrollment"
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <div className="p-4 bg-white rounded-lg border">
-                  <div className="text-2xl font-bold text-purple-600 mb-2">1</div>
-                  <h4 className="font-semibold text-gray-900 mb-1">Enter Details</h4>
-                  <p className="text-sm text-gray-600">Provide your information for PAYG setup</p>
-                </div>
-                <div className="p-4 bg-white rounded-lg border">
-                  <div className="text-2xl font-bold text-purple-600 mb-2">2</div>
-                  <h4 className="font-semibold text-gray-900 mb-1">Add Payment</h4>
-                  <p className="text-sm text-gray-600">Secure payment method via Stripe</p>
-                </div>
-                <div className="p-4 bg-white rounded-lg border">
-                  <div className="text-2xl font-bold text-purple-600 mb-2">3</div>
-                  <h4 className="font-semibold text-gray-900 mb-1">Start Using</h4>
-                  <p className="text-sm text-gray-600">Access all features immediately</p>
-                </div>
+                {isAuthenticated && userProfile ? (
+                  // Steps for logged in users - skip enrollment
+                  <>
+                    <div className="p-4 bg-white rounded-lg border">
+                      <div className="text-2xl font-bold text-purple-600 mb-2">1</div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Add Payment Method</h4>
+                      <p className="text-sm text-gray-600">Secure payment setup via Stripe</p>
+                    </div>
+                    <div className="p-4 bg-white rounded-lg border">
+                      <div className="text-2xl font-bold text-purple-600 mb-2">2</div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Start Using</h4>
+                      <p className="text-sm text-gray-600">Access all features immediately</p>
+                    </div>
+                    <div className="p-4 bg-white rounded-lg border">
+                      <div className="text-2xl font-bold text-purple-600 mb-2">3</div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Pay as You Go</h4>
+                      <p className="text-sm text-gray-600">Only charged when you reach $5 usage</p>
+                    </div>
+                  </>
+                ) : (
+                  // Steps for non-logged in users - include enrollment
+                  <>
+                    <div className="p-4 bg-white rounded-lg border">
+                      <div className="text-2xl font-bold text-purple-600 mb-2">1</div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Enter Details</h4>
+                      <p className="text-sm text-gray-600">Provide your information for PAYG setup</p>
+                    </div>
+                    <div className="p-4 bg-white rounded-lg border">
+                      <div className="text-2xl font-bold text-purple-600 mb-2">2</div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Add Payment</h4>
+                      <p className="text-sm text-gray-600">Secure payment method via Stripe</p>
+                    </div>
+                    <div className="p-4 bg-white rounded-lg border">
+                      <div className="text-2xl font-bold text-purple-600 mb-2">3</div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Start Using</h4>
+                      <p className="text-sm text-gray-600">Access all features immediately</p>
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -200,7 +249,7 @@ export default function PAYGTermsPage() {
             >
               {acceptedTerms && acceptedPrivacy ? (
                 <>
-                  {isAuthenticated && userProfile ? 'Continue to Setup' : 'Continue to Enrollment'}
+                  {isAuthenticated && userProfile ? 'Continue to Payment Setup' : 'Continue to Enrollment'}
                   <Check className="ml-2 h-5 w-5" />
                 </>
               ) : (

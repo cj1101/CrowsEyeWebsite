@@ -5,7 +5,7 @@ import { body, validationResult } from 'express-validator';
 import { prisma } from '../config/database';
 import { env } from '../config/environment';
 import { authenticateToken } from '../middleware/auth';
-import { LoginRequest, SignupRequest, AuthResponse, AuthenticatedRequest } from '../types';
+import { LoginRequest, SignupRequest, AuthResponse, AuthenticatedRequest, UserPlan } from '../types';
 import { logger } from '../config/logger';
 
 const router = Router();
@@ -39,6 +39,51 @@ const generateTokens = (userId: string, email: string, plan: string) => {
   return { accessToken, refreshToken };
 };
 
+// Helper function to format user data for frontend
+const formatUserResponse = (user: any) => {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+    displayName: user.displayName,
+    firstName: user.firstName || '',
+    lastName: user.lastName || '',
+    avatar: user.avatar,
+    avatar_url: user.avatar,
+    subscription_tier: user.plan.toLowerCase() as 'free' | 'creator' | 'growth' | 'pro' | 'payg',
+    subscription_status: user.subscriptionStatus || 'inactive',
+    stripe_customer_id: user.stripeCustomerId,
+    subscription_expires: user.subscriptionExpires?.toISOString(),
+    created_at: user.createdAt.toISOString(),
+    updated_at: user.updatedAt?.toISOString() || user.createdAt.toISOString(),
+    last_login: user.lastLoginAt?.toISOString(),
+    email_verified: user.emailVerified || false,
+    usage_limits: {
+      linked_accounts: 0,
+      max_linked_accounts: user.plan === 'PAYG' ? 5 : user.plan === 'CREATOR' ? 3 : user.plan === 'GROWTH' ? 7 : user.plan === 'PRO' ? 10 : 1,
+      ai_credits: 0,
+      max_ai_credits: user.plan === 'PAYG' ? -1 : user.plan === 'CREATOR' ? 150 : user.plan === 'GROWTH' ? 400 : user.plan === 'PRO' ? 750 : 50,
+      scheduled_posts: 0,
+      max_scheduled_posts: user.plan === 'PAYG' ? -1 : user.plan === 'CREATOR' ? 100 : user.plan === 'GROWTH' ? 300 : user.plan === 'PRO' ? -1 : 10,
+      media_storage_mb: 0,
+      max_media_storage_mb: user.plan === 'PAYG' ? -1 : user.plan === 'CREATOR' ? 5120 : user.plan === 'GROWTH' ? 15360 : user.plan === 'PRO' ? 51200 : 1024
+    },
+    plan_features: {
+      basic_content_tools: true,
+      media_library: true,
+      smart_gallery: true,
+      post_formatting: true,
+      basic_video_tools: true,
+      advanced_content: user.plan !== 'FREE' && user.plan !== 'CREATOR',
+      analytics: user.plan === 'FREE' ? 'none' : user.plan === 'CREATOR' ? 'enhanced' : 'advanced',
+      team_collaboration: user.plan === 'PRO',
+      custom_branding: user.plan === 'GROWTH' || user.plan === 'PRO',
+      api_access: user.plan === 'PAYG' || user.plan === 'PRO',
+      priority_support: user.plan === 'GROWTH' || user.plan === 'PRO'
+    }
+  };
+};
+
 /**
  * @swagger
  * /auth/login:
@@ -69,11 +114,8 @@ router.post('/login', loginValidation, async (req: Request<{}, AuthResponse, Log
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid input',
-          details: errors.array()
-        }
+        error: 'Invalid input',
+        details: errors.array()
       });
     }
 
@@ -87,10 +129,7 @@ router.post('/login', loginValidation, async (req: Request<{}, AuthResponse, Log
     if (!user) {
       return res.status(401).json({
         success: false,
-        error: {
-          code: 'INVALID_CREDENTIALS',
-          message: 'Invalid email or password'
-        }
+        error: 'Invalid email or password'
       });
     }
 
@@ -99,10 +138,7 @@ router.post('/login', loginValidation, async (req: Request<{}, AuthResponse, Log
     if (!isValidPassword) {
       return res.status(401).json({
         success: false,
-        error: {
-          code: 'INVALID_CREDENTIALS',
-          message: 'Invalid email or password'
-        }
+        error: 'Invalid email or password'
       });
     }
 
@@ -124,22 +160,15 @@ router.post('/login', loginValidation, async (req: Request<{}, AuthResponse, Log
       data: { lastLoginAt: new Date() }
     });
 
-    // Return user data (without password)
-    const userData = {
-      id: user.id,
-      email: user.email,
-      displayName: user.displayName,
-      firstName: user.firstName || '',
-      lastName: user.lastName || '',
-      avatar: user.avatar,
-      plan: user.plan.toLowerCase() as 'free' | 'creator' | 'pro',
-      createdAt: user.createdAt.toISOString(),
-      lastLoginAt: new Date().toISOString(),
-    };
-
+    // Return response in expected format
     res.json({
-      token: accessToken,
-      user: userData
+      success: true,
+      data: {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        user: formatUserResponse(user),
+        expires_in: 24 * 60 * 60 // 24 hours in seconds
+      }
     });
 
     logger.info(`User logged in: ${user.email}`);
@@ -147,10 +176,7 @@ router.post('/login', loginValidation, async (req: Request<{}, AuthResponse, Log
     logger.error('Login error:', error);
     res.status(500).json({
       success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Login failed'
-      }
+      error: 'Login failed'
     });
   }
 });
@@ -177,6 +203,9 @@ router.post('/login', loginValidation, async (req: Request<{}, AuthResponse, Log
  *               displayName:
  *                 type: string
  *                 minLength: 2
+ *               subscription_tier:
+ *                 type: string
+ *                 enum: [free, creator, growth, pro, payg]
  *     responses:
  *       201:
  *         description: User created successfully
@@ -189,15 +218,12 @@ router.post('/signup', signupValidation, async (req: Request<{}, AuthResponse, S
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid input',
-          details: errors.array()
-        }
+        error: 'Invalid input',
+        details: errors.array()
       });
     }
 
-    const { email, password, displayName } = req.body;
+    const { email, password, displayName, subscription_tier } = req.body;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -207,15 +233,18 @@ router.post('/signup', signupValidation, async (req: Request<{}, AuthResponse, S
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        error: {
-          code: 'USER_EXISTS',
-          message: 'User with this email already exists'
-        }
+        error: 'User with this email already exists'
       });
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Determine plan from subscription_tier
+    let plan: UserPlan = 'FREE';
+    if (subscription_tier) {
+      plan = subscription_tier.toUpperCase() as UserPlan;
+    }
 
     // Create user
     const user = await prisma.user.create({
@@ -223,7 +252,7 @@ router.post('/signup', signupValidation, async (req: Request<{}, AuthResponse, S
         email,
         password: hashedPassword,
         displayName,
-        plan: 'FREE'
+        plan
       }
     });
 
@@ -239,22 +268,15 @@ router.post('/signup', signupValidation, async (req: Request<{}, AuthResponse, S
       }
     });
 
-    // Return user data (without password)
-    const userData = {
-      id: user.id,
-      email: user.email,
-      displayName: user.displayName,
-      firstName: user.firstName || '',
-      lastName: user.lastName || '',
-      avatar: user.avatar,
-      plan: user.plan.toLowerCase() as 'free' | 'creator' | 'pro',
-      createdAt: user.createdAt.toISOString(),
-      lastLoginAt: user.createdAt.toISOString(),
-    };
-
+    // Return response in expected format
     res.status(201).json({
-      token: accessToken,
-      user: userData
+      success: true,
+      data: {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        user: formatUserResponse(user),
+        expires_in: 24 * 60 * 60 // 24 hours in seconds
+      }
     });
 
     logger.info(`New user registered: ${user.email}`);
@@ -262,10 +284,58 @@ router.post('/signup', signupValidation, async (req: Request<{}, AuthResponse, S
     logger.error('Signup error:', error);
     res.status(500).json({
       success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Registration failed'
-      }
+      error: 'Registration failed'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /auth/me:
+ *   get:
+ *     summary: Get current user
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user data
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'User ID not found in token'
+      });
+    }
+
+    // Get fresh user data from database
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: formatUserResponse(user)
+    });
+
+  } catch (error) {
+    logger.error('Get current user error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get user data'
     });
   }
 });
@@ -295,10 +365,7 @@ router.post('/logout', authenticateToken, async (req: AuthenticatedRequest, res:
     logger.error('Logout error:', error);
     res.status(500).json({
       success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Logout failed'
-      }
+      error: 'Logout failed'
     });
   }
 });

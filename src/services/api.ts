@@ -213,8 +213,9 @@ export interface User {
   email: string;
   name: string;
   avatar_url?: string;
-  subscription_tier: 'free' | 'creator' | 'growth' | 'pro';
+  subscription_tier: 'free' | 'creator' | 'growth' | 'pro' | 'payg';
   subscription_status: 'active' | 'inactive' | 'cancelled' | 'past_due';
+  stripe_customer_id?: string;
   subscription_expires?: string;
   created_at: string;
   updated_at: string;
@@ -559,13 +560,46 @@ export class CrowsEyeAPI {
 
   // Transform backend user data to frontend User interface
   private transformUser(backendUser: any): User {
-    return {
+    console.log('🔄 transformUser input:', backendUser);
+    
+    // Normalize the plan from backend - could be 'PRO' or 'pro' 
+    let normalizedPlan = 'free';
+    if (backendUser.plan) {
+      const backendPlan = backendUser.plan.toLowerCase();
+      // Map backend plan names to frontend subscription_tier
+      switch (backendPlan) {
+        case 'pro':
+          normalizedPlan = 'pro';
+          break;
+        case 'creator':
+          normalizedPlan = 'creator';
+          break;
+        case 'growth':
+          normalizedPlan = 'growth';
+          break;
+        case 'payg':
+          normalizedPlan = 'payg';
+          break;
+        default:
+          normalizedPlan = 'free';
+      }
+    }
+    
+    console.log('🎯 Plan mapping:', {
+      backendPlan: backendUser.plan,
+      normalizedPlan,
+      hasStripeId: !!backendUser.stripeCustomerId
+    });
+
+    const transformedUser = {
       id: backendUser.id,
       email: backendUser.email,
       name: backendUser.displayName || `${backendUser.firstName || ''} ${backendUser.lastName || ''}`.trim(),
       avatar_url: backendUser.avatar,
-      subscription_tier: backendUser.plan as 'free' | 'creator' | 'growth' | 'pro',
-      subscription_status: 'active', // Backend doesn't provide this
+      subscription_tier: normalizedPlan as 'free' | 'creator' | 'growth' | 'pro' | 'payg',
+      subscription_status: 'active' as 'active' | 'inactive' | 'cancelled' | 'past_due',
+      stripe_customer_id: backendUser.stripeCustomerId,
+      subscription_expires: backendUser.subscriptionExpiresAt,
       created_at: backendUser.createdAt,
       updated_at: backendUser.updatedAt || backendUser.createdAt,
       last_login: backendUser.lastLoginAt,
@@ -587,13 +621,16 @@ export class CrowsEyeAPI {
         post_formatting: true,
         basic_video_tools: true,
         advanced_content: backendUser.plan === 'PRO',
-        analytics: backendUser.plan === 'FREE' ? 'basic' : 'enhanced',
+        analytics: (backendUser.plan === 'FREE' ? 'basic' : 'enhanced') as 'none' | 'basic' | 'enhanced' | 'advanced',
         team_collaboration: backendUser.plan === 'PRO',
         custom_branding: backendUser.plan === 'PRO',
         api_access: backendUser.plan !== 'FREE',
         priority_support: backendUser.plan === 'PRO',
       }
     };
+    
+    console.log('✅ transformUser output:', transformedUser);
+    return transformedUser;
   }
 
   constructor(baseURL: string = API_BASE_URL) {
@@ -737,28 +774,32 @@ export class CrowsEyeAPI {
   
   async getCurrentUser(): Promise<APIResponse<User>> {
     try {
-      console.log('👤 Fetching current user...');
-      const response = await this.api.get('/api/v1/auth/me');
-      console.log('✅ Current user fetched successfully');
-      return { success: true, data: response.data };
-    } catch (error: any) {
-      console.error('❌ getCurrentUser API failed:', error.message);
+      console.log('🔍 Getting current user from API...');
+      const response = await this.api.get('/auth/me');
       
-      // For unauthorized, throw error to trigger re-authentication
-      if (error.response?.status === 401) {
-        throw new Error('Unauthorized - token expired or invalid');
+      if (response.data.success && response.data.data) {
+        return {
+          success: true,
+          data: response.data.data
+        };
+      } else {
+        throw new Error('Invalid response format');
       }
-      
-      throw error;
+    } catch (error: any) {
+      console.error('❌ Get current user failed:', error);
+      return {
+        success: false,
+        error: error?.response?.data?.error || error.message || 'Failed to get current user'
+      };
     }
   }
   
   async refreshToken(refreshToken: string): Promise<AxiosResponse<AuthResponse>> {
-    return this.api.post('/api/v1/auth/refresh', { refresh_token: refreshToken });
+    return await this.api.post('/auth/refresh', { refreshToken });
   }
   
   async logout(): Promise<AxiosResponse> {
-    return this.api.post('/api/v1/auth/logout');
+    return await this.api.post('/auth/logout');
   }
 
   async requestPasswordReset(email: string): Promise<AxiosResponse> {
@@ -1534,6 +1575,50 @@ export class CrowsEyeAPI {
       return response;
     } catch (error) {
       console.error('Error deleting post:', error);
+      throw error;
+    }
+  }
+
+  // Billing & Subscription Methods
+  async updatePAYGCustomer(stripeCustomerId: string, subscriptionId?: string): Promise<AxiosResponse> {
+    try {
+      console.log('💳 Updating PAYG customer with API...');
+      return await this.api.post('/billing/update-payg-customer', {
+        stripeCustomerId,
+        subscriptionId
+      });
+    } catch (error) {
+      console.error('❌ Update PAYG customer failed:', error);
+      throw error;
+    }
+  }
+
+  async getSubscriptionStatus(): Promise<AxiosResponse> {
+    try {
+      console.log('📊 Getting subscription status from API...');
+      return await this.api.get('/billing/subscription-status');
+    } catch (error) {
+      console.error('❌ Get subscription status failed:', error);
+      throw error;
+    }
+  }
+
+  async createBillingPortalSession(): Promise<AxiosResponse> {
+    try {
+      console.log('🔗 Creating billing portal session...');
+      return await this.api.post('/billing/create-portal-session');
+    } catch (error) {
+      console.error('❌ Create billing portal session failed:', error);
+      throw error;
+    }
+  }
+
+  async syncSubscriptionStatus(): Promise<AxiosResponse> {
+    try {
+      console.log('🔄 Syncing subscription status with Stripe...');
+      return await this.api.post('/billing/sync-subscription');
+    } catch (error) {
+      console.error('❌ Sync subscription failed:', error);
       throw error;
     }
   }

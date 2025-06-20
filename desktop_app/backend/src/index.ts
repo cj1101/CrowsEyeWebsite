@@ -19,6 +19,7 @@ import galleriesRoutes from './routes/galleries';
 import storiesRoutes from './routes/stories';
 import highlightsRoutes from './routes/highlights';
 import marketingToolRoutes from './routes/marketing-tool';
+import billingRoutes from './routes/billing';
 
 const app = express();
 
@@ -148,6 +149,7 @@ app.use('/galleries', galleriesRoutes);
 app.use('/stories', storiesRoutes);
 app.use('/highlights', highlightsRoutes);
 app.use('/marketing-tool', marketingToolRoutes);
+app.use('/billing', billingRoutes);
 
 // API info endpoint
 app.get('/', (req, res) => {

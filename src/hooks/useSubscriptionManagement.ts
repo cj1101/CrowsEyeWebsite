@@ -55,7 +55,9 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
         throw new Error('No authentication token found')
       }
 
-      const response = await fetch('/api/subscription', {
+      // Use the correct API base URL and endpoint
+      const apiBase = 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com';
+      const response = await fetch(`${apiBase}/billing/subscription-status`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -69,7 +71,30 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
       }
 
       const data = await response.json()
-      setSubscription(data.subscription)
+      
+      // Transform the backend response to match frontend expectations
+      if (data.success && data.data) {
+        const subscriptionData: SubscriptionData = {
+          id: data.data.stripeCustomerId || 'local',
+          status: data.data.subscriptionStatus === 'active' ? 'active' : 'canceled',
+          current_period_end: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60), // Default 30 days
+          cancel_at_period_end: false,
+          plan: {
+            id: data.data.plan,
+            nickname: data.data.plan.charAt(0).toUpperCase() + data.data.plan.slice(1),
+            amount: data.data.plan === 'payg' ? 0 : 1500, // $15 default
+            currency: 'usd',
+            interval: 'month'
+          },
+          customer: {
+            id: data.data.stripeCustomerId || 'local',
+            email: data.data.email
+          }
+        }
+        setSubscription(subscriptionData)
+      } else {
+        setSubscription(null)
+      }
       setError(null)
     } catch (err) {
       console.error('Error fetching subscription:', err)
@@ -89,9 +114,9 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
         throw new Error('No authentication token found')
       }
 
-      // For demo purposes, open the demo portal link
-      const response = await fetch('/api/create-portal-session', {
-        method: 'GET',
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com';
+      const response = await fetch(`${apiBase}/billing/create-portal-session`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,

@@ -36,9 +36,10 @@ export default function SignInPage() {
       if (redirectPath) {
         localStorage.removeItem('redirectAfterLogin');
         router.push(redirectPath);
+      } else {
+        // Already authenticated, redirect to dashboard
+        router.push('/marketing-tool');
       }
-      // Don't automatically redirect to marketing-tool to avoid loops
-      // Let user stay on signin page or navigate manually
     }
   }, [isAuthenticated, router]);
 
@@ -97,9 +98,9 @@ export default function SignInPage() {
           localStorage.removeItem('rememberedEmail');
         }
 
-        setSuccessMessage('Login successful! Please navigate to your desired page.');
+        setSuccessMessage('Login successful! Redirecting to dashboard...');
         
-        // Check for stored redirect path only
+        // Check for stored redirect path first, otherwise redirect to dashboard
         const redirectPath = localStorage.getItem('redirectAfterLogin');
         if (redirectPath) {
           localStorage.removeItem('redirectAfterLogin');
@@ -108,8 +109,12 @@ export default function SignInPage() {
           setTimeout(() => {
             router.push(redirectPath);
           }, 1500);
+        } else {
+          // Default redirect to dashboard
+          setTimeout(() => {
+            router.push('/marketing-tool');
+          }, 1500);
         }
-        // Don't auto-redirect to marketing-tool to avoid loops
       } else {
         // Handle specific error cases
         const errorMessage = result.error || 'Login failed. Please try again.';

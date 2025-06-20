@@ -6,6 +6,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NODE_ENV === 'production' ? 'https://crowseye.netlify.app' : 'http://localhost:3000'),
   title: "Crow's Eye - AI-Powered Marketing Automation for Visionary Creators",
   description: "Effortlessly organize, create, and publish stunning visual content for Instagram and Facebook. Let AI be your creative partner.",
   keywords: ["AI marketing", "social media automation", "Instagram", "Facebook", "content creation", "creators"],

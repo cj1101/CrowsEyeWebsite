@@ -108,6 +108,21 @@ export default function DashboardPage() {
     );
   }
 
+  const getPlanLabel = (tier?: string) => {
+    switch (tier) {
+      case 'payg':
+        return 'Pay-as-you-Go';
+      case 'creator':
+        return 'Creator';
+      case 'growth':
+        return 'Growth';
+      case 'pro':
+        return 'Pro';
+      default:
+        return 'Free';
+    }
+  };
+
   const navigationItems = [
     { id: 'overview', label: 'Dashboard', icon: BarChart3, description: 'Overview & Analytics' },
     { id: 'library', label: 'Media Library', icon: FolderOpen, description: 'Manage your content' },
@@ -193,7 +208,7 @@ export default function DashboardPage() {
             {/* User menu */}
             <div className="flex items-center space-x-3">
               <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30">
-                {userProfile?.subscription_tier || 'Free'} Plan
+                {getPlanLabel(userProfile?.subscription_tier)} Plan
               </Badge>
               
               {userProfile?.avatar_url ? (
@@ -243,7 +258,7 @@ export default function DashboardPage() {
             ))}
           </nav>
 
-          {sidebarOpen && (
+          {sidebarOpen && userProfile?.subscription_tier === 'free' && (
             <div className="p-4 mt-8">
               <Card className="bg-gray-800/50 border-gray-700">
                 <CardContent className="p-4">

@@ -298,7 +298,7 @@ const PAYGBenefits = ({ plan }: { plan: typeof pricingPlans[0] }) => {
 function PricingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { userProfile, isAuthenticated } = useAuth();
+  const { userProfile, isAuthenticated, loading } = useAuth();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
@@ -315,22 +315,44 @@ function PricingContent() {
   };
 
   const handlePromoCode = () => {
-    // Valid promo codes for free access
+    // Define promo codes
+    const lifetimeCode = 'TESTER_CROW_2024_LIFETIME_$7D91F3A8';
     const validCodes = ['FOUNDER', 'BETA', 'INFLUENCER', 'PARTNER', 'LAUNCH'];
-    
-    if (validCodes.includes(promoCode.toUpperCase())) {
+
+    const entered = promoCode.trim().toUpperCase();
+
+    // 1) Lifetime access code check
+    if (entered === lifetimeCode) {
+      setPromoApplied(true);
+      setPromoError('');
+
+      // Persist lifetime flag so AuthContext picks it up on the next reload
+      localStorage.setItem('crowsEyePromoCode', lifetimeCode);
+      localStorage.setItem('crowsEyePromoTier', 'lifetime_pro');
+
+      // If the user is already logged in, refresh the app so the new permissions take effect immediately
+      if (isAuthenticated) {
+        // Small delay so the success message can be seen
+        setTimeout(() => {
+          window.location.reload();
+        }, 750);
+      }
+
+      return; // Exit early – no further checks needed
+    }
+
+    // 2) Regular promo codes
+    if (validCodes.includes(entered)) {
       setPromoApplied(true);
       setPromoError('');
       // Store promo code for signup process
-      localStorage.setItem('crowsEyePromoCode', promoCode.toUpperCase());
+      localStorage.setItem('crowsEyePromoCode', entered);
       localStorage.setItem('crowsEyePromoTier', 'free_trial');
     } else {
       setPromoError('Invalid promotion code');
       setPromoApplied(false);
     }
   };
-
-
 
   const getDisplayPrice = (plan: typeof pricingPlans[0]) => {
     if (plan.paymentType === 'payg') return 'Pay-as-you-Go';
@@ -356,14 +378,22 @@ function PricingContent() {
       isAuthenticated,
       hasUserProfile: !!userProfile,
       userEmail: userProfile?.email,
-      promoApplied
+      promoApplied,
+      authLoading: loading
     })
     
     if (promoApplied) {
       // If promo code is applied, redirect to signup with free access
       router.push(`/auth/signup?plan=${plan.paymentType}&promo=true`);
     } else if (plan.paymentType === 'payg') {
-      // For PAYG, check if user is logged in first
+      // For PAYG, wait for auth state to be ready, then check if user is logged in
+      if (loading) {
+        console.log('⏳ Auth state loading, waiting...')
+        // Wait a moment for auth state to stabilize
+        setTimeout(() => handlePlanSelect(plan), 100)
+        return
+      }
+      
       if (isAuthenticated && userProfile) {
         // User is logged in, skip terms and go directly to setup
         console.log('✅ User is authenticated, skipping terms and going directly to PAYG setup')
@@ -852,8 +882,6 @@ function PricingContent() {
             ··· ··· ···
           </button>
         </div>
-
-
 
       </div>
     </div>

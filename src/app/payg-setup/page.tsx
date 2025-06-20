@@ -1,27 +1,55 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { CreditCard, Calculator, Check, ArrowRight } from 'lucide-react'
-import { PAYGUsageService } from '@/services/payg-usage'
+import { CreditCard, Calculator, Check, ArrowRight, AlertCircle } from 'lucide-react'
 
 export default function PAYGSetupPage() {
-  const { user, userProfile, isAuthenticated, hasValidSubscription } = useAuth()
+  const { user, userProfile, isAuthenticated, hasValidSubscription, updateUserSubscription } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [setupComplete, setSetupComplete] = useState(false)
 
-  // Debug environment variables
+  // Check URL params for Stripe session completion
   useEffect(() => {
-    console.log('🔍 PAYG Setup - Environment Check:', {
-      hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
-      nodeEnv: process.env.NODE_ENV,
-      allStripeKeys: Object.keys(process.env).filter(k => k.includes('STRIPE'))
-    })
-  }, [])
+    const sessionId = searchParams?.get('session_id')
+    const customerId = searchParams?.get('customer_id')
+    
+    if (sessionId && customerId && userProfile) {
+      handleSetupCompletion(customerId)
+    }
+  }, [searchParams, userProfile])
+
+  // Handle setup completion from Stripe redirect
+  const handleSetupCompletion = async (customerId: string) => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      console.log('🎉 PAYG setup completed, updating user...')
+      
+      const result = await updateUserSubscription(customerId)
+      
+      if (result.success) {
+        setSetupComplete(true)
+        setTimeout(() => {
+          router.push('/marketing-tool?setup=complete')
+        }, 2000)
+      } else {
+        setError(result.error || 'Failed to complete setup')
+      }
+    } catch (error: any) {
+      console.error('Setup completion failed:', error)
+      setError(error?.message || 'Failed to complete PAYG setup')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -33,24 +61,19 @@ export default function PAYGSetupPage() {
     // Check if user already has a different subscription
     if (userProfile && hasValidSubscription() && (userProfile.subscription_tier as string) !== 'payg') {
       console.log('User already has a different subscription:', userProfile.subscription_tier)
+      router.push('/marketing-tool')
       return
     }
 
     // If user already has PAYG set up, redirect to dashboard
-    if (userProfile && (userProfile.subscription_tier as string) === 'payg' && userProfile.subscription_status === 'active') {
+    if (userProfile && (userProfile.subscription_tier as string) === 'payg' && (userProfile as any).stripe_customer_id) {
       router.push('/marketing-tool')
     }
   }, [isAuthenticated, userProfile, hasValidSubscription, router])
 
-  const handlePAYGSetup = async () => {
-    console.log('🚀 Starting PAYG setup:', {
-      hasUser: !!user,
-      userEmail: user?.email,
-      userUid: user?.uid
-    })
-    
-    if (!user?.email) {
-      setError('User email not found')
+  const handleStartPAYGSetup = async () => {
+    if (!userProfile) {
+      setError('User profile not available')
       return
     }
 
@@ -58,240 +81,191 @@ export default function PAYGSetupPage() {
     setError(null)
 
     try {
-      const paygService = new PAYGUsageService()
-      const result = await paygService.createPAYGAccount(user.email, user.uid)
+      console.log('🚀 Starting PAYG setup...')
       
-      console.log('✅ PAYG account creation result:', result)
-      
-      if (result.url) {
-        // Redirect to Stripe checkout
-        console.log('🔄 Redirecting to Stripe checkout:', result.url)
-        window.location.href = result.url
+      // Call backend API to create PAYG subscription
+      const response = await fetch('/api/billing/payg/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({
+          customerEmail: userProfile.email,
+          userId: userProfile.id,
+          successUrl: `${window.location.origin}/payg-setup`,
+          cancelUrl: `${window.location.origin}/payg-setup?cancelled=true`
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success && data.url) {
+        console.log('✅ PAYG setup session created, redirecting to Stripe...')
+        window.location.href = data.url
       } else {
-        setError('Failed to create checkout session')
+        throw new Error(data.error || 'Failed to create payment setup session')
       }
+
     } catch (error: any) {
-      console.error('❌ PAYG setup error:', error)
-      
-      // Provide more helpful error messages
-      if (error.message?.includes('not configured')) {
-        setError('Payment system is not configured. Please contact support or try again later.')
-      } else if (error.message?.includes('Unable to create')) {
-        setError('Unable to set up payment method. Please check your internet connection and try again.')
-      } else {
-        setError(error.message || 'Failed to set up pay-as-you-go account')
-      }
+      console.error('❌ PAYG setup failed:', error)
+      setError(error?.message || 'Failed to start PAYG setup')
     } finally {
       setLoading(false)
     }
   }
 
-  if (!isAuthenticated) {
+  if (setupComplete) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500 mx-auto"></div>
-          <p className="text-gray-300 mt-4">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Show notice if user already has a different subscription
-  if (userProfile && hasValidSubscription() && (userProfile.subscription_tier as string) !== 'payg') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white">
-        <div className="container mx-auto px-4 py-20">
-          <div className="max-w-2xl mx-auto">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold mb-4">
-                <span className="bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
-                  Subscription Notice
-                </span>
-              </h1>
-              <p className="text-xl text-gray-300">
-                You already have an active subscription
-              </p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-purple-900 flex items-center justify-center p-4">
+        <Card className="max-w-lg mx-auto bg-gray-900/50 backdrop-blur-sm border-gray-800 text-white">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-green-500/20">
+              <Check className="h-10 w-10 text-green-400" />
             </div>
-
-            {/* Notice Card */}
-            <Card className="border-orange-500/30 bg-gradient-to-br from-orange-50 to-red-50">
-              <CardHeader className="text-center">
-                <div className="mx-auto mb-4 p-3 bg-orange-100 rounded-full w-fit">
-                  <CreditCard className="h-8 w-8 text-orange-600" />
-                </div>
-                <CardTitle className="text-2xl text-gray-900">Active {userProfile.subscription_tier?.toUpperCase()} Plan</CardTitle>
-                <CardDescription className="text-lg text-gray-700">
-                  You currently have an active {userProfile.subscription_tier} subscription
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent className="space-y-6">
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <h3 className="font-bold text-blue-800 mb-3">📋 Next Steps</h3>
-                  <div className="space-y-2 text-blue-700">
-                    <p>• To switch to Pay-as-you-Go, first manage your current subscription</p>
-                    <p>• Visit your account settings to view or modify your plan</p>
-                    <p>• Contact support if you need assistance with plan changes</p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Button 
-                    onClick={() => router.push('/account/subscription')}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    Manage Subscription
-                  </Button>
-                  <Button 
-                    onClick={() => router.push('/marketing-tool')}
-                    variant="outline"
-                    className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
-                  >
-                    Go to Dashboard
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+            <CardTitle className="text-2xl text-green-400">Setup Complete!</CardTitle>
+            <CardDescription className="text-gray-400">
+              Your Pay-as-you-Go account is now active. Redirecting to dashboard...
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-purple-900 text-white">
       <div className="container mx-auto px-4 py-20">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
-                Complete Your Setup
+          <div className="text-center mb-12">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">
+              <span className="bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+                Setup Pay-as-you-Go
               </span>
             </h1>
-            <p className="text-xl text-gray-300">
-              Add your payment method to activate pay-as-you-go billing
+            <p className="text-xl text-gray-300 mb-8">
+              Add your payment method to start using Crow's Eye with transparent, usage-based pricing
             </p>
           </div>
 
-          {/* Main Setup Card */}
-          <Card className="border-green-500/30 bg-gradient-to-br from-green-50 to-blue-50">
-            <CardHeader className="text-center">
-              <div className="mx-auto mb-4 p-3 bg-green-100 rounded-full w-fit">
-                <CreditCard className="h-8 w-8 text-green-600" />
-              </div>
-              <CardTitle className="text-2xl text-gray-900">Pay-as-you-Go Setup</CardTitle>
-              <CardDescription className="text-lg text-gray-700">
-                You're just one step away from using Crow's Eye!
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center text-red-300">
+              <AlertCircle className="h-5 w-5 mr-3 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Setup Card */}
+          <Card className="bg-gray-900/50 backdrop-blur-sm border-gray-800 text-white mb-8">
+            <CardHeader>
+              <CardTitle className="text-2xl flex items-center">
+                <CreditCard className="h-6 w-6 mr-3" />
+                Payment Method Setup
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                We'll securely collect your payment information. No charges until you reach $5 in usage.
               </CardDescription>
             </CardHeader>
-            
             <CardContent className="space-y-6">
-              {/* How it works */}
-              <div className="bg-white p-4 rounded-lg border border-green-200">
-                <h3 className="font-bold text-green-800 mb-3 flex items-center">
-                  <Calculator className="h-5 w-5 mr-2" />
-                  How It Works
-                </h3>
-                <div className="space-y-2 text-gray-700">
-                  <div className="flex items-start space-x-3">
-                    <div className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded flex-shrink-0 mt-0.5">1</div>
-                    <span>Add your payment method (no charges yet!)</span>
+              {/* How It Works */}
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <h3 className="font-semibold text-green-400 mb-3">🎯 How Pay-as-you-Go Works:</h3>
+                <div className="space-y-2 text-gray-300">
+                  <div className="flex items-center space-x-2">
+                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">1</span>
+                    <span>Add your payment method (secure, encrypted)</span>
                   </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded flex-shrink-0 mt-0.5">2</div>
-                    <span>Start using AI credits, scheduling posts, storing media</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">2</span>
+                    <span>Use Crow's Eye freely - track your usage in real-time</span>
                   </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded flex-shrink-0 mt-0.5">3</div>
+                  <div className="flex items-center space-x-2">
+                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">3</span>
                     <span>Get charged monthly only when you reach $5 in usage</span>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">4</span>
+                    <span>Cancel anytime - no commitments or hidden fees</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Pricing reminder */}
-              <div className="bg-gray-50 p-4 rounded-lg border">
-                <h3 className="font-bold text-gray-900 mb-3">Simple Pricing</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">AI Credits:</span>
-                    <span className="font-semibold text-green-600">$0.15 each</span>
+              {/* Pricing Breakdown */}
+              <div className="bg-gray-800/50 p-4 rounded-lg">
+                <h3 className="font-semibold text-blue-400 mb-3 flex items-center">
+                  <Calculator className="h-5 w-5 mr-2" />
+                  Transparent Pricing
+                </h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center py-1 border-b border-gray-700">
+                    <span className="text-gray-300">AI Credits:</span>
+                    <span className="font-bold text-green-400">$0.15 each</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">Scheduled Posts:</span>
-                    <span className="font-semibold text-green-600">$0.25 each</span>
+                  <div className="flex justify-between items-center py-1 border-b border-gray-700">
+                    <span className="text-gray-300">Scheduled Posts:</span>
+                    <span className="font-bold text-green-400">$0.25 each</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-700">Storage:</span>
-                    <span className="font-semibold text-green-600">$2.99/GB/month</span>
+                  <div className="flex justify-between items-center py-1 border-b border-gray-700">
+                    <span className="text-gray-300">Storage:</span>
+                    <span className="font-bold text-green-400">$2.99/GB/month</span>
                   </div>
-                  <div className="border-t pt-2 mt-3">
-                    <div className="flex justify-between font-bold">
-                      <span className="text-gray-900">Minimum monthly charge:</span>
-                      <span className="text-green-700">$5.00</span>
+                  <div className="flex justify-between items-center py-2 bg-green-500/20 px-3 rounded border border-green-500/30 mt-3">
+                    <span className="font-bold text-green-300">Minimum monthly charge:</span>
+                    <span className="font-bold text-green-300 text-lg">$5.00</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Security Notice */}
+              <div className="bg-blue-500/20 p-4 rounded-lg border border-blue-500/30">
+                <div className="flex items-center text-blue-300">
+                  <Check className="h-5 w-5 mr-2" />
+                  <span className="font-medium">Secure & Encrypted</span>
+                </div>
+                <p className="text-blue-200 text-sm mt-2">
+                  Your payment information is processed securely by Stripe and never stored on our servers.
+                </p>
+              </div>
+
+              {/* Setup Button */}
+              <div className="pt-4">
+                <Button
+                  onClick={handleStartPAYGSetup}
+                  disabled={loading}
+                  className="w-full text-lg py-6 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold shadow-lg"
+                >
+                  {loading ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                      Setting up payment method...
                     </div>
-                  </div>
-                </div>
+                  ) : (
+                    <div className="flex items-center">
+                      <CreditCard className="h-5 w-5 mr-3" />
+                      Add Payment Method & Complete Setup
+                      <ArrowRight className="h-5 w-5 ml-3" />
+                    </div>
+                  )}
+                </Button>
+                <p className="text-center text-gray-400 text-sm mt-3">
+                  No charges until you reach $5 in usage • Cancel anytime
+                </p>
               </div>
-
-              {/* Benefits */}
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <h3 className="font-bold text-blue-800 mb-3">✨ Benefits</h3>
-                <div className="space-y-2 text-sm text-blue-700">
-                  <div className="flex items-center space-x-2">
-                    <Check className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                    <span>No monthly commitments</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Check className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                    <span>Scale up or down as needed</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Check className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                    <span>Full access to all features</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Check className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                    <span>Cancel anytime</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Error message */}
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                  {error}
-                </div>
-              )}
-
-              {/* Setup button */}
-              <Button 
-                onClick={handlePAYGSetup} 
-                disabled={loading}
-                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 text-lg"
-                size="lg"
-              >
-                {loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Setting up your account...
-                  </>
-                ) : (
-                  <>
-                    Add Payment Method & Continue
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </>
-                )}
-              </Button>
-
-              {/* Security note */}
-              <p className="text-center text-sm text-gray-500">
-                🔒 Secure payment processing powered by Stripe. Your payment information is never stored on our servers.
-              </p>
             </CardContent>
           </Card>
+
+          {/* Back Link */}
+          <div className="text-center">
+            <Button
+              variant="ghost"
+              onClick={() => router.push('/pricing')}
+              className="text-gray-400 hover:text-white"
+            >
+              ← Back to Pricing Plans
+            </Button>
+          </div>
         </div>
       </div>
     </div>
