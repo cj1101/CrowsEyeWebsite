@@ -43,7 +43,7 @@ export default function TestPAYGPage() {
         },
         body: JSON.stringify({
           event_name: 'ai_credit_used',
-          stripe_customer_id: 'cus_test123',
+          stripe_customer_id: 'cus_SWvtJy3rk0SLcA',
           value: 1
         })
       })
@@ -58,6 +58,96 @@ export default function TestPAYGPage() {
       }
     } catch (error: any) {
       addResult('❌ Usage Event API error: ' + error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const testPostScheduled = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/billing/payg/usage-event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          event_name: 'post_scheduled',
+          stripe_customer_id: 'cus_SWvtJy3rk0SLcA',
+          value: 1
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        addResult('✅ Post Scheduled Event - Event tracked successfully')
+        addResult(`📈 Tracked: ${data.meter_type} (${data.value} units at $${data.rate}/unit = $${data.cost})`)
+      } else {
+        addResult('❌ Post Scheduled Event failed: ' + data.error)
+      }
+    } catch (error: any) {
+      addResult('❌ Post Scheduled Event error: ' + error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const testStorageUsed = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/billing/payg/usage-event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          event_name: 'storage_used',
+          stripe_customer_id: 'cus_SWvtJy3rk0SLcA',
+          value: 1
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        addResult('✅ Storage Used Event - Event tracked successfully')
+        addResult(`📈 Tracked: ${data.meter_type} (${data.value} units at $${data.rate}/unit = $${data.cost})`)
+      } else {
+        addResult('❌ Storage Used Event failed: ' + data.error)
+      }
+    } catch (error: any) {
+      addResult('❌ Storage Used Event error: ' + error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const testDecimalValue = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/billing/payg/usage-event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          event_name: 'storage_used',
+          stripe_customer_id: 'cus_SWvtJy3rk0SLcA',
+          value: 0.5  // This should be rounded to 1
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        addResult('✅ Decimal Value Test - Value rounded correctly')
+        addResult(`📈 0.5 rounded to: ${data.value} (${data.meter_type} at $${data.rate}/unit = $${data.cost})`)
+      } else {
+        addResult('❌ Decimal Value Test failed: ' + data.error)
+      }
+    } catch (error: any) {
+      addResult('❌ Decimal Value Test error: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -126,7 +216,28 @@ export default function TestPAYGPage() {
                 disabled={loading}
                 variant="outline"
               >
-                Test Usage Event
+                AI Credit Event
+              </Button>
+              <Button 
+                onClick={testPostScheduled}
+                disabled={loading}
+                variant="outline"
+              >
+                Post Scheduled Event
+              </Button>
+              <Button 
+                onClick={testStorageUsed}
+                disabled={loading}
+                variant="outline"
+              >
+                Storage Used Event
+              </Button>
+              <Button 
+                onClick={testDecimalValue}
+                disabled={loading}
+                variant="outline"
+              >
+                Test Decimal Values
               </Button>
               <Button 
                 onClick={testSubscription}

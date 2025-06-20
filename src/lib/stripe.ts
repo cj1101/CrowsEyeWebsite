@@ -285,11 +285,14 @@ export const reportUsageToStripe = async (params: {
     const meterConfig = USAGE_PRICING_CONFIG.meters[params.meterType]
     const eventName = meterConfig.event_name
     
+    // Ensure value is an integer as required by Stripe
+    const integerValue = Math.round(params.value)
+    
     await stripe.billing.meterEvents.create({
       event_name: eventName,
       payload: {
         stripe_customer_id: params.customerId,
-        value: params.value.toString()
+        value: integerValue.toString()
       },
       timestamp: params.timestamp || Math.floor(Date.now() / 1000)
     })
