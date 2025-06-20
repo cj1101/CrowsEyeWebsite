@@ -1,13 +1,13 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, CreditCard, ArrowRight, Calculator } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
-export default function SuccessPage() {
+function SuccessPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { refreshUserProfile } = useAuth()
@@ -171,5 +171,17 @@ export default function SuccessPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-gray-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    }>
+      <SuccessPageContent />
+    </Suspense>
   )
 } 
