@@ -22,6 +22,7 @@ model User {
   stripeCustomerId String?
   subscriptionStatus String @default("inactive")
   subscriptionExpires DateTime?
+  subscriptionId String?
   emailVerified Boolean @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

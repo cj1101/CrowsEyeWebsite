@@ -102,9 +102,11 @@ const nextConfig: NextConfig = {
     pagesBufferLength: 2,
   },
   
-  // Output configuration for Firebase hosting
-  output: 'export',
-  distDir: 'out',
+  // Output configuration for Firebase hosting (only for production builds)
+  ...(process.env.NODE_ENV === 'production' && {
+    output: 'export',
+    distDir: 'out',
+  }),
   
   // Static optimization
   generateEtags: false,

@@ -73,7 +73,7 @@ router.post('/update-payg-customer', authenticateToken as any, async (req, res) 
       data: {
         stripeCustomerId,
         subscriptionStatus: 'active',
-        plan: 'PAYG'
+        plan: 'PAYG' as any
       }
     })
 
@@ -136,7 +136,7 @@ router.get('/subscription-status', authenticateToken as any, async (req, res) =>
 
         billingInfo = {
           customerId: user.stripeCustomerId,
-          hasPaymentMethod: customer.default_source !== null || 
+          hasPaymentMethod: (customer as any).default_source !== null || 
                            (customer as any).invoice_settings?.default_payment_method !== null,
           activeSubscriptions: subscriptions.data.length
         }

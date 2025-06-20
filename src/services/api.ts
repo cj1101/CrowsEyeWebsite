@@ -35,9 +35,8 @@ class RateLimiter {
 const rateLimiter = new RateLimiter();
 
 // Determine the API base URL dynamically for cross-platform compatibility
-// FORCED to use user's specified API URL
 const getApiBaseUrl = (): string => {
-  // Use the correct GCP API endpoint with /api/v1 prefix
+  // Use Google Cloud API endpoint for production deployment
   return 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com';
 };
 
@@ -686,20 +685,31 @@ export class CrowsEyeAPI {
       const requestData = {
         email: userData.email,
         password: userData.password,
-        name: userData.name,
+        displayName: userData.name,
         subscription_tier: userData.subscription_tier || 'free'
       };
       
-      const response = await this.api.post('/api/v1/auth/register', requestData);
+      const response = await this.api.post('/auth/signup', requestData);
       console.log('✅ Registration successful');
       
-      // Transform backend response to match frontend expectations
-      if (response.data?.token && response.data?.user) {
+      // Handle both new and legacy backend response formats
+      if (response.data?.success && response.data?.data) {
+        // New backend format: { success: true, data: { access_token, refresh_token, user } }
         return {
           success: true,
           data: {
-            access_token: response.data.token, // Map 'token' to 'access_token'
-            refresh_token: response.data.refreshToken || '', // Add refresh token if available
+            access_token: response.data.data.access_token,
+            refresh_token: response.data.data.refresh_token || '',
+            user: response.data.data.user
+          }
+        };
+      } else if (response.data?.token && response.data?.user) {
+        // Legacy format
+        return {
+          success: true,
+          data: {
+            access_token: response.data.token,
+            refresh_token: response.data.refreshToken || '',
             user: this.transformUser(response.data.user)
           }
         };
@@ -730,16 +740,27 @@ export class CrowsEyeAPI {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
       console.log('🔐 Attempting user login...');
-      const response = await this.api.post('/api/v1/auth/login', credentials);
+      const response = await this.api.post('/auth/login', credentials);
       console.log('✅ Login successful');
       
-      // Transform backend response to match frontend expectations
-      if (response.data?.token && response.data?.user) {
+      // Handle both new and legacy backend response formats
+      if (response.data?.success && response.data?.data) {
+        // New backend format: { success: true, data: { access_token, refresh_token, user } }
         return {
           success: true,
           data: {
-            access_token: response.data.token, // Map 'token' to 'access_token'
-            refresh_token: response.data.refreshToken || '', // Add refresh token if available
+            access_token: response.data.data.access_token,
+            refresh_token: response.data.data.refresh_token || '',
+            user: response.data.data.user
+          }
+        };
+      } else if (response.data?.token && response.data?.user) {
+        // Legacy format
+        return {
+          success: true,
+          data: {
+            access_token: response.data.token,
+            refresh_token: response.data.refreshToken || '',
             user: this.transformUser(response.data.user)
           }
         };
@@ -770,7 +791,7 @@ export class CrowsEyeAPI {
   async getCurrentUser(): Promise<APIResponse<User>> {
     try {
       console.log('🔍 Getting current user from API...');
-      const response = await this.api.get('/api/v1/auth/me');
+      const response = await this.api.get('/auth/me');
       
       if (response.data.success && response.data.data) {
         return {
@@ -860,7 +881,7 @@ export class CrowsEyeAPI {
   }
   
   async updateProfile(profileData: Partial<User>): Promise<AxiosResponse<User>> {
-    return this.api.put('/api/v1/users/me', profileData);
+    return this.api.put('/user/profile', profileData);
   }
 
   // =============================================================================
@@ -869,7 +890,7 @@ export class CrowsEyeAPI {
 
   // === HEALTH & STATUS ===
   async healthCheck(): Promise<AxiosResponse> {
-    return this.api.get('/api/v1/health');
+    return this.api.get('/health');
   }
 
   async testConnection(): Promise<AxiosResponse> {
@@ -1578,7 +1599,7 @@ export class CrowsEyeAPI {
   async updatePAYGCustomer(stripeCustomerId: string, subscriptionId?: string): Promise<AxiosResponse> {
     try {
       console.log('💳 Updating PAYG customer with API...');
-      return await this.api.post('/api/v1/billing/update-payg-customer', {
+      return await this.api.post('/billing/update-payg-customer', {
         stripeCustomerId,
         subscriptionId
       });
@@ -1591,7 +1612,7 @@ export class CrowsEyeAPI {
   async getSubscriptionStatus(): Promise<AxiosResponse> {
     try {
       console.log('📊 Getting subscription status from API...');
-      return await this.api.get('/api/v1/billing/subscription-status');
+      return await this.api.get('/billing/subscription-status');
     } catch (error) {
       console.error('❌ Get subscription status failed:', error);
       throw error;
@@ -1601,7 +1622,7 @@ export class CrowsEyeAPI {
   async createBillingPortalSession(): Promise<AxiosResponse> {
     try {
       console.log('🔗 Creating billing portal session...');
-      return await this.api.post('/api/v1/billing/create-portal-session');
+      return await this.api.post('/billing/create-portal-session');
     } catch (error) {
       console.error('❌ Create billing portal session failed:', error);
       throw error;
@@ -1611,7 +1632,7 @@ export class CrowsEyeAPI {
   async syncSubscriptionStatus(): Promise<AxiosResponse> {
     try {
       console.log('🔄 Syncing subscription status with Stripe...');
-      return await this.api.post('/api/v1/billing/sync-subscription');
+      return await this.api.post('/billing/sync-subscription');
     } catch (error) {
       console.error('❌ Sync subscription failed:', error);
       throw error;

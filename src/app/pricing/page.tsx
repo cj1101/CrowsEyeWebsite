@@ -41,7 +41,7 @@
 'use client'
 
 import React, { useState, Suspense } from 'react'
-import { Check, X, Gift, Calculator, CreditCard } from 'lucide-react'
+import { Check, X, Gift, Calculator, CreditCard, BrainCircuit, Send, HardDrive } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -241,19 +241,19 @@ const FeatureRow = ({ feature, plans }: { feature: string; plans: typeof pricing
 
   return (
     <tr className="border-b border-gray-800">
-      <td className="py-4 px-4 text-left text-gray-300">{feature}</td>
+      <td className="py-3 sm:py-4 px-3 sm:px-4 text-left text-gray-300 text-xs sm:text-sm font-medium">{feature}</td>
       {plans.map((plan) => {
         const value = getFeatureValue(plan, feature);
         return (
-          <td key={plan.id} className="py-4 px-4 text-center">
+          <td key={plan.id} className="py-3 sm:py-4 px-2 sm:px-4 text-center">
             {typeof value === 'boolean' ? (
               value ? (
-                <Check className="h-5 w-5 text-green-500 mx-auto" />
+                <Check className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mx-auto" />
               ) : (
-                <X className="h-5 w-5 text-gray-500 mx-auto" />
+                <X className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 mx-auto" />
               )
             ) : (
-              <span className="text-gray-300 text-sm">{value}</span>
+              <span className="text-gray-300 text-xs sm:text-sm px-1">{value}</span>
             )}
           </td>
         );
@@ -267,8 +267,8 @@ const PAYGBenefits = ({ plan }: { plan: typeof pricingPlans[0] }) => {
   if (!plan.benefits) return null
   
   return (
-    <div className="mt-4 space-y-3">
-      <div className="bg-gray-800/50 p-3 rounded-lg space-y-3 text-xs border border-gray-700">
+    <div className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
+      <div className="bg-gray-800/50 p-2 sm:p-3 rounded-lg space-y-2 sm:space-y-3 text-xs border border-gray-700">
         <div className="text-center">
           <Badge className="bg-green-500/20 text-green-400 text-xs border-green-500/30">
             ✨ Start Free - No Minimums
@@ -276,18 +276,18 @@ const PAYGBenefits = ({ plan }: { plan: typeof pricingPlans[0] }) => {
         </div>
         
         <div>
-          <h5 className="font-medium text-gray-300 mb-2">Why Pay-as-you-Go?</h5>
+          <h5 className="font-medium text-gray-300 mb-1 sm:mb-2 text-xs sm:text-sm">Why Pay-as-you-Go?</h5>
           <ul className="space-y-1">
             {plan.benefits.map((benefit, index) => (
-              <li key={index} className="flex items-center text-gray-300">
-                <div className="w-1 h-1 bg-green-400 rounded-full mr-2 flex-shrink-0"></div>
-                {benefit}
+              <li key={index} className="flex items-start text-gray-300 text-xs leading-relaxed">
+                <div className="w-1 h-1 bg-green-400 rounded-full mr-2 mt-1.5 flex-shrink-0"></div>
+                <span>{benefit}</span>
               </li>
             ))}
           </ul>
         </div>
         
-        <div className="text-center p-2 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded text-xs text-gray-300 border border-green-500/30">
+        <div className="text-center p-1.5 sm:p-2 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded text-xs text-gray-300 border border-green-500/30">
           💡 Simple, transparent pricing - pay exactly for what you use!
         </div>
       </div>
@@ -364,6 +364,10 @@ function PricingContent() {
     }
   };
 
+  const getTrialDays = () => {
+    return billingPeriod === 'yearly' ? 14 : 7;
+  }
+
   const getSavings = (plan: typeof pricingPlans[0]) => {
     if (plan.paymentType === 'payg') return null;
     if (billingPeriod === 'monthly') return null;
@@ -414,21 +418,21 @@ function PricingContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-purple-900 text-white">
       {/* Hero Section */}
-      <div className="relative overflow-hidden py-20 px-4 sm:px-6 lg:px-8">
+      <div className="relative overflow-hidden py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
         <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 blur-3xl" />
         
         {/* Subscription Required Banner */}
         {isRequired && (
-          <div className="relative max-w-4xl mx-auto mb-8">
-            <div className="bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 rounded-lg p-6 text-center">
-              <div className="flex items-center justify-center mb-4">
-                <CreditCard className="h-8 w-8 text-red-400 mr-3" />
-                <h3 className="text-2xl font-bold text-red-300">Subscription Required</h3>
+          <div className="relative max-w-4xl mx-auto mb-6 sm:mb-8">
+            <div className="bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 rounded-lg p-4 sm:p-6 text-center">
+              <div className="flex flex-col sm:flex-row items-center justify-center mb-3 sm:mb-4">
+                <CreditCard className="h-6 w-6 sm:h-8 sm:w-8 text-red-400 mb-2 sm:mb-0 sm:mr-3" />
+                <h3 className="text-xl sm:text-2xl font-bold text-red-300">Subscription Required</h3>
               </div>
-              <p className="text-red-200 text-lg mb-4">
+              <p className="text-red-200 text-base sm:text-lg mb-3 sm:mb-4">
                 Access to Crow's Eye requires an active subscription with payment method on file.
               </p>
-              <p className="text-red-100 text-base">
+              <p className="text-red-100 text-sm sm:text-base">
                 Choose a plan below to continue. Even our Pay-as-you-Go option requires a card for billing when you reach the $5 minimum.
               </p>
             </div>
@@ -436,12 +440,12 @@ function PricingContent() {
         )}
         
         <div className="relative max-w-7xl mx-auto text-center">
-          <h1 className="text-5xl md:text-7xl font-bold mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 leading-tight">
             <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
               {isRequired ? 'Complete Your Setup' : 'Choose Your Plan'}
             </span>
           </h1>
-          <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
+          <p className="text-lg sm:text-xl lg:text-2xl text-gray-300 mb-6 sm:mb-8 max-w-3xl mx-auto px-4">
             {isRequired 
               ? 'Set up your subscription to access all the powerful AI-driven social media tools'
               : 'Unlock the full potential of AI-powered social media marketing with plans designed for every creator and business'
@@ -449,28 +453,28 @@ function PricingContent() {
           </p>
 
           {/* Promotion Code Section */}
-          <div className="max-w-md mx-auto mb-8">
-            <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg border border-gray-800 p-4">
-              <div className="flex gap-2">
+          <div className="max-w-md mx-auto mb-6 sm:mb-8 px-4">
+            <div className="bg-gray-900/50 backdrop-blur-sm rounded-lg border border-gray-800 p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   placeholder="Enter promotion code"
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value)}
-                  className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                  className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm sm:text-base text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
                 />
                 <button
                   onClick={handlePromoCode}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors text-sm sm:text-base font-medium"
                 >
                   Apply
                 </button>
               </div>
               {promoError && (
-                <p className="text-red-400 text-sm mt-2">{promoError}</p>
+                <p className="text-red-400 text-xs sm:text-sm mt-2">{promoError}</p>
               )}
               {promoApplied && (
-                <p className="text-green-400 text-sm mt-2">
+                <p className="text-green-400 text-xs sm:text-sm mt-2">
                   🎉 Promotion code applied! Free access granted.
                 </p>
               )}
@@ -478,13 +482,13 @@ function PricingContent() {
           </div>
 
           {/* Billing Toggle */}
-          <div className="flex items-center justify-center mb-12">
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-full p-1 flex">
+          <div className="flex items-center justify-center mb-8 sm:mb-12 px-4">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-full p-1 flex w-full max-w-sm sm:w-auto">
               <button
                 onClick={() => setBillingPeriod('monthly')}
-                className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 ${
                   billingPeriod === 'monthly'
-                    ? 'bg-purple-500 text-white shadow-lg'
+                    ? 'bg-purple-600 text-white shadow-lg'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
@@ -492,14 +496,14 @@ function PricingContent() {
               </button>
               <button
                 onClick={() => setBillingPeriod('yearly')}
-                className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 ${
                   billingPeriod === 'yearly'
-                    ? 'bg-purple-500 text-white shadow-lg'
+                    ? 'bg-purple-600 text-white shadow-lg'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                Yearly
-                <Badge className="ml-2 bg-green-500/20 text-green-400 border-green-500/30">
+                <span className="block sm:inline">Yearly</span>
+                <Badge className="ml-1 sm:ml-2 bg-green-500/20 text-green-400 border-green-500/30 text-xs">
                   Save 20%
                 </Badge>
               </button>
@@ -509,152 +513,82 @@ function PricingContent() {
       </div>
 
       {/* Pricing Cards */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        {/* Pay-as-you-Go Plan - Featured */}
-        <div className="mb-12">
-          <div className="max-w-2xl mx-auto">
-            {/* Pay-as-you-Go Plan - Standalone */}
-            <Card className="relative border-2 border-green-500 shadow-xl bg-gradient-to-br from-green-50 to-blue-50">
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-green-500 text-white px-4 py-2 text-sm font-semibold">
-                  <Gift className="h-4 w-4 mr-1" />
-                  Start Free - $5 Minimum
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 lg:pb-20">
+        {/* Modern Pay-as-you-Go Plan */}
+        <div className="mb-12 sm:mb-16">
+          <div className="max-w-4xl mx-auto">
+            <div className="relative vision-card border-2 border-green-500/50 hover:border-green-500/80 p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-2xl shadow-green-500/10">
+               <div className="absolute -top-3 sm:-top-4 left-1/2 transform -translate-x-1/2">
+                <Badge className="bg-gradient-to-r from-green-400 to-cyan-400 text-black px-4 sm:px-6 py-1 sm:py-2 text-xs sm:text-sm font-bold">
+                  Start For Free
                 </Badge>
               </div>
-              <CardHeader className="text-center pt-8">
-                <CardTitle className="text-3xl font-bold text-gray-900">Pay-as-you-Go</CardTitle>
-                <div className="text-4xl font-bold text-green-600 mb-2">Simple & Fair</div>
-                <CardDescription className="text-lg text-gray-700">
-                  Perfect for everyone - pay only for what you use with a generous $5 minimum threshold
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {/* How It Works */}
-                  <div className="bg-white p-4 rounded-lg border border-green-200">
-                    <h4 className="font-bold text-green-800 mb-3 text-lg">🎯 How It Works:</h4>
-                    <div className="space-y-2 text-gray-700">
-                      <div className="flex items-center space-x-2">
-                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">1</span>
-                        <span>Sign up and add your payment method</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">2</span>
-                        <span>Use the platform freely - no charges yet!</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">3</span>
-                        <span>Get charged only when you reach $5 in usage</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">4</span>
-                        <span>Then pay monthly for actual usage</span>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Pricing Breakdown */}
-                  <div className="bg-gray-50 p-4 rounded-lg border">
-                    <h4 className="font-bold text-gray-900 mb-3 flex items-center text-lg">
-                      <Calculator className="h-5 w-5 mr-2" />
-                      Simple Pricing Structure
-                    </h4>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                        <span className="font-medium text-black">AI Credits:</span>
-                        <span className="font-bold text-green-600 text-lg">$0.15 each</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                        <span className="font-medium text-black">Scheduled Posts:</span>
-                        <span className="font-bold text-green-600 text-lg">$0.25 each</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                        <span className="font-medium text-black">Storage:</span>
-                        <span className="font-bold text-green-600 text-lg">$2.99/GB/month</span>
-                      </div>
-                      <div className="flex justify-between items-center py-3 bg-green-100 px-3 rounded border-2 border-green-300">
-                        <span className="font-bold text-green-800">Minimum monthly charge:</span>
-                        <span className="font-bold text-green-800 text-xl">$5.00</span>
-                      </div>
-                    </div>
-                  </div>
+              <div className="text-center mt-6 sm:mt-4">
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white text-glow">Pay-as-you-Go</h2>
+                  <p className="text-base sm:text-lg text-gray-300 mt-2 px-2">The ultimate flexibility. Pay only for what you use.</p>
+              </div>
 
-                  {/* Usage Examples */}
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <h4 className="font-bold text-blue-800 mb-3 text-lg">💡 Usage Examples:</h4>
-                    <div className="grid grid-cols-1 gap-3 text-sm">
-                      <div className="bg-white p-3 rounded border">
-                        <div className="font-medium text-blue-800 mb-1">Light User:</div>
-                        <div className="text-gray-600">10 AI credits + 3 posts + 1GB = $4.24</div>
-                        <div className="text-green-600 font-medium">💸 Charged: $0 (under $5)</div>
-                      </div>
-                      <div className="bg-white p-3 rounded border">
-                        <div className="font-medium text-blue-800 mb-1">Medium User:</div>
-                        <div className="text-gray-600">25 AI credits + 10 posts + 2GB = $12.23</div>
-                        <div className="text-blue-600 font-medium">💳 Charged: $12.23</div>
-                      </div>
-                      <div className="bg-white p-3 rounded border">
-                        <div className="font-medium text-blue-800 mb-1">Power User:</div>
-                        <div className="text-gray-600">100 AI credits + 50 posts + 10GB = $57.40</div>
-                        <div className="text-purple-600 font-medium">🚀 Charged: $57.40</div>
-                      </div>
-                    </div>
+              <div className="mt-6 sm:mt-8 lg:mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-center">
+                  <div className="bg-gray-800/50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-gray-700">
+                      <BrainCircuit className="h-6 w-6 sm:h-8 sm:w-8 text-green-400 mx-auto mb-2 sm:mb-3" />
+                      <p className="text-gray-300 text-sm sm:text-base">AI Credits</p>
+                      <p className="text-xl sm:text-2xl font-bold text-white text-glow">$0.15</p>
+                      <p className="text-xs text-gray-500">per credit</p>
                   </div>
-
-                  {/* Key Benefits */}
-                  <div className="space-y-3">
-                    <h4 className="font-bold text-gray-900 text-lg">✨ Key Benefits:</h4>
-                    <ul className="space-y-3">
-                      {[
-                        '🆓 True free start - no upfront costs',
-                        '💳 Card required but no charges until $5',
-                        '📊 Transparent pricing - know exactly what you pay',
-                        '📈 Scale naturally with your business',
-                        '🔄 No long-term commitments',
-                        '⚡ All features included from day one',
-                        '🛡️ Fair usage protection for light users'
-                      ].map((feature, index) => (
-                        <li key={index} className="flex items-center text-sm font-medium text-gray-700">
-                          <Check className="h-4 w-4 text-green-500 mr-3 flex-shrink-0" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
+                   <div className="bg-gray-800/50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-gray-700">
+                      <Send className="h-6 w-6 sm:h-8 sm:w-8 text-cyan-400 mx-auto mb-2 sm:mb-3" />
+                      <p className="text-gray-300 text-sm sm:text-base">Scheduled Posts</p>
+                      <p className="text-xl sm:text-2xl font-bold text-white text-glow">$0.25</p>
+                      <p className="text-xs text-gray-500">per post</p>
                   </div>
-                </div>
+                   <div className="bg-gray-800/50 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-gray-700">
+                      <HardDrive className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400 mx-auto mb-2 sm:mb-3" />
+                      <p className="text-gray-300 text-sm sm:text-base">Storage</p>
+                      <p className="text-xl sm:text-2xl font-bold text-white text-glow">$2.99</p>
+                      <p className="text-xs text-gray-500">per GB/month</p>
+                  </div>
+              </div>
+              
+              <div className="mt-6 sm:mt-8 lg:mt-10 bg-gray-900/50 p-4 sm:p-6 rounded-xl sm:rounded-2xl text-center border-2 border-green-500/30">
+                  <h3 className="text-base sm:text-lg font-semibold text-white">How Billing Works</h3>
+                  <p className="text-gray-400 mt-2 text-xs sm:text-sm max-w-lg mx-auto px-2">
+                      Use our platform freely. We'll only charge your card automatically once your usage hits the <span className="text-green-400 font-bold">$5.00 minimum</span> for the month. Simple and fair.
+                  </p>
+              </div>
 
-                <div className="mt-8">
+              <div className="mt-6 sm:mt-8">
                   <Button 
-                    className="w-full text-lg py-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold shadow-lg" 
+                    className="w-full text-base sm:text-lg py-3 sm:py-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold shadow-lg" 
                     size="lg"
                     onClick={() => handlePlanSelect(pricingPlans.find(p => p.id === 'payg')!)}
                   >
-                    {isRequired ? '💳 Setup PAYG & Access Platform' : '🚀 Start Free with PAYG'}
+                    <span className="hidden sm:inline">{isRequired ? '💳 Setup PAYG & Access Platform' : '🚀 Start Free with PAYG'}</span>
+                    <span className="sm:hidden">{isRequired ? '💳 Setup PAYG' : '🚀 Start Free'}</span>
                   </Button>
-                  <p className="text-sm text-gray-600 text-center mt-3 font-medium">
+                   <p className="text-xs sm:text-sm text-gray-500 text-center mt-3 font-medium px-4">
                     {isRequired 
-                      ? 'Required: Add payment method to access the platform'
-                      : 'Add payment method • No charges until $5 usage • Cancel anytime'
+                      ? 'Add payment method to access the platform'
+                      : 'No charges until $5 in usage · Cancel anytime'
                     }
                   </p>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Traditional Plans Header */}
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">Traditional Monthly Plans</h2>
-          <p className="text-gray-400">Fixed pricing with set limits - perfect for consistent usage</p>
+        <div className="text-center mb-6 sm:mb-8 px-4">
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">Traditional Monthly Plans</h2>
+          <p className="text-sm sm:text-base text-gray-400">Fixed pricing with set limits - perfect for consistent usage</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {pricingPlans.filter(plan => plan.id !== 'payg').map((plan) => (
             <Card 
               key={plan.id}
-              className={`relative bg-gray-900/50 backdrop-blur-sm border-gray-800 text-white hover:border-purple-500/50 transition-all duration-300 ${
-                plan.popular ? 'ring-2 ring-purple-500/50 scale-105' : ''
+              className={`relative vision-card text-white transition-all duration-300 ${
+                plan.popular ? 'ring-2 ring-purple-500' : 'border-gray-800'
               }`}
             >
               {plan.badge && (
@@ -665,23 +599,23 @@ function PricingContent() {
                 </div>
               )}
               
-              <CardHeader className="text-center pb-8">
-                <CardTitle className="text-2xl font-bold mb-2">{plan.name}</CardTitle>
-                <CardDescription className="text-gray-400 mb-4">
+              <CardHeader className="text-center pb-6 sm:pb-8">
+                <CardTitle className="text-xl sm:text-2xl font-bold mb-2">{plan.name}</CardTitle>
+                <CardDescription className="text-gray-400 mb-4 text-sm sm:text-base px-2">
                   {plan.description}
                 </CardDescription>
                 
                 <div className="mb-4">
-                  <div className="text-4xl font-bold">
+                  <div className="text-3xl sm:text-4xl font-bold">
                     {getDisplayPrice(plan)}
                     {plan.paymentType !== 'free' && (
-                      <span className="text-lg text-gray-400">
+                      <span className="text-base sm:text-lg text-gray-400">
                         /{billingPeriod === 'monthly' ? 'mo' : 'mo'}
                       </span>
                     )}
                   </div>
                   {getSavings(plan) && (
-                    <div className="text-sm text-green-400 mt-1">
+                    <div className="text-xs sm:text-sm text-green-400 mt-1">
                       {getSavings(plan)}
                     </div>
                   )}
@@ -691,18 +625,18 @@ function PricingContent() {
                     </div>
                   )}
                   {plan.trial && (
-                    <div className="text-xs text-green-400 mt-1 font-medium">
-                      {plan.trialDays}-day free trial included
+                    <div className="text-xs sm:text-sm text-green-400 mt-1 font-medium">
+                      {getTrialDays()}-day free trial included
                     </div>
                   )}
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
                 {/* Usage Limits */}
                 <div className="space-y-2">
-                  <h4 className="font-semibold text-purple-400">Usage Limits:</h4>
-                  <ul className="text-sm text-gray-300 space-y-1">
+                  <h4 className="font-semibold text-purple-400 text-sm sm:text-base">Usage Limits:</h4>
+                  <ul className="text-xs sm:text-sm text-gray-300 space-y-1">
                     <li>{plan.limits.linkedAccounts}</li>
                     <li>{plan.limits.users}</li>
                     <li>{plan.limits.aiCredits}</li>
@@ -713,25 +647,25 @@ function PricingContent() {
 
                 {/* Key Features */}
                 <div className="space-y-2">
-                  <h4 className="font-semibold text-purple-400">Key Features:</h4>
-                  <ul className="text-sm space-y-2">
+                  <h4 className="font-semibold text-purple-400 text-sm sm:text-base">Key Features:</h4>
+                  <ul className="text-xs sm:text-sm space-y-2">
                     {Object.entries(plan.features).slice(0, 6).map(([key, value]) => (
                       <li key={key} className="flex items-center">
                         {typeof value === 'boolean' ? (
                           value ? (
                             <>
-                              <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                              <Check className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 mr-2 flex-shrink-0" />
                               <span className="text-gray-300">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
                             </>
                           ) : (
                             <>
-                              <X className="h-4 w-4 text-gray-500 mr-2 flex-shrink-0" />
+                              <X className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 mr-2 flex-shrink-0" />
                               <span className="text-gray-500">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
                             </>
                           )
                         ) : (
                           <>
-                            <Check className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                            <Check className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 mr-2 flex-shrink-0" />
                             <span className="text-gray-300">{value}</span>
                           </>
                         )}
@@ -741,17 +675,22 @@ function PricingContent() {
                 </div>
               </CardContent>
 
-              <CardFooter className="flex-col space-y-3">
+              <CardFooter className="flex-col space-y-3 px-4 sm:px-6">
                 <Button
                   onClick={() => handlePlanSelect(plan)}
                   variant={plan.buttonVariant}
-                  className={`w-full ${
+                  className={`w-full text-sm sm:text-base py-2 sm:py-3 ${
                     plan.popular 
                       ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600' 
                       : ''
                   }`}
                 >
-                  {plan.buttonText}
+                  <span className="hidden sm:inline">
+                    {plan.trial ? `Start ${getTrialDays()}-Day Free Trial` : plan.buttonText}
+                  </span>
+                  <span className="sm:hidden">
+                    {plan.trial ? `${getTrialDays()}-Day Trial` : 'Get Started'}
+                  </span>
                 </Button>
                 
                 {/* Add PAYG benefits for pay-as-you-go plan */}
@@ -762,27 +701,28 @@ function PricingContent() {
         </div>
 
         {/* Feature Comparison Table */}
-        <div className="mt-20">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+        <div className="mt-12 sm:mt-16 lg:mt-20">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 px-4">
+            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent text-glow">
               Detailed Feature Comparison
             </span>
           </h2>
           
-          <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-800 overflow-hidden">
+          <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-800 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-800/50">
+              <table className="w-full min-w-[600px]">
+                <thead className="bg-black/20">
                   <tr>
-                    <th className="py-4 px-4 text-left text-gray-300 font-semibold">Feature</th>
+                    <th className="py-3 sm:py-5 px-3 sm:px-6 text-left text-gray-300 font-semibold text-xs sm:text-sm uppercase">Feature</th>
                     {pricingPlans.map((plan) => (
-                      <th key={plan.id} className="py-4 px-4 text-center text-gray-300 font-semibold min-w-[120px]">
-                        {plan.name}
+                      <th key={plan.id} className="py-3 sm:py-5 px-2 sm:px-6 text-center text-gray-300 font-semibold text-xs sm:text-sm uppercase min-w-[100px] sm:min-w-[140px]">
+                        <span className="hidden sm:inline">{plan.name}</span>
+                        <span className="sm:hidden">{plan.name.split(' ')[0]}</span>
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-gray-800">
                   <FeatureRow feature="basicContentTools" plans={pricingPlans} />
                   <FeatureRow feature="mediaLibrary" plans={pricingPlans} />
                   <FeatureRow feature="smartGallery" plans={pricingPlans} />
@@ -796,76 +736,80 @@ function PricingContent() {
                 </tbody>
               </table>
             </div>
+            <div className="p-3 sm:hidden bg-black/10 text-center">
+              <p className="text-xs text-gray-400">Scroll horizontally to see all plans</p>
+            </div>
           </div>
         </div>
 
         {/* FAQ Section */}
-        <div className="mt-20 text-center">
-          <h2 className="text-3xl font-bold mb-8">
+        <div className="mt-12 sm:mt-16 lg:mt-20 text-center px-4">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">
             <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
               Frequently Asked Questions
             </span>
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 max-w-5xl mx-auto">
             <Card className="bg-gray-900/50 backdrop-blur-sm border-gray-800 text-white">
-              <CardHeader>
-                <CardTitle className="text-lg">Can I upgrade or downgrade anytime?</CardTitle>
+              <CardHeader className="pb-3 sm:pb-4">
+                <CardTitle className="text-base sm:text-lg">Can I upgrade or downgrade anytime?</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-gray-300">Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately.</p>
+              <CardContent className="pt-0">
+                <p className="text-gray-300 text-sm sm:text-base">Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately.</p>
               </CardContent>
             </Card>
             
             <Card className="bg-gray-900/50 backdrop-blur-sm border-gray-800 text-white">
-              <CardHeader>
-                <CardTitle className="text-lg">What happens if I exceed my limits?</CardTitle>
+              <CardHeader className="pb-3 sm:pb-4">
+                <CardTitle className="text-base sm:text-lg">What happens if I exceed my limits?</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-gray-300">We'll notify you when you're approaching your limits and offer easy upgrade options.</p>
+              <CardContent className="pt-0">
+                <p className="text-gray-300 text-sm sm:text-base">We'll notify you when you're approaching your limits and offer easy upgrade options.</p>
               </CardContent>
             </Card>
             
             <Card className="bg-gray-900/50 backdrop-blur-sm border-gray-800 text-white">
-              <CardHeader>
-                <CardTitle className="text-lg">Is there a free trial?</CardTitle>
+              <CardHeader className="pb-3 sm:pb-4">
+                <CardTitle className="text-base sm:text-lg">Is there a free trial?</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-gray-300">Yes! All paid plans come with a 7-day free trial. No credit card required to start.</p>
+              <CardContent className="pt-0">
+                <p className="text-gray-300 text-sm sm:text-base">Yes! All paid plans come with a 7-day free trial. No credit card required to start.</p>
               </CardContent>
             </Card>
             
             <Card className="bg-gray-900/50 backdrop-blur-sm border-gray-800 text-white">
-              <CardHeader>
-                <CardTitle className="text-lg">Do you offer refunds?</CardTitle>
+              <CardHeader className="pb-3 sm:pb-4">
+                <CardTitle className="text-base sm:text-lg">Do you offer refunds?</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-gray-300">Yes, we offer a 30-day money-back guarantee for all paid plans. No questions asked.</p>
+              <CardContent className="pt-0">
+                <p className="text-gray-300 text-sm sm:text-base">Yes, we offer a 30-day money-back guarantee for all paid plans. No questions asked.</p>
               </CardContent>
             </Card>
           </div>
         </div>
 
         {/* Call to Action */}
-        <div className="mt-20 text-center">
-                      <Card className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 backdrop-blur-sm border-purple-500/30 text-white max-w-2xl mx-auto">
-            <CardHeader>
-              <CardTitle className="text-2xl">Ready to Transform Your Social Media?</CardTitle>
-              <CardDescription className="text-gray-300">
+        <div className="mt-12 sm:mt-16 lg:mt-20 text-center px-4">
+          <Card className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 backdrop-blur-sm border-purple-500/30 text-white max-w-3xl mx-auto">
+            <CardHeader className="pb-4 sm:pb-6">
+              <CardTitle className="text-xl sm:text-2xl px-2">Ready to Transform Your Social Media?</CardTitle>
+              <CardDescription className="text-gray-300 text-sm sm:text-base px-2">
                 Join thousands of creators and businesses already using Crow's Eye to supercharge their social media presence.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col sm:flex-row gap-4 justify-center">
+            <CardContent className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4 sm:px-6">
               <Button 
                 onClick={() => router.push('/auth/signup')}
-                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-sm sm:text-base py-2 sm:py-3"
               >
-                Start 7-Day Free Trial
+                <span className="hidden sm:inline">Start {getTrialDays()}-Day Free Trial</span>
+                <span className="sm:hidden">Start Free Trial</span>
               </Button>
               <Button 
                 onClick={() => router.push('/features')}
                 variant="outline"
-                className="border-purple-500 text-purple-300 hover:bg-purple-500/10"
+                className="border-purple-500 text-purple-300 hover:bg-purple-500/10 text-sm sm:text-base py-2 sm:py-3"
               >
                 Watch Demo
               </Button>
