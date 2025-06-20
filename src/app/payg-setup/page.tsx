@@ -9,19 +9,46 @@ import { CreditCard, Calculator, Check, ArrowRight } from 'lucide-react'
 import { PAYGUsageService } from '@/services/payg-usage'
 
 export default function PAYGSetupPage() {
-  const { user, userProfile, isAuthenticated } = useAuth()
+  const { user, userProfile, isAuthenticated, hasValidSubscription } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Debug environment variables
+  useEffect(() => {
+    console.log('🔍 PAYG Setup - Environment Check:', {
+      hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
+      nodeEnv: process.env.NODE_ENV,
+      allStripeKeys: Object.keys(process.env).filter(k => k.includes('STRIPE'))
+    })
+  }, [])
 
   // Redirect if not authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/auth/signin?redirect=/payg-setup')
+      return
     }
-  }, [isAuthenticated, router])
+
+    // Check if user already has a different subscription
+    if (userProfile && hasValidSubscription() && (userProfile.subscription_tier as string) !== 'payg') {
+      console.log('User already has a different subscription:', userProfile.subscription_tier)
+      return
+    }
+
+    // If user already has PAYG set up, redirect to dashboard
+    if (userProfile && (userProfile.subscription_tier as string) === 'payg' && userProfile.subscription_status === 'active') {
+      router.push('/marketing-tool')
+    }
+  }, [isAuthenticated, userProfile, hasValidSubscription, router])
 
   const handlePAYGSetup = async () => {
+    console.log('🚀 Starting PAYG setup:', {
+      hasUser: !!user,
+      userEmail: user?.email,
+      userUid: user?.uid
+    })
+    
     if (!user?.email) {
       setError('User email not found')
       return
@@ -34,15 +61,26 @@ export default function PAYGSetupPage() {
       const paygService = new PAYGUsageService()
       const result = await paygService.createPAYGAccount(user.email, user.uid)
       
+      console.log('✅ PAYG account creation result:', result)
+      
       if (result.url) {
         // Redirect to Stripe checkout
+        console.log('🔄 Redirecting to Stripe checkout:', result.url)
         window.location.href = result.url
       } else {
         setError('Failed to create checkout session')
       }
     } catch (error: any) {
-      console.error('PAYG setup error:', error)
-      setError(error.message || 'Failed to set up pay-as-you-go account')
+      console.error('❌ PAYG setup error:', error)
+      
+      // Provide more helpful error messages
+      if (error.message?.includes('not configured')) {
+        setError('Payment system is not configured. Please contact support or try again later.')
+      } else if (error.message?.includes('Unable to create')) {
+        setError('Unable to set up payment method. Please check your internet connection and try again.')
+      } else {
+        setError(error.message || 'Failed to set up pay-as-you-go account')
+      }
     } finally {
       setLoading(false)
     }
@@ -54,6 +92,69 @@ export default function PAYGSetupPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500 mx-auto"></div>
           <p className="text-gray-300 mt-4">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show notice if user already has a different subscription
+  if (userProfile && hasValidSubscription() && (userProfile.subscription_tier as string) !== 'payg') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 text-white">
+        <div className="container mx-auto px-4 py-20">
+          <div className="max-w-2xl mx-auto">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold mb-4">
+                <span className="bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+                  Subscription Notice
+                </span>
+              </h1>
+              <p className="text-xl text-gray-300">
+                You already have an active subscription
+              </p>
+            </div>
+
+            {/* Notice Card */}
+            <Card className="border-orange-500/30 bg-gradient-to-br from-orange-50 to-red-50">
+              <CardHeader className="text-center">
+                <div className="mx-auto mb-4 p-3 bg-orange-100 rounded-full w-fit">
+                  <CreditCard className="h-8 w-8 text-orange-600" />
+                </div>
+                <CardTitle className="text-2xl text-gray-900">Active {userProfile.subscription_tier?.toUpperCase()} Plan</CardTitle>
+                <CardDescription className="text-lg text-gray-700">
+                  You currently have an active {userProfile.subscription_tier} subscription
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="space-y-6">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h3 className="font-bold text-blue-800 mb-3">📋 Next Steps</h3>
+                  <div className="space-y-2 text-blue-700">
+                    <p>• To switch to Pay-as-you-Go, first manage your current subscription</p>
+                    <p>• Visit your account settings to view or modify your plan</p>
+                    <p>• Contact support if you need assistance with plan changes</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button 
+                    onClick={() => router.push('/account/subscription')}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Manage Subscription
+                  </Button>
+                  <Button 
+                    onClick={() => router.push('/marketing-tool')}
+                    variant="outline"
+                    className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    Go to Dashboard
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     )

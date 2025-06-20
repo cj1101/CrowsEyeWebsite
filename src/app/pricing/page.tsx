@@ -46,6 +46,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { useAuth } from '@/contexts/AuthContext'
 
 const pricingPlans = [
   {
@@ -297,6 +298,7 @@ const PAYGBenefits = ({ plan }: { plan: typeof pricingPlans[0] }) => {
 function PricingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { userProfile, isAuthenticated } = useAuth();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
@@ -349,12 +351,28 @@ function PricingContent() {
   };
 
   const handlePlanSelect = async (plan: typeof pricingPlans[0]) => {
+    console.log('🚀 Plan selection:', {
+      planType: plan.paymentType,
+      isAuthenticated,
+      hasUserProfile: !!userProfile,
+      userEmail: userProfile?.email,
+      promoApplied
+    })
+    
     if (promoApplied) {
       // If promo code is applied, redirect to signup with free access
       router.push(`/auth/signup?plan=${plan.paymentType}&promo=true`);
     } else if (plan.paymentType === 'payg') {
-      // For PAYG, redirect to signup with PAYG setup redirect
-      router.push('/auth/signup?plan=payg&redirect=/payg-setup');
+      // For PAYG, check if user is logged in first
+      if (isAuthenticated && userProfile) {
+        // User is logged in, skip terms and go directly to setup
+        console.log('✅ User is authenticated, skipping terms and going directly to PAYG setup')
+        router.push('/payg-setup');
+      } else {
+        // User not logged in, start with terms page
+        console.log('❌ User not authenticated, starting with terms page')
+        router.push('/payg-terms');
+      }
     } else {
       const url = billingPeriod === 'monthly' ? plan.monthlyUrl : plan.yearlyUrl;
       if (url) {
@@ -579,7 +597,7 @@ function PricingContent() {
                   <Button 
                     className="w-full text-lg py-4 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold shadow-lg" 
                     size="lg"
-                    onClick={() => router.push('/auth/signup?plan=payg')}
+                    onClick={() => handlePlanSelect(pricingPlans.find(p => p.id === 'payg')!)}
                   >
                     {isRequired ? '💳 Setup PAYG & Access Platform' : '🚀 Start Free with PAYG'}
                   </Button>

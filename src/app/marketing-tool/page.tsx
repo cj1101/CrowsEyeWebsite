@@ -374,39 +374,52 @@ const FeatureCard = ({ icon: Icon, title, description, available, upgradeText }:
 };
 
 export default function MarketingToolPage() {
-  const { user, userProfile, hasValidSubscription, requiresSubscription } = useAuth();
+  const { user, userProfile, hasValidSubscription, requiresSubscription, needsPAYGSetup } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
+    // If not authenticated, redirect to pricing page (consistent with dashboard)
+    if (!user) {
+      router.push('/pricing?required=true');
+      return;
+    }
+
+    // Wait for user profile to load
     if (!userProfile) {
-      router.push('/auth/signin');
       return;
     }
     
-    // Check if user needs PAYG setup specifically (using string comparison to avoid type issues)
-    if ((userProfile.subscription_tier as string) === 'payg' && userProfile.subscription_status !== 'active') {
+    // Don't redirect if user has a valid subscription or is Pro with lifetime
+    if (hasValidSubscription()) {
+      return; // User has valid access, let them use the tool
+    }
+    
+    // Check if user needs PAYG setup specifically
+    if (needsPAYGSetup()) {
       console.log('🔒 User needs PAYG setup, redirecting to PAYG setup page');
       router.push('/payg-setup');
       return;
     }
     
-    // Check if user needs to set up subscription
+    // Only redirect to pricing if user has no subscription at all
     if (requiresSubscription()) {
       console.log('🔒 User requires subscription setup, redirecting to pricing');
       router.push('/pricing?required=true');
       return;
     }
-  }, [userProfile, requiresSubscription, router]);
+  }, [user, userProfile, requiresSubscription, needsPAYGSetup, hasValidSubscription, router]);
 
   // Show loading while checking auth and subscription
-  if (!userProfile || requiresSubscription()) {
+  if (!user || !userProfile || (userProfile && !hasValidSubscription())) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-500 mx-auto"></div>
           <p className="text-gray-300 mt-4">
-            {!userProfile ? 'Checking authentication...' : 'Checking subscription status...'}
+            {!userProfile ? 'Checking authentication...' : 
+             needsPAYGSetup() ? 'Setting up pay-as-you-go...' : 
+             'Checking subscription status...'}
           </p>
         </div>
       </div>

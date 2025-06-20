@@ -58,17 +58,32 @@ import AnalyticsTab from '@/components/dashboard/AnalyticsTab';
 import ConnectionsTab from '@/components/dashboard/ConnectionsTab';
 
 export default function DashboardPage() {
-  const { user, userProfile, loading } = useAuth();
+  const { user, userProfile, loading, hasValidSubscription, requiresSubscription, needsPAYGSetup } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Redirect if not authenticated
+  // Enhanced authentication and subscription enforcement
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/auth/signin');
+    if (!loading) {
+      // If not authenticated, redirect to pricing page
+      if (!user) {
+        router.push('/pricing?required=true');
+        return;
+      }
+
+      // If authenticated but no valid subscription, redirect to pricing
+      if (user && userProfile && !hasValidSubscription()) {
+        // Special case: if user needs PAYG setup, send them to PAYG setup instead
+        if (needsPAYGSetup()) {
+          router.push('/payg-setup');
+        } else {
+          router.push('/pricing?required=true');
+        }
+        return;
+      }
     }
-  }, [user, loading, router]);
+  }, [user, userProfile, loading, hasValidSubscription, needsPAYGSetup, router]);
 
   if (loading) {
     return (
@@ -81,8 +96,16 @@ export default function DashboardPage() {
     );
   }
 
-  if (!user) {
-    return null;
+  // Show loading while redirecting
+  if (!user || (userProfile && !hasValidSubscription())) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
+          <p className="text-gray-300">Redirecting...</p>
+        </div>
+      </div>
+    );
   }
 
   const navigationItems = [

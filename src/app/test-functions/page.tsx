@@ -9,6 +9,7 @@ import { CrowsEyeAPI } from '@/services/api';
 import { AlertCircle, CheckCircle, Clock, XCircle, Wifi, WifiOff } from 'lucide-react';
 import AuthenticationTester from './auth-test';
 import ComprehensiveTestSuite from './comprehensive-test';
+import StripeConfigTest from './stripe-config-test';
 
 interface TestResult {
   name: string;
@@ -563,9 +564,10 @@ const API_INTEGRATION_TEST_PAGE = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="comprehensive">🚀 Comprehensive</TabsTrigger>
           <TabsTrigger value="auth">🔐 Auth Test</TabsTrigger>
+          <TabsTrigger value="stripe">💳 Stripe Config</TabsTrigger>
           <TabsTrigger value="all">All Tests</TabsTrigger>
           <TabsTrigger value="essential">Essential</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
@@ -577,6 +579,10 @@ const API_INTEGRATION_TEST_PAGE = () => {
 
         <TabsContent value="auth" className="mt-6">
           <AuthenticationTester />
+        </TabsContent>
+
+        <TabsContent value="stripe" className="mt-6">
+          <StripeConfigTest />
         </TabsContent>
 
         <TabsContent value="all" className="mt-6">
