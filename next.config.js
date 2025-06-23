@@ -15,12 +15,10 @@ const nextConfig = {
     // Enable server actions for better API route handling
     serverActions: {
       bodySizeLimit: '10mb'
-    },
-    // WebAssembly support (esmExternals has been removed as it's deprecated)
-    // asyncWebAssembly is handled in webpack config below
+    }
   },
   
-  // ESLint configuration for production builds
+  // Production build optimizations
   eslint: {
     // Allow builds to complete with warnings (for production deployment)
     ignoreDuringBuilds: true,
@@ -32,7 +30,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // Webpack configuration for WebAssembly FFmpeg
+  // Webpack configuration for WebAssembly FFmpeg and cross-platform compatibility
   webpack: (config, { isServer }) => {
     // Handle WebAssembly files
     config.experiments = {
@@ -41,15 +39,37 @@ const nextConfig = {
       layers: true,
     };
     
-    // Handle FFmpeg WebAssembly files
+    // Enhanced fallbacks for client-side builds
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
         path: false,
         crypto: false,
+        net: false,
+        tls: false,
+        stream: false,
+        url: false,
+        zlib: false,
+        http: false,
+        https: false,
+        assert: false,
+        os: false,
       };
     }
+    
+    // Exclude non-web directories
+    config.module.rules.push({
+      test: /\.(ts|tsx|js|jsx)$/,
+      exclude: [
+        /node_modules/,
+        /desktop_app/,
+        /crow_eye_api/,
+        /\.git/,
+        /functions/,
+        /scripts/,
+      ]
+    });
     
     // Handle .wasm files
     config.module.rules.push({
@@ -63,12 +83,18 @@ const nextConfig = {
   // Enable static file serving for large files
   staticPageGenerationTimeout: 300,
   
-  // Environment variables
+  // Environment variables - consolidated configuration
   env: {
     ENABLE_WEBASSEMBLY_FFMPEG: 'true',
     VIDEO_PROCESSING_TIMEOUT: '300000', // 5 minutes
     MAX_VIDEO_SIZE: '100000000', // 100MB
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com'
   },
+  
+  // Optimized settings
+  generateEtags: false,
+  poweredByHeader: false,
+  reactStrictMode: true,
 };
 
 module.exports = nextConfig; 
