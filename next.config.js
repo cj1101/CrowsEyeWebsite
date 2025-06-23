@@ -105,17 +105,27 @@ const nextConfig = {
   // Disable static optimization for dynamic content
   trailingSlash: false,
   
-  // Image optimization settings (if needed for thumbnails)
+  // Image optimization settings (updated to use remotePatterns instead of deprecated domains)
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: '**',
-      },
-      {
         protocol: 'http',
         hostname: 'localhost',
+        port: '',
+        pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'localhost',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+        port: '',
+        pathname: '/**',
+      }
     ],
     formats: ['image/webp', 'image/avif'],
   },
