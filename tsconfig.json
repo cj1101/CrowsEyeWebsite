@@ -5,7 +5,7 @@
     "lib": [
       "dom",
       "dom.iterable",
-      "esnext"
+      "ES6"
     ],
     "allowJs": true,
     "skipLibCheck": true,
@@ -23,6 +23,7 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
@@ -30,11 +31,10 @@
     }
   },
   "include": [
-    ".next/types/**/*.ts",
     "next-env.d.ts",
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "out/types/**/*.ts"
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
