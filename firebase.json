@@ -1,8 +1,12 @@
 {
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs18"
+  },
   "hosting": [
     {
       "site": "crows-eye",
-      "public": "out",
+      "public": "public",
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -10,14 +14,33 @@
       ],
       "rewrites": [
         {
+          "source": "/api/**",
+          "function": "nextjsFunc"
+        },
+        {
+          "source": "/_next/**",
+          "function": "nextjsFunc"
+        },
+        {
           "source": "**",
-          "destination": "/index.html"
+          "function": "nextjsFunc"
+        }
+      ],
+      "headers": [
+        {
+          "source": "**/*.@(jpg|jpeg|gif|png|svg|webp|js|css)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
         }
       ]
     },
     {
       "site": "crows-eye-website",
-      "public": "out",
+      "public": "public",
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -25,8 +48,27 @@
       ],
       "rewrites": [
         {
+          "source": "/api/**",
+          "function": "nextjsFunc"
+        },
+        {
+          "source": "/_next/**",
+          "function": "nextjsFunc"
+        },
+        {
           "source": "**",
-          "destination": "/index.html"
+          "function": "nextjsFunc"
+        }
+      ],
+      "headers": [
+        {
+          "source": "**/*.@(jpg|jpeg|gif|png|svg|webp|js|css)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
         }
       ]
     }
