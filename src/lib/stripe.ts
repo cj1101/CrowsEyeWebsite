@@ -178,21 +178,21 @@ export const USAGE_PRICING_CONFIG = {
   // Usage meters and simple flat pricing
   meters: {
     ai_credits: {
-      stripe_meter_id: process.env.STRIPE_AI_CREDITS_METER_ID || 'mtr_61Sl9eelYsOgIYgfj41GU2Wb0yZINWj2',
+      stripe_meter_id: process.env.STRIPE_AI_CREDITS_METER_ID || '',
       event_name: 'ai_credit_used',
       price_per_unit: 0.15, // $0.15 per AI credit
       display_name: 'AI Credits',
       unit: 'credit'
     },
     scheduled_posts: {
-      stripe_meter_id: process.env.STRIPE_POSTS_METER_ID || 'mtr_61Sl9gDxkiKC5UgsQ41GU2Wb0yZIN2MK',
+      stripe_meter_id: process.env.STRIPE_POSTS_METER_ID || '',
       event_name: 'post_scheduled',
       price_per_unit: 0.25, // $0.25 per scheduled post
       display_name: 'Scheduled Posts',
       unit: 'post'
     },
     storage_gb: {
-      stripe_meter_id: process.env.STRIPE_STORAGE_METER_ID || 'mtr_61Sl9gcwiovreXe7u41GU2Wb0yZINUuu',
+      stripe_meter_id: process.env.STRIPE_STORAGE_METER_ID || '',
       event_name: 'storage_used',
       price_per_unit: 2.99, // $2.99 per GB per month
       display_name: 'Storage',
