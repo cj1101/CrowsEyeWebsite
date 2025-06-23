@@ -63,9 +63,12 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  // Temporarily bypass authentication for production testing
+  const shouldBypassAuth = true; // TODO: Remove this after testing
+
   // Enhanced authentication and subscription enforcement
   useEffect(() => {
-    if (!loading) {
+    if (!shouldBypassAuth && !loading) {
       // If not authenticated, redirect to pricing page
       if (!user) {
         router.push('/pricing?required=true');
@@ -83,9 +86,9 @@ export default function DashboardPage() {
         return;
       }
     }
-  }, [user, userProfile, loading, hasValidSubscription, needsPAYGSetup, router]);
+  }, [shouldBypassAuth, user, userProfile, loading, hasValidSubscription, needsPAYGSetup, router]);
 
-  if (loading) {
+  if (!shouldBypassAuth && loading) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -97,7 +100,7 @@ export default function DashboardPage() {
   }
 
   // Show loading while redirecting
-  if (!user || (userProfile && !hasValidSubscription())) {
+  if (!shouldBypassAuth && (!user || (userProfile && !hasValidSubscription()))) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -179,7 +182,7 @@ export default function DashboardPage() {
             <div>
               <h1 className="text-xl font-bold text-white">Crow's Eye Dashboard</h1>
               <p className="text-sm text-gray-400">
-                Welcome back, {userProfile?.displayName || user.email?.split('@')[0]}
+                Welcome back, {userProfile?.displayName || user?.email?.split('@')[0] || 'Guest'}
               </p>
             </div>
           </div>
