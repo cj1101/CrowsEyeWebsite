@@ -1,29 +1,23 @@
 {
   "functions": {
     "source": "functions",
-    "runtime": "nodejs18"
+    "runtime": "nodejs20"
   },
   "hosting": [
     {
       "site": "crows-eye",
-      "public": "public",
+      "public": "out",
       "ignore": [
         "firebase.json",
         "**/.*",
         "**/node_modules/**"
       ],
+      "cleanUrls": true,
+      "trailingSlash": false,
       "rewrites": [
         {
           "source": "/api/**",
-          "function": "nextjsFunc"
-        },
-        {
-          "source": "/_next/**",
-          "function": "nextjsFunc"
-        },
-        {
-          "source": "**",
-          "function": "nextjsFunc"
+          "function": "nextjsFunc2"
         }
       ],
       "headers": [
@@ -40,24 +34,18 @@
     },
     {
       "site": "crows-eye-website",
-      "public": "public",
+      "public": "out",
       "ignore": [
         "firebase.json",
         "**/.*",
         "**/node_modules/**"
       ],
+      "cleanUrls": true,
+      "trailingSlash": false,
       "rewrites": [
         {
           "source": "/api/**",
-          "function": "nextjsFunc"
-        },
-        {
-          "source": "/_next/**",
-          "function": "nextjsFunc"
-        },
-        {
-          "source": "**",
-          "function": "nextjsFunc"
+          "function": "nextjsFunc2"
         }
       ],
       "headers": [
