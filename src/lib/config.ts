@@ -29,7 +29,7 @@ export const firebaseConfig = {
 
 // API Configuration
 export const apiConfig = {
-  baseUrl: getEnvVar('NEXT_PUBLIC_API_URL') || 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com',
+  baseUrl: getEnvVar('NEXT_PUBLIC_API_URL') || 'https://crows-eye-website.uc.r.appspot.com',
   timeout: 10000,
   retries: 3,
 };
