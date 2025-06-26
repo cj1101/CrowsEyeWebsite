@@ -2,7 +2,7 @@
   "hosting": [
     {
       "site": "crows-eye",
-      "public": "out",
+      "public": "public",
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -17,7 +17,7 @@
     },
     {
       "site": "crows-eye-website",
-      "public": "out",
+      "public": "public",
       "ignore": [
         "firebase.json",
         "**/.*",
