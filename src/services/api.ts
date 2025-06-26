@@ -1599,7 +1599,7 @@ export class CrowsEyeAPI {
   async updatePAYGCustomer(stripeCustomerId: string, subscriptionId?: string): Promise<AxiosResponse> {
     try {
       console.log('💳 Updating PAYG customer with API...');
-      return await this.api.post('/billing/update-payg-customer', {
+      return await this.api.post('/api/v1/billing/update-payg-customer', {
         stripeCustomerId,
         subscriptionId
       });
@@ -1612,7 +1612,7 @@ export class CrowsEyeAPI {
   async getSubscriptionStatus(): Promise<AxiosResponse> {
     try {
       console.log('📊 Getting subscription status from API...');
-      return await this.api.get('/billing/subscription-status');
+      return await this.api.get('/api/v1/billing/subscription-status');
     } catch (error) {
       console.error('❌ Get subscription status failed:', error);
       throw error;
@@ -1622,7 +1622,7 @@ export class CrowsEyeAPI {
   async createBillingPortalSession(): Promise<AxiosResponse> {
     try {
       console.log('🔗 Creating billing portal session...');
-      return await this.api.post('/billing/create-portal-session');
+      return await this.api.post('/api/v1/billing/create-portal-session');
     } catch (error) {
       console.error('❌ Create billing portal session failed:', error);
       throw error;
@@ -1632,7 +1632,7 @@ export class CrowsEyeAPI {
   async syncSubscriptionStatus(): Promise<AxiosResponse> {
     try {
       console.log('🔄 Syncing subscription status with Stripe...');
-      return await this.api.post('/billing/sync-subscription');
+      return await this.api.post('/api/v1/billing/sync-subscription');
     } catch (error) {
       console.error('❌ Sync subscription failed:', error);
       throw error;

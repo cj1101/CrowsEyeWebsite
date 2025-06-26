@@ -149,10 +149,20 @@ export default function CreatePostTab() {
   const [scheduleTime, setScheduleTime] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [useBranding, setUseBranding] = useState(true);
   const [aiTone, setAiTone] = useState<'professional' | 'casual' | 'engaging'>('casual');
   const [isPublishing, setIsPublishing] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const brandProfile = React.useMemo(() => {
+    try {
+      const stored = localStorage.getItem('crows_eye_brand_profile');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  }, []);
 
   const handlePlatformToggle = (platformId: string) => {
     setSelectedPlatforms(prev => prev.map(platform => {
@@ -216,15 +226,30 @@ export default function CreatePostTab() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       const suggestions = {
-        professional: "Elevating your brand with innovative solutions. Our latest project showcases cutting-edge technology and thoughtful design. #Innovation #Technology #Business",
-        casual: "Just dropped something amazing! 🚀 Can't wait for you all to see what we've been working on. This is going to be epic! #Excited #NewProject #TeamWork",
-        engaging: "Ready to be amazed? ✨ We've been cooking up something special and today's the day we share it with the world! What do you think? Drop your thoughts below! 👇 #Amazing #Community #Feedback"
-      };
+        professional: "Elevating your brand with innovative solutions. Our latest project showcases cutting-edge technology and thoughtful design.",
+        casual: "Just dropped something amazing! 🚀 Can't wait for you all to see what we've been working on. This is going to be epic!",
+        engaging: "Ready to be amazed? ✨ We've been cooking up something special and today's the day we share it with the world! What do you think? Drop your thoughts below! 👇"
+      } as Record<typeof aiTone, string>;
+      
+      // Inject brand context if enabled
+      if (useBranding && brandProfile) {
+        const brandIntro = brandProfile.tagline || brandProfile.description || brandProfile.name;
+        suggestions.professional = `${brandIntro ? brandIntro + ' – ' : ''}${suggestions.professional}`;
+        suggestions.casual = `${brandIntro ? brandIntro + ' – ' : ''}${suggestions.casual}`;
+        suggestions.engaging = `${brandIntro ? brandIntro + ' – ' : ''}${suggestions.engaging}`;
+      }
       
       setPostContent(suggestions[aiTone]);
       
       // Generate relevant hashtags
-      const aiHashtags = ['AI', 'Innovation', 'Creative', 'Digital', 'Tech'];
+      let aiHashtags = ['AI', 'Innovation', 'Creative', 'Digital', 'Tech'];
+      if (useBranding && brandProfile?.hashtags) {
+        const brandTags = brandProfile.hashtags
+          .split(',')
+          .map((t: string) => t.trim().replace(/^#?/, ''))
+          .filter(Boolean);
+        aiHashtags = [...new Set([...brandTags, ...aiHashtags])].slice(0, 10);
+      }
       setHashtags(aiHashtags);
       
     } catch (error) {
@@ -355,7 +380,16 @@ export default function CreatePostTab() {
                   <MessageSquare className="h-5 w-5 mr-2" />
                   Post Content
                 </CardTitle>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-4">
+                  {/* Branding toggle */}
+                  <label className="flex items-center gap-1 text-xs text-gray-300 select-none">
+                    <input
+                      type="checkbox"
+                      checked={useBranding}
+                      onChange={(e) => setUseBranding(e.target.checked)}
+                      className="form-checkbox h-4 w-4 text-blue-500 rounded bg-gray-700 border-gray-600 focus:ring-blue-500" />
+                    Use Brand Profile
+                  </label>
                   <select
                     value={aiTone}
                     onChange={(e) => setAiTone(e.target.value as any)}
