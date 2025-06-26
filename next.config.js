@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Generate static output suitable for Firebase Hosting
+  output: 'export',
   // Enable experimental features for WebAssembly FFmpeg
   experimental: {
     // Enable server actions for better API route handling
