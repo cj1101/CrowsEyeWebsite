@@ -2,33 +2,17 @@
   "hosting": [
     {
       "site": "crows-eye",
-      "public": "public",
-      "ignore": [
-        "firebase.json",
-        "**/.*",
-        "**/node_modules/**"
-      ],
-      "rewrites": [
-        {
-          "source": "**",
-          "destination": "/index.html"
-        }
-      ]
+      "source": ".",
+      "frameworksBackend": {
+        "region": "us-central1"
+      }
     },
     {
       "site": "crows-eye-website",
-      "public": "public",
-      "ignore": [
-        "firebase.json",
-        "**/.*",
-        "**/node_modules/**"
-      ],
-      "rewrites": [
-        {
-          "source": "**",
-          "destination": "/index.html"
-        }
-      ]
+      "source": ".",
+      "frameworksBackend": {
+        "region": "us-central1"
+      }
     }
   ]
 } 
