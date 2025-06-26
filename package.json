@@ -28,7 +28,7 @@
   "license": "MIT",
   "copyright": "Copyright © 2024 Crow's Eye Marketing Suite. All rights reserved.",
   "engines": {
-    "node": ">=20"
+    "node": "22"
   },
   "scripts": {
     "dev": "next dev",
