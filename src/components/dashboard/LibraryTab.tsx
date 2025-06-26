@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { useMediaLibrary, MediaItem } from '@/hooks/api/useMediaLibrary';
 import MediaUpload from '@/components/media/MediaUpload';
-import GooglePhotosBrowser from '@/components/google-photos/GooglePhotosBrowser';
 import { 
   PhotoIcon, 
   VideoCameraIcon, 
@@ -23,10 +22,12 @@ import {
   PlayIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 
 type DashboardMode = 'completed' | 'unedited';
 
 export default function LibraryTab() {
+  const router = useRouter();
   const { media, loading, uploadMedia, deleteMedia, processMedia, refetch } = useMediaLibrary();
   const [dashboardMode, setDashboardMode] = useState<DashboardMode>('unedited');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -34,8 +35,6 @@ export default function LibraryTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showProcessModal, setShowProcessModal] = useState(false);
-  const [showGooglePhotosBrowser, setShowGooglePhotosBrowser] = useState(false);
-  const [googlePhotosConnected, setGooglePhotosConnected] = useState(false);
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
 
@@ -44,33 +43,6 @@ export default function LibraryTab() {
     console.log('Media library updated:', media.length, 'items');
     console.log('Media items:', media);
   }, [media]);
-
-  // Check Google Photos connection status
-  React.useEffect(() => {
-    checkGooglePhotosConnection();
-  }, []);
-
-  const checkGooglePhotosConnection = async () => {
-    try {
-      // Check localStorage for connection status (demo implementation)
-      const isConnected = localStorage.getItem('googlePhotosConnected') === 'true';
-      const tokens = localStorage.getItem('googlePhotosTokens');
-      
-      if (isConnected && tokens) {
-        const tokenData = JSON.parse(tokens);
-        // Check if token is expired
-        if (tokenData.expires_at > Date.now()) {
-          setGooglePhotosConnected(true);
-          return;
-        }
-      }
-      
-      setGooglePhotosConnected(false);
-    } catch (error) {
-      console.error('Failed to check Google Photos connection:', error);
-      setGooglePhotosConnected(false);
-    }
-  };
 
   // Filter media based on dashboard mode
   const dashboardMedia = media.filter((item: MediaItem) => {
@@ -126,58 +98,7 @@ export default function LibraryTab() {
     }
   };
 
-  const handleGooglePhotosImport = async (items: any[]) => {
-    try {
-      console.log('Google Photos import completed:', items.length, 'items');
-      // Refresh the media library to show imported items
-      await refetch();
-    } catch (error) {
-      console.error('Failed to handle Google Photos import:', error);
-    }
-  };
-
-  const handleOpenGooglePhotos = async () => {
-    if (!googlePhotosConnected) {
-      // Start Google Photos connection process
-      try {
-        // Initiate OAuth flow
-        const response = await fetch('/api/google-photos/auth', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        const data = await response.json();
-        
-        if (data.authUrl) {
-          // Open OAuth URL in new window
-          const authWindow = window.open(
-            data.authUrl,
-            'googlePhotosAuth',
-            'width=500,height=600,scrollbars=yes,resizable=yes'
-          );
-          
-          // Listen for auth completion
-          const checkClosed = setInterval(() => {
-            if (authWindow?.closed) {
-              clearInterval(checkClosed);
-              // Recheck connection status
-              checkGooglePhotosConnection();
-            }
-          }, 1000);
-        } else {
-          console.error('Failed to get auth URL');
-          alert('Failed to initiate Google Photos connection. Please try again.');
-        }
-      } catch (error) {
-        console.error('Google Photos connection error:', error);
-        alert('Failed to connect to Google Photos. Please try again.');
-      }
-    } else {
-      setShowGooglePhotosBrowser(true);
-    }
-  };
+    // Google Photos functionality has been discontinued
 
   const toggleSelection = (id: string) => {
     setSelectedItems(prev => 
@@ -219,13 +140,30 @@ export default function LibraryTab() {
               }}
             />
           </>
+        ) : (item.type === 'video' || item.subtype === 'reel' || item.subtype === 'short') && item.thumbnail ? (
+          <>
+            <img 
+              src={item.thumbnail}
+              alt={item.name}
+              className="w-full h-full object-cover"
+              loading="lazy"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/images/video-thumb.jpg';
+              }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="bg-black/60 backdrop-blur-sm rounded-full p-3">
+                <PlayIcon className="h-6 w-6 text-white" />
+              </div>
+            </div>
+          </>
         ) : item.type === 'video' && item.url ? (
           <>
             <video 
               src={item.url}
               className="w-full h-full object-cover"
               muted
-              preload="metadata"
+              preload="none"
               onError={(e) => {
                 console.error('Video preview error:', e);
               }}
@@ -473,24 +411,53 @@ export default function LibraryTab() {
             </button>
           </div>
 
-          {/* Upload Button */}
+          {/* Upload Media Button */}
           <Button
             onClick={() => setShowUploadModal(true)}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white flex items-center gap-2 px-4 py-3"
+            title="Upload Media"
           >
-            <PlusIcon className="h-4 w-4 mr-2" />
+            <PlusIcon className="h-5 w-5" />
             Upload Media
           </Button>
 
-          {/* Google Photos Button */}
-          <Button
-            onClick={handleOpenGooglePhotos}
-            variant="outline"
-            className="border-blue-500 text-blue-400 hover:bg-blue-500/10"
-          >
-            <PhotoIcon className="h-4 w-4 mr-2" />
-            {googlePhotosConnected ? 'Browse Google Photos' : 'Connect Google Photos'}
-          </Button>
+          {/* Action Button Grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              onClick={() => router.push('/ai-tools/photo-generation')}
+              className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white flex items-center gap-2 px-4 py-3 min-w-[150px]"
+              title="Generate Photo"
+            >
+              <SparklesIcon className="h-4 w-4" />
+              Generate Photo
+            </Button>
+            <Button
+              onClick={() => router.push('/ai-tools/video-generation')}
+              className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white flex items-center gap-2 px-4 py-3 min-w-[150px]"
+              title="Generate Video"
+            >
+              <VideoCameraIcon className="h-4 w-4" />
+              Generate Video
+            </Button>
+            <Button
+              onClick={() => router.push('/ai-tools/photo-editor')}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white flex items-center gap-2 px-4 py-3 min-w-[150px]"
+              title="Image Editing"
+            >
+              <PencilIcon className="h-4 w-4" />
+              Image Editing
+            </Button>
+            <Button
+              onClick={() => router.push('/ai-tools/video-processing')}
+              className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white flex items-center gap-2 px-4 py-3 min-w-[150px]"
+              title="Video Processing"
+            >
+              <FilmIcon className="h-4 w-4" />
+              Video Processing
+            </Button>
+          </div>
+
+          {/* Google Photos functionality has been discontinued */}
         </div>
       </div>
 
@@ -524,14 +491,7 @@ export default function LibraryTab() {
                   <PlusIcon className="h-4 w-4 mr-2" />
                   Upload Media
                 </Button>
-                <Button
-                  onClick={handleOpenGooglePhotos}
-                  variant="outline"
-                  className="border-blue-500 text-blue-400 hover:bg-blue-500/10"
-                >
-                  <PhotoIcon className="h-4 w-4 mr-2" />
-                  Import from Google Photos
-                </Button>
+                {/* Google Photos functionality has been discontinued */}
               </div>
             </div>
           </div>
@@ -649,13 +609,6 @@ export default function LibraryTab() {
           </div>
         </div>
       )}
-
-      {/* Google Photos Browser */}
-      <GooglePhotosBrowser
-        isOpen={showGooglePhotosBrowser}
-        onClose={() => setShowGooglePhotosBrowser(false)}
-        onImportComplete={handleGooglePhotosImport}
-      />
 
       {/* Media View Modal */}
       {showMediaModal && selectedMedia && (

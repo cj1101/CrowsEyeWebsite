@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import LibraryTab from '@/components/dashboard/LibraryTab';
+import { Button } from '@/components/ui/button';
 import CreatePostTab from '@/components/dashboard/CreatePostTab';
 import SchedulingTab from '@/components/dashboard/SchedulingTab';
 import ToolsTab from '@/components/dashboard/ToolsTab';
@@ -15,7 +15,6 @@ import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import ComplianceDashboard from '@/components/compliance/ComplianceDashboard';
 import AccountManagementDashboard from '@/components/compliance/AccountManagementDashboard';
-import GooglePhotosIntegration from '@/components/google-photos/GooglePhotosIntegration';
 import VideoProcessingHub from '@/components/video-processing/VideoProcessingHub';
 import { 
   CpuChipIcon,
@@ -206,7 +205,7 @@ export default function MarketingToolDashboard() {
       {/* Main Dashboard Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8 bg-gray-800/50 backdrop-blur-sm">
+          <TabsList className="grid w-full grid-cols-7 bg-gray-800/50 backdrop-blur-sm">
             <TabsTrigger 
               value="overview" 
               className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
@@ -218,12 +217,6 @@ export default function MarketingToolDashboard() {
               className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
             >
               Media Library
-            </TabsTrigger>
-            <TabsTrigger 
-              value="google-photos" 
-              className="text-gray-300 data-[state=active]:text-white data-[state=active]:bg-blue-600/50"
-            >
-              Google Photos
             </TabsTrigger>
             <TabsTrigger 
               value="video-processing" 
@@ -262,16 +255,77 @@ export default function MarketingToolDashboard() {
           </TabsContent>
 
           <TabsContent value="library" className="space-y-6">
-            <LibraryTab />
-          </TabsContent>
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Media Tools</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Access powerful AI-driven media creation and editing tools
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Photo Generation */}
+                  <Button
+                    onClick={() => router.push('/ai-tools/photo-generation')}
+                    className="h-24 bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-200 hover:scale-105"
+                  >
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="p-3 rounded-full bg-purple-500/20">
+                        <svg className="h-8 w-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-white">Photo Generation</span>
+                    </div>
+                  </Button>
 
-          <TabsContent value="google-photos" className="space-y-6">
-            <GooglePhotosIntegration 
-              onMediaImported={(mediaItems) => {
-                console.log('Media imported from Google Photos:', mediaItems);
-                // Optionally refresh the media library or show success message
-              }}
-            />
+                  {/* Video Generation */}
+                  <Button
+                    onClick={() => router.push('/ai-tools/video-generation')}
+                    className="h-24 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30 hover:border-blue-400/50 transition-all duration-200 hover:scale-105"
+                  >
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="p-3 rounded-full bg-blue-500/20">
+                        <svg className="h-8 w-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-white">Video Generation</span>
+                    </div>
+                  </Button>
+
+                  {/* Edit Photo */}
+                  <Button
+                    onClick={() => router.push('/ai-tools/photo-editor')}
+                    className="h-24 bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30 hover:border-green-400/50 transition-all duration-200 hover:scale-105"
+                  >
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="p-3 rounded-full bg-green-500/20">
+                        <svg className="h-8 w-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-white">Edit Photo</span>
+                    </div>
+                  </Button>
+
+                  {/* Video Processing Suite */}
+                  <Button
+                    onClick={() => router.push('/ai-tools/video-processing')}
+                    className="h-24 bg-gradient-to-br from-orange-500/20 to-red-500/20 border border-orange-500/30 hover:border-orange-400/50 transition-all duration-200 hover:scale-105"
+                  >
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="p-3 rounded-full bg-orange-500/20">
+                        <svg className="h-8 w-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-white">Video Processing Suite</span>
+                    </div>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="video-processing" className="space-y-6">

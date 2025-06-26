@@ -52,71 +52,10 @@ export function useMediaLibrary() {
         isProcessed: upload.isProcessed || false
       }));
 
-      // Fallback to mock data for demo purposes
-      const mockMedia: MediaItem[] = [
-        {
-          id: '1',
-          name: 'product-hero.jpg',
-          type: 'image',
-          url: '/images/placeholder-image.jpg',
-          size: 245760,
-          createdAt: '2024-01-15T10:30:00Z',
-          tags: ['product', 'hero', 'marketing'],
-          platforms: ['instagram', 'facebook'],
-          dimensions: { width: 1920, height: 1080 }
-        },
-        {
-          id: '2',
-          name: 'demo-video.mp4',
-          type: 'video',
-          url: '/videos/placeholder-video.mp4',
-          thumbnail: '/images/video-thumb.jpg',
-          size: 15728640,
-          createdAt: '2024-01-14T14:20:00Z',
-          tags: ['demo', 'tutorial', 'video'],
-          platforms: ['youtube', 'tiktok'],
-          dimensions: { width: 1920, height: 1080 },
-          duration: 120
-        },
-        {
-          id: '3',
-          name: 'background-music.mp3',
-          type: 'audio',
-          url: '/audio/placeholder-audio.mp3',
-          size: 3145728,
-          createdAt: '2024-01-13T09:15:00Z',
-          tags: ['music', 'background', 'audio'],
-          platforms: ['instagram', 'youtube'],
-          duration: 180
-        },
-        {
-          id: '4',
-          name: 'social-campaign.png',
-          type: 'image',
-          url: '/images/placeholder-image.jpg',
-          size: 189440,
-          createdAt: '2024-01-12T16:45:00Z',
-          tags: ['social', 'campaign', 'design'],
-          platforms: ['instagram', 'facebook', 'twitter'],
-          dimensions: { width: 1080, height: 1080 }
-        },
-        {
-          id: '5',
-          name: 'podcast-intro.mp3',
-          type: 'audio',
-          url: '/audio/placeholder-audio.mp3',
-          size: 2097152,
-          createdAt: '2024-01-11T11:30:00Z',
-          tags: ['podcast', 'intro', 'audio'],
-          platforms: ['youtube', 'spotify'],
-          duration: 30
-        }
-      ];
-      
-      // Combine local uploads with mock data, with local uploads first
-      const combinedMedia = [...localMedia, ...mockMedia];
+      // Combine only local uploads; remove demo/mock media
+      const combinedMedia = [...localMedia];
       setMedia(combinedMedia);
-      console.log('Loaded media library with', localMedia.length, 'local uploads and', mockMedia.length, 'mock items');
+      console.log('Loaded media library with', localMedia.length, 'local uploads');
     } catch (err) {
       console.error('Error fetching media:', err);
       setError('Failed to load media library');
