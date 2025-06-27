@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -8,6 +8,7 @@ import { ArrowLeftIcon, SparklesIcon } from '@heroicons/react/24/outline';
 
 export default function PhotoGenerationPage() {
   const router = useRouter();
+  const [useBranding, setUseBranding] = useState(true);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
@@ -33,6 +34,16 @@ export default function PhotoGenerationPage() {
 
         {/* Main Content */}
         <Card className="bg-gray-800/50 border-gray-700">
+          <div className="flex items-center justify-end p-4">
+            <label className="flex items-center gap-1 text-xs text-gray-300 select-none">
+              <input
+                type="checkbox"
+                checked={useBranding}
+                onChange={(e) => setUseBranding(e.target.checked)}
+                className="form-checkbox h-4 w-4 text-blue-500 rounded bg-gray-700 border-gray-600 focus:ring-blue-500" />
+              Use Brand Profile
+            </label>
+          </div>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">
               <SparklesIcon className="h-6 w-6 text-purple-400" />

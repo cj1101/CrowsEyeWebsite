@@ -27,11 +27,25 @@ interface HighlightData {
     endTime: number;
     description: string;
     confidence: number;
+    score: number;
   }>;
   metadata: {
-    originalDuration: number;
-    compressionRatio: number;
-    keyMoments: string[];
+    originalDuration?: number;
+    compressionRatio?: number;
+    keyMoments?: string[];
+    processing_time_ms?: number;
+    ai_calls_made?: number;
+    estimated_cost?: number;
+    compression_ratio?: number;
+    confidence_score?: number;
+    algorithm_stages?: Array<{
+      name: string;
+      cost: number;
+      segments: any[];
+    }>;
+    fallback_used?: boolean;
+    style_applied?: string;
+    cost_optimized?: boolean;
   };
 }
 
@@ -46,7 +60,9 @@ export default function HighlightGenerator({ mediaId, onGenerated }: HighlightGe
     style: 'dynamic',
     includeCaptions: true,
     musicTrack: 'auto',
-    transitionStyle: 'smooth'
+    transitionStyle: 'smooth',
+    costOptimize: true,
+    maxCost: 1.0
   });
   const [showSettings, setShowSettings] = useState(false);
 
@@ -61,7 +77,7 @@ export default function HighlightGenerator({ mediaId, onGenerated }: HighlightGe
 
     setIsGenerating(true);
     try {
-      // Updated to match backend API exactly
+      // Updated to use advanced multi-stage algorithm
       const response = await apiService.generateHighlights({
         media_ids: [parseInt(selectedMedia)],
         duration: settings.duration,
@@ -70,7 +86,9 @@ export default function HighlightGenerator({ mediaId, onGenerated }: HighlightGe
         include_text: settings.includeCaptions,
         include_music: settings.musicTrack !== 'none',
         context_padding: 2.0,
-        content_instructions: 'Create an engaging highlight reel'
+        content_instructions: 'Create an engaging highlight reel',
+        cost_optimize: settings.costOptimize,
+        max_cost: settings.maxCost
       });
       
       const highlightData = response.data;
@@ -78,7 +96,7 @@ export default function HighlightGenerator({ mediaId, onGenerated }: HighlightGe
         id: highlightData.highlight_url,
         videoUrl: highlightData.highlight_url,
         duration: highlightData.duration,
-        highlights: [],
+        highlights: highlightData.segments || [],
         metadata: highlightData.generation_metadata || {}
       });
       
@@ -87,7 +105,7 @@ export default function HighlightGenerator({ mediaId, onGenerated }: HighlightGe
           id: highlightData.highlight_url,
           videoUrl: highlightData.highlight_url,
           duration: highlightData.duration,
-          highlights: [],
+          highlights: highlightData.segments || [],
           metadata: highlightData.generation_metadata || {}
         });
       }
@@ -273,6 +291,40 @@ export default function HighlightGenerator({ mediaId, onGenerated }: HighlightGe
                       Include captions
                     </label>
                   </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="costOptimize"
+                      checked={settings.costOptimize}
+                      onChange={(e) => setSettings(prev => ({ ...prev, costOptimize: e.target.checked }))}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label htmlFor="costOptimize" className="text-sm text-gray-700 dark:text-gray-300">
+                      Cost optimization
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Max Cost Budget ($)
+                    </label>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="5.0"
+                      step="0.1"
+                      value={settings.maxCost}
+                      onChange={(e) => setSettings(prev => ({ ...prev, maxCost: parseFloat(e.target.value) }))}
+                      className="w-full"
+                      disabled={!settings.costOptimize}
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <span>$0.10</span>
+                      <span>${settings.maxCost.toFixed(2)}</span>
+                      <span>$5.00</span>
+                    </div>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -344,26 +396,97 @@ export default function HighlightGenerator({ mediaId, onGenerated }: HighlightGe
                 <span>Duration: {generatedHighlight.duration}s</span>
               </div>
               <div className="text-gray-600 dark:text-gray-400">
-                Compression: {(generatedHighlight.metadata.compressionRatio * 100).toFixed(1)}%
+                Compression: {((generatedHighlight.metadata.compression_ratio || generatedHighlight.metadata.compressionRatio || 0) * 100).toFixed(1)}%
               </div>
               <div className="text-gray-600 dark:text-gray-400">
                 Highlights: {generatedHighlight.highlights.length} segments
               </div>
             </div>
 
-            {generatedHighlight.metadata.keyMoments.length > 0 && (
-              <div className="mt-4">
-                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Key Moments:</h4>
-                <div className="flex flex-wrap gap-2">
-                  {generatedHighlight.metadata.keyMoments.map((moment, index) => (
-                    <span
-                      key={index}
-                      className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full text-xs"
-                    >
-                      {moment}
-                    </span>
-                  ))}
+            {/* Enhanced Algorithm Analysis Display */}
+            {generatedHighlight.metadata && (
+              <div className="mt-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Analysis Summary</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Processing Time:</span>
+                        <span className="font-medium">{generatedHighlight.metadata.processing_time_ms}ms</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">AI Calls Made:</span>
+                        <span className="font-medium">{generatedHighlight.metadata.ai_calls_made}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Estimated Cost:</span>
+                        <span className="font-medium text-green-600 dark:text-green-400">
+                          ${generatedHighlight.metadata.estimated_cost?.toFixed(3)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600 dark:text-gray-400">Confidence Score:</span>
+                        <span className="font-medium">
+                          {((generatedHighlight.metadata.confidence_score || 0) * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Algorithm Stages</h4>
+                    <div className="space-y-2">
+                      {generatedHighlight.metadata.algorithm_stages?.map((stage, index) => (
+                        <div key={index} className="flex items-center justify-between text-sm">
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-2 h-2 rounded-full ${
+                              stage.cost === 0 ? 'bg-green-500' : 'bg-blue-500'
+                            }`}></div>
+                            <span className="text-gray-700 dark:text-gray-300">{stage.name}</span>
+                          </div>
+                          <span className="text-gray-500 dark:text-gray-400">
+                            {stage.cost === 0 ? 'Free' : `$${stage.cost.toFixed(3)}`}
+                          </span>
+                        </div>
+                      ))}
+                      {generatedHighlight.metadata.fallback_used && (
+                        <div className="mt-2 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded text-xs">
+                          Emergency fallback used - guaranteed result
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
+
+                {/* Segment Analysis */}
+                {generatedHighlight.highlights.length > 0 && (
+                  <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Detected Segments</h4>
+                    <div className="space-y-2">
+                      {generatedHighlight.highlights.map((segment, index) => (
+                        <div key={index} className="flex items-center justify-between text-sm border-b border-gray-200 dark:border-gray-600 pb-2">
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900 dark:text-gray-100">
+                              Segment {index + 1}: {segment.startTime}s - {segment.endTime}s
+                            </div>
+                            <div className="text-gray-600 dark:text-gray-400 text-xs mt-1">
+                              {segment.description}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Score: {(segment.score * 100).toFixed(0)}%
+                            </span>
+                            <div className={`w-2 h-2 rounded-full ${
+                              segment.confidence > 0.8 ? 'bg-green-500' :
+                              segment.confidence > 0.6 ? 'bg-yellow-500' : 'bg-red-500'
+                            }`}></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </motion.div>

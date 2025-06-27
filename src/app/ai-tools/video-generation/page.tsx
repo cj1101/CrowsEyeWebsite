@@ -8,8 +8,7 @@ import {
   Play, 
   Download, 
   RefreshCw, 
-  Copy, 
-  Check,
+  Copy,
   Sparkles,
   Video,
   ArrowLeft,
@@ -48,8 +47,8 @@ import {
   Globe,
   Monitor
 } from 'lucide-react';
-import { useMediaLibrary } from '@/hooks/api/useMediaLibrary';
 import { useRouter } from 'next/navigation';
+import { useMediaStore } from '@/stores/mediaStore';
 
 export default function VideoGenerationPage() {
   const [prompt, setPrompt] = useState('');
@@ -59,11 +58,11 @@ export default function VideoGenerationPage() {
   const [generatedVideo, setGeneratedVideo] = useState<any>(null);
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [useBranding, setUseBranding] = useState(true);
 
   // Use the media library hook and router
-  const { addGeneratedMedia } = useMediaLibrary();
   const router = useRouter();
+  const { addFiles } = useMediaStore();
 
   // Video Marketing Preset Prompts
   const videoPresets = [
@@ -269,7 +268,6 @@ export default function VideoGenerationPage() {
     setIsGenerating(true);
     setError('');
     setGeneratedVideo(null);
-    setSaved(false);
 
     try {
       // Convert duration string to seconds for API
@@ -384,13 +382,19 @@ export default function VideoGenerationPage() {
 
     setIsSaving(true);
     try {
-      const filename = `ai-generated-video-${Date.now()}.mp4`;
-      
-      // Add to media library
-      await addGeneratedMedia(generatedVideo.videoUrl, filename, 'video');
-      
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      const id = `media_${Date.now()}`;
+      addFiles([{
+        id,
+        name: `ai-generated-video-${Date.now()}.mp4`,
+        type: 'video',
+        url: generatedVideo.videoUrl,
+        size: 0,
+        uploadedAt: new Date(),
+        tags: [],
+        aiGenerated: true,
+      }]);
+
+      router.push('/content-hub');
     } catch (error) {
       console.error('Error saving to library:', error);
       setError('Failed to save to media library');
@@ -487,6 +491,18 @@ export default function VideoGenerationPage() {
                 <CardDescription>Describe the video you want to create or customize a template</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Branding Toggle */}
+                <div className="flex items-center justify-between mb-2">
+                  <label className="flex items-center gap-1 text-xs text-gray-300 select-none">
+                    <input
+                      type="checkbox"
+                      checked={useBranding}
+                      onChange={(e) => setUseBranding(e.target.checked)}
+                      className="form-checkbox h-4 w-4 text-pink-500 rounded bg-gray-700 border-gray-600 focus:ring-pink-500" />
+                    Use Brand Profile
+                  </label>
+                </div>
+
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
@@ -668,16 +684,14 @@ export default function VideoGenerationPage() {
                         onClick={handleSaveToLibrary}
                         disabled={isSaving}
                         variant="outline"
-                        className="border-gray-600"
+                        className="border-blue-600"
                       >
                         {isSaving ? (
                           <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        ) : saved ? (
-                          <Check className="h-4 w-4 mr-2" />
                         ) : (
                           <Save className="h-4 w-4 mr-2" />
                         )}
-                        {saved ? 'Saved!' : 'Save to Library'}
+                        Add to Library
                       </Button>
 
                       <Button

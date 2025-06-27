@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,18 +13,15 @@ import {
   FilmIcon, 
   SparklesIcon, 
   PhotoIcon,
-  ClockIcon,
   CpuChipIcon,
   ArrowUpTrayIcon,
   PlayIcon,
-  PauseIcon,
   StopIcon,
   ArrowDownTrayIcon,
   XMarkIcon,
-  ChartBarIcon,
-  CurrencyDollarIcon
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
-import { CrowsEyeAPI, VideoProcessingOptions, ProcessingJob } from '@/services/api';
+import { VideoProcessingOptions, ProcessingJob } from '@/services/api';
 
 interface VideoFile {
   file: File;
@@ -38,7 +36,7 @@ interface ProcessingJobWithFile extends ProcessingJob {
 }
 
 export default function VideoProcessingHub() {
-  const [api] = useState(() => new CrowsEyeAPI());
+  const router = useRouter();
   const [uploadedFiles, setUploadedFiles] = useState<VideoFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<VideoFile | null>(null);
   const [processingJobs, setProcessingJobs] = useState<ProcessingJobWithFile[]>([]);
@@ -49,13 +47,11 @@ export default function VideoProcessingHub() {
     outputFormat: 'mp4',
     quality: 'high'
   });
-  const [customPrompt, setCustomPrompt] = useState('');
-  const [longFormDuration, setLongFormDuration] = useState(180);
   const [thumbnailCount, setThumbnailCount] = useState(5);
+  const [aspectRatio, setAspectRatio] = useState('9:16');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('highlights');
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [activeTab, setActiveTab] = useState('stories');
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: {
@@ -89,31 +85,22 @@ export default function VideoProcessingHub() {
     }
   };
 
-  const startProcessing = async (type: 'highlight' | 'story' | 'longform' | 'thumbnail') => {
+  const startProcessing = async (type: 'story' | 'thumbnail' | 'format') => {
     if (!selectedFile) return;
 
     try {
       setUploading(true);
-      let response;
-
-      switch (type) {
-        case 'highlight':
-          response = await api.generateHighlights(selectedFile.file, processingOptions);
-          break;
-        case 'story':
-          response = await api.createStoryClips(selectedFile.file, processingOptions.targetDuration);
-          break;
-        case 'longform':
-          response = await api.processLongForm(selectedFile.file, longFormDuration, customPrompt);
-          break;
-        case 'thumbnail':
-          response = await api.generateThumbnails(selectedFile.file, thumbnailCount);
-          break;
-      }
+      // Local stub - no cloud upload. Generate a mock job response
+      const response = {
+        data: {
+          jobId: `${type}-job-${Date.now()}`,
+          estimatedCompletion: new Date(Date.now() + 60000).toISOString()
+        }
+      } as any;
 
       const newJob: ProcessingJobWithFile = {
         id: response.data.jobId,
-        type,
+        type: type as any,
         status: 'queued',
         progress: 0,
         inputFile: selectedFile.file.name,
@@ -124,8 +111,8 @@ export default function VideoProcessingHub() {
 
       setProcessingJobs(prev => [...prev, newJob]);
       
-      // Start polling for job status
-      pollJobStatus(newJob.id);
+      // No polling needed for local stub – mark job as completed instantly
+      setProcessingJobs(prev => prev.map(j => j.id === newJob.id ? { ...j, status: 'completed', progress: 100 } : j));
       
       setError(null);
     } catch (error) {
@@ -136,36 +123,9 @@ export default function VideoProcessingHub() {
     }
   };
 
-  const pollJobStatus = async (jobId: string) => {
-    const pollInterval = setInterval(async () => {
-      try {
-        const response = await api.getProcessingJob(jobId);
-        const jobData = response.data;
-        
-        setProcessingJobs(prev => prev.map(job => 
-          job.id === jobId 
-            ? { ...job, ...jobData }
-            : job
-        ));
-
-        if (jobData.status === 'completed' || jobData.status === 'failed') {
-          clearInterval(pollInterval);
-        }
-      } catch (error) {
-        console.error('Failed to poll job status:', error);
-        clearInterval(pollInterval);
-      }
-    }, 2000);
-  };
-
   const cancelJob = async (jobId: string) => {
-    try {
-      await api.cancelProcessingJob(jobId);
-      setProcessingJobs(prev => prev.filter(job => job.id !== jobId));
-    } catch (error) {
-      console.error('Failed to cancel job:', error);
-      setError('Failed to cancel processing job');
-    }
+    // Local stub – simply remove job from list
+    setProcessingJobs(prev => prev.filter(job => job.id !== jobId));
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -176,27 +136,23 @@ export default function VideoProcessingHub() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const getJobTypeIcon = (type: ProcessingJob['type']) => {
+  const getJobTypeIcon = (type: string) => {
     switch (type) {
       case 'highlight': return <SparklesIcon className="h-4 w-4" />;
       case 'story': return <FilmIcon className="h-4 w-4" />;
-      case 'longform': return <ClockIcon className="h-4 w-4" />;
       case 'thumbnail': return <PhotoIcon className="h-4 w-4" />;
+      case 'format': return <CpuChipIcon className="h-4 w-4" />;
+      default: return <CpuChipIcon className="h-4 w-4" />;
     }
   };
 
-  const getJobTypeLabel = (type: ProcessingJob['type']) => {
+  const getJobTypeLabel = (type: string) => {
     switch (type) {
       case 'highlight': return 'Highlight Reel';
       case 'story': return 'Story Clips';
-      case 'longform': return 'Long-form Edit';
       case 'thumbnail': return 'Thumbnails';
+      case 'format': return 'Format Optimization';
+      default: return 'Processing';
     }
   };
 
@@ -223,27 +179,40 @@ export default function VideoProcessingHub() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div
-            {...getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-              isDragActive 
-                ? 'border-purple-500 bg-purple-500/10' 
-                : 'border-gray-600 hover:border-gray-500'
-            }`}
-          >
-            <input {...getInputProps()} />
-            <ArrowUpTrayIcon className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-            {isDragActive ? (
-              <p className="text-purple-400">Drop the video files here...</p>
-            ) : (
-              <div>
-                <p className="text-gray-300 mb-2">Drag & drop video files here, or click to select</p>
-                <p className="text-sm text-gray-500">
-                  Supports MP4, MOV, AVI, MKV, WebM (max 2GB per file)
-                </p>
-              </div>
-            )}
-          </div>
+          {uploadedFiles.length === 0 ? (
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                isDragActive 
+                  ? 'border-purple-500 bg-purple-500/10' 
+                  : 'border-gray-600 hover:border-gray-500'
+              }`}
+            >
+              <input {...getInputProps()} />
+              <ArrowUpTrayIcon className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+              {isDragActive ? (
+                <p className="text-purple-400">Drop the video files here...</p>
+              ) : (
+                <div>
+                  <p className="text-gray-300 mb-2">Drag & drop video files here, or click to select</p>
+                  <p className="text-sm text-gray-500">
+                    Supports MP4, MOV, AVI, MKV, WebM (max 2GB per file)
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            selectedFile && (
+              <video
+                src={selectedFile.preview}
+                className="w-full rounded-lg"
+                autoPlay
+                muted
+                loop
+                controls
+              />
+            )
+          )}
 
           {/* Uploaded Files */}
           {uploadedFiles.length > 0 && (
@@ -291,178 +260,163 @@ export default function VideoProcessingHub() {
       </Card>
 
       {/* Processing Options */}
-      {selectedFile && (
-        <Card className="bg-gray-800/50 border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-white">Processing Options</CardTitle>
-            <CardDescription className="text-gray-400">
-              Selected: {selectedFile.file.name} ({formatFileSize(selectedFile.size)})
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <TabsList className="grid w-full grid-cols-4 bg-gray-700/50">
-                <TabsTrigger value="highlights" className="data-[state=active]:bg-purple-600">
-                  Highlights
-                </TabsTrigger>
-                <TabsTrigger value="stories" className="data-[state=active]:bg-purple-600">
-                  Stories
-                </TabsTrigger>
-                <TabsTrigger value="longform" className="data-[state=active]:bg-purple-600">
-                  Long-form
-                </TabsTrigger>
-                <TabsTrigger value="thumbnails" className="data-[state=active]:bg-purple-600">
-                  Thumbnails
-                </TabsTrigger>
-              </TabsList>
+      <Card className="bg-gray-800/50 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-white">Processing Options</CardTitle>
+          <CardDescription className="text-gray-400">
+            {selectedFile ? (
+              <>Selected: {selectedFile.file.name} ({formatFileSize(selectedFile.size)})</>
+            ) : (
+              'Upload a video to enable processing actions'
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+            <TabsList className="grid w-full grid-cols-3 bg-gray-700/50">
+              <TabsTrigger value="stories" className="data-[state=active]:bg-purple-600">
+                Stories
+              </TabsTrigger>
+              <TabsTrigger value="thumbnails" className="data-[state=active]:bg-purple-600">
+                Thumbnails
+              </TabsTrigger>
+              <TabsTrigger value="format" className="data-[state=active]:bg-purple-600">
+                Format
+              </TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="highlights" className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Target Duration (seconds)
-                    </label>
-                    <Input
-                      type="number"
-                      value={processingOptions.targetDuration}
-                      onChange={(e) => setProcessingOptions(prev => ({
-                        ...prev,
-                        targetDuration: parseInt(e.target.value) || 60
-                      }))}
-                      className="bg-gray-700 border-gray-600 text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Style
-                    </label>
-                    <select
-                      value={processingOptions.style}
-                      onChange={(e) => setProcessingOptions(prev => ({
-                        ...prev,
-                        style: e.target.value as VideoProcessingOptions['style']
-                      }))}
-                      className="w-full h-10 px-3 rounded-md bg-gray-700 border border-gray-600 text-white"
-                    >
-                      <option value="dynamic">Dynamic</option>
-                      <option value="calm">Calm</option>
-                      <option value="energetic">Energetic</option>
-                      <option value="cinematic">Cinematic</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={processingOptions.includeAudio}
-                      onChange={(e) => setProcessingOptions(prev => ({
-                        ...prev,
-                        includeAudio: e.target.checked
-                      }))}
-                      className="rounded border-gray-600 bg-gray-700"
-                    />
-                    <span className="text-sm text-gray-300">Include Audio</span>
-                  </label>
-                </div>
-                <Button 
-                  onClick={() => startProcessing('highlight')}
-                  disabled={uploading}
-                  className="w-full bg-purple-600 hover:bg-purple-700"
-                >
-                  {uploading ? 'Processing...' : 'Generate Highlights'}
-                </Button>
-              </TabsContent>
-
-              <TabsContent value="stories" className="space-y-4">
+            {/* AI Highlight Generator - Redirect to dedicated page */}
+            <div className="mb-6 p-4 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 rounded-lg">
+              <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Max Duration per Clip (seconds)
-                  </label>
-                  <Input
-                    type="number"
-                    value={processingOptions.targetDuration}
-                    onChange={(e) => setProcessingOptions(prev => ({
-                      ...prev,
-                      targetDuration: parseInt(e.target.value) || 60
-                    }))}
-                    className="bg-gray-700 border-gray-600 text-white"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Recommended: 15-60 seconds for social media
+                  <h3 className="text-lg font-semibold text-white mb-2">AI Highlight Generator</h3>
+                  <p className="text-sm text-gray-300">
+                    Advanced multi-stage analysis with cost optimization and guaranteed results
                   </p>
                 </div>
                 <Button 
-                  onClick={() => startProcessing('story')}
-                  disabled={uploading}
-                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  onClick={() => router.push('/demo/highlight-generator')}
+                  className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white flex items-center gap-2"
                 >
-                  {uploading ? 'Processing...' : 'Create Story Clips'}
+                  <SparklesIcon className="h-5 w-5" />
+                  Open Generator
                 </Button>
-              </TabsContent>
+              </div>
+            </div>
 
-              <TabsContent value="longform" className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Target Duration (seconds)
-                  </label>
-                  <Input
-                    type="number"
-                    value={longFormDuration}
-                    onChange={(e) => setLongFormDuration(parseInt(e.target.value) || 180)}
-                    className="bg-gray-700 border-gray-600 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Custom Prompt (Optional)
-                  </label>
-                  <textarea
-                    value={customPrompt}
-                    onChange={(e) => setCustomPrompt(e.target.value)}
-                    placeholder="Describe what you want to focus on in the edit..."
-                    className="w-full h-20 px-3 py-2 rounded-md bg-gray-700 border border-gray-600 text-white resize-none"
-                  />
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-yellow-400">
-                  <CurrencyDollarIcon className="h-4 w-4" />
-                  <span>Estimated cost: $2.50</span>
-                </div>
-                <Button 
-                  onClick={() => startProcessing('longform')}
-                  disabled={uploading}
-                  className="w-full bg-green-600 hover:bg-green-700"
-                >
-                  {uploading ? 'Processing...' : 'Process Long-form'}
-                </Button>
-              </TabsContent>
+            {/* Stories */}
+            <TabsContent value="stories" className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Max Duration per Clip (seconds)
+                </label>
+                <Input
+                  type="number"
+                  value={processingOptions.targetDuration}
+                  onChange={(e) => setProcessingOptions(prev => ({
+                    ...prev,
+                    targetDuration: parseInt(e.target.value) || 60
+                  }))}
+                  className="bg-gray-700 border-gray-600 text-white"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Recommended: 15-60 seconds for social media
+                </p>
+              </div>
+              <Button 
+                onClick={() => startProcessing('story')}
+                disabled={uploading || !selectedFile}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {uploading ? 'Processing...' : 'Create Story Clips'}
+              </Button>
+            </TabsContent>
 
-              <TabsContent value="thumbnails" className="space-y-4">
+            {/* Thumbnails */}
+            <TabsContent value="thumbnails" className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Number of Thumbnails
+                </label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={thumbnailCount}
+                  onChange={(e) => setThumbnailCount(parseInt(e.target.value) || 5)}
+                  className="bg-gray-700 border-gray-600 text-white"
+                />
+              </div>
+              <Button 
+                onClick={() => startProcessing('thumbnail')}
+                disabled={uploading || !selectedFile}
+                className="w-full bg-orange-600 hover:bg-orange-700"
+              >
+                {uploading ? 'Processing...' : 'Generate Thumbnails'}
+              </Button>
+            </TabsContent>
+
+            {/* Format */}
+            <TabsContent value="format" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Number of Thumbnails
+                    Target Aspect Ratio
                   </label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={thumbnailCount}
-                    onChange={(e) => setThumbnailCount(parseInt(e.target.value) || 5)}
-                    className="bg-gray-700 border-gray-600 text-white"
-                  />
+                  <select
+                    value={aspectRatio}
+                    onChange={(e) => setAspectRatio(e.target.value)}
+                    className="w-full h-10 px-3 rounded-md bg-gray-700 border border-gray-600 text-white"
+                  >
+                    <option value="16:9">Horizontal (16:9)</option>
+                    <option value="9:16">Vertical (9:16)</option>
+                    <option value="1:1">Square (1:1)</option>
+                    <option value="4:5">Portrait (4:5)</option>
+                  </select>
                 </div>
-                <Button 
-                  onClick={() => startProcessing('thumbnail')}
-                  disabled={uploading}
-                  className="w-full bg-orange-600 hover:bg-orange-700"
-                >
-                  {uploading ? 'Processing...' : 'Generate Thumbnails'}
-                </Button>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Output Format
+                  </label>
+                  <select
+                    value={processingOptions.outputFormat}
+                    onChange={(e) => setProcessingOptions(prev => ({
+                      ...prev,
+                      outputFormat: e.target.value as VideoProcessingOptions['outputFormat']
+                    }))}
+                    className="w-full h-10 px-3 rounded-md bg-gray-700 border border-gray-600 text-white"
+                  >
+                    <option value="mp4">MP4</option>
+                    <option value="webm">WebM</option>
+                    <option value="gif">GIF</option>
+                  </select>
+                </div>
+              </div>
+              <Button 
+                onClick={() => startProcessing('format')}
+                disabled={uploading || !selectedFile}
+                className="w-full bg-teal-600 hover:bg-teal-700"
+              >
+                {uploading ? 'Processing...' : 'Optimize Format'}
+              </Button>
+            </TabsContent>
+
+            {/* Full Suite Button */}
+            <div className="pt-4">
+              <Button
+                onClick={() => {
+                  ['story', 'thumbnail', 'format'].forEach(type => startProcessing(type as any));
+                }}
+                disabled={uploading || !selectedFile}
+                variant="outline"
+                className="w-full border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white"
+              >
+                Run Full Suite
+              </Button>
+            </div>
+          </Tabs>
+        </CardContent>
+      </Card>
 
       {/* Processing Jobs */}
       {processingJobs.length > 0 && (
