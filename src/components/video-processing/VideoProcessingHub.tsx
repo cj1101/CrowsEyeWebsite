@@ -295,7 +295,7 @@ export default function VideoProcessingHub() {
                   </p>
                 </div>
                 <Button 
-                  onClick={() => router.push('/demo/highlight-generator')}
+                  onClick={() => router.push('/highlight-generator')}
                   className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white flex items-center gap-2"
                 >
                   <SparklesIcon className="h-5 w-5" />

@@ -107,13 +107,42 @@ export default function MediaUpload({
         formData.append('tags', JSON.stringify(['uploaded', 'media']));
 
         try {
-          const response = await apiService.uploadMedia(formData, (progress) => {
-            setFiles(prev => prev.map(f => 
+          const response: any = await apiService.uploadMedia(formData, (progress: number) => {
+            setFiles(prev => prev.map(f =>
               f.id === file.id ? { ...f, progress } : f
             ));
           });
           
           console.log('Upload successful:', response);
+
+          // Add uploaded media to global media store so other components can access it
+          try {
+            const data = response.data;
+            const mediaId = data?.id || data?.media_id || `media-${Date.now()}`;
+            // Determine media type based on file mime type
+            let mediaType: 'image' | 'video' | 'audio' = 'image';
+            if (file.type.startsWith('video/')) {
+              mediaType = 'video';
+            } else if (file.type.startsWith('audio/')) {
+              mediaType = 'audio';
+            }
+
+            addFiles([
+              {
+                id: mediaId.toString(),
+                name: file.name,
+                type: mediaType,
+                url: data?.url || data?.fileUrl || data?.downloadUrl || '',
+                size: file.size,
+                uploadedAt: new Date(),
+                tags: data?.tags || [],
+                aiGenerated: false,
+                description: data?.description || undefined,
+              }
+            ]);
+          } catch (storeErr) {
+            console.error('Failed to add uploaded media to store:', storeErr);
+          }
         } catch (uploadError: any) {
           console.error('Upload error:', uploadError);
           
