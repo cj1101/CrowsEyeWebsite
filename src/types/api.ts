@@ -175,6 +175,7 @@ export interface HighlightGenerationRequest {
     end_time?: number;
     description?: string;
   };
+  scene_count?: number;
 }
 
 export interface HighlightGenerationResponse {

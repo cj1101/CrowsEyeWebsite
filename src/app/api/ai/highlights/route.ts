@@ -26,6 +26,13 @@ interface HighlightRequest {
   content_instructions?: string;
   cost_optimize?: boolean;
   max_cost?: number;
+  example?: {
+    start_time?: number;
+    end_time?: number;
+    description?: string;
+  };
+  scene_count?: number;
+  video_duration?: number;
 }
 
 export async function POST(request: NextRequest) {
@@ -41,7 +48,10 @@ export async function POST(request: NextRequest) {
       context_padding = 2.0,
       content_instructions = '',
       cost_optimize = true,
-      max_cost = 1.0
+      max_cost = 1.0,
+      example,
+      scene_count,
+      video_duration
     } = body;
 
     // Validate required fields
@@ -68,13 +78,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Starting highlight generation for ${media_ids.length} media files`);
-    console.log(`Target duration: ${duration}s, Style: ${style}, Cost optimize: ${cost_optimize}`);
+    console.log(`Starting NLP-driven highlight generation for ${media_ids.length} media files`);
+    console.log(`Target duration: ${duration}s, Instructions: "${content_instructions}"`);
+    if (example?.start_time) {
+      console.log(`Example time provided: ${example.start_time}s`);
+    }
 
     // Mock video analysis since we don't have actual video files in this demo
     // In production, this would analyze actual video files
     const mockVideoData = {
-      duration: Math.random() * 3600 + 1800, // 30min to 90min videos
+      duration: video_duration || Math.random() * 3600 + 1800, // use provided duration if available
       width: 1920,
       height: 1080,
       fps: 30,
@@ -83,7 +96,7 @@ export async function POST(request: NextRequest) {
 
     const startTime = Date.now();
     
-    // Multi-stage highlight generation algorithm
+    // Enhanced NLP-driven highlight generation algorithm
     const result = await generateHighlightReel({
       mediaIds: media_ids,
       targetDuration: duration,
@@ -93,10 +106,13 @@ export async function POST(request: NextRequest) {
       includeMusic: include_music,
       contextPadding: context_padding,
       contentInstructions: content_instructions,
+      exampleTime: example?.start_time,
       costOptimize: cost_optimize,
       maxCost: max_cost,
       apiKey,
-      videoData: mockVideoData
+      videoData: mockVideoData,
+      scene_count,
+      video_duration
     });
 
     const processingTime = Date.now() - startTime;
@@ -116,7 +132,9 @@ export async function POST(request: NextRequest) {
         confidence_score: result.overallConfidence,
         style_applied: style,
         cost_optimized: cost_optimize,
-        fallback_used: result.fallbackUsed
+        fallback_used: result.fallbackUsed,
+        nlp_instructions: content_instructions,
+        example_time_used: example?.start_time
       }
     });
 
@@ -138,10 +156,13 @@ async function generateHighlightReel(params: {
   includeMusic: boolean;
   contextPadding: number;
   contentInstructions: string;
+  exampleTime?: number;
   costOptimize: boolean;
   maxCost: number;
   apiKey: string;
   videoData: any;
+  scene_count?: number;
+  video_duration?: number;
 }) {
   const {
     mediaIds,
@@ -149,62 +170,75 @@ async function generateHighlightReel(params: {
     highlightType,
     style,
     contentInstructions,
+    exampleTime,
     costOptimize,
     maxCost,
     apiKey,
-    videoData
+    videoData,
+    scene_count,
+    video_duration
   } = params;
 
   console.log(`Analyzing ${videoData.duration}s video for ${targetDuration}s highlights`);
+  console.log(`NLP Instructions: "${contentInstructions}"`);
+  if (exampleTime) {
+    console.log(`Example pattern at: ${exampleTime}s`);
+  }
 
   const analysisStages: AnalysisStage[] = [];
   let totalCost = 0;
   let aiCallsMade = 0;
 
-  // Stage 1: Technical Pre-filtering (FREE - no AI cost)
-  console.log('Stage 1: Technical pre-filtering...');
-  const motionSegments = await detectMotionSegments(videoData);
-  const audioSegments = await detectAudioEnergySegments(videoData);
-  const sceneSegments = await detectSceneChanges(videoData);
-  
-  // Merge and score segments
-  const candidateSegments = mergeAndScoreSegments(
-    motionSegments, 
-    audioSegments, 
-    sceneSegments, 
-    targetDuration
-  );
+  // Stage 1: Enhanced Pattern Detection with Example Time
+  console.log('Stage 1: NLP-driven pattern detection...');
+  let candidateSegments: HighlightSegment[] = [];
+
+  if (contentInstructions && exampleTime) {
+    // Use example time to find similar patterns
+    candidateSegments = await findSimilarPatterns(videoData, contentInstructions, exampleTime);
+    console.log(`Found ${candidateSegments.length} segments matching example pattern`);
+  } else if (contentInstructions) {
+    // Use NLP instructions without example
+    candidateSegments = await detectPatternsByInstructions(videoData, contentInstructions);
+    console.log(`Found ${candidateSegments.length} segments matching instructions`);
+  } else {
+    // Fallback to traditional detection
+    const motionSegments = await detectMotionSegments(videoData);
+    const audioSegments = await detectAudioEnergySegments(videoData);
+    const sceneSegments = await detectSceneChanges(videoData);
+    candidateSegments = mergeAndScoreSegments(motionSegments, audioSegments, sceneSegments, targetDuration);
+  }
 
   analysisStages.push({
-    name: 'Technical Pre-filtering',
+    name: contentInstructions ? 'NLP Pattern Detection' : 'Technical Pre-filtering',
     cost: 0,
-    segments: candidateSegments.slice(0, 10) // Top 10 candidates
+    segments: candidateSegments.slice(0, 10)
   });
 
   let finalSegments = candidateSegments;
 
-  // Stage 2: AI Analysis (COST-OPTIMIZED)
+  // Stage 2: AI Validation and Refinement
   if (candidateSegments.length > 0 && totalCost < maxCost) {
-    console.log('Stage 2: AI-powered content analysis...');
+    console.log('Stage 2: AI validation of detected patterns...');
     
-    // Smart sampling based on cost constraints
     const maxAiCalls = costOptimize ? Math.min(15, Math.floor(maxCost / 0.01)) : 30;
     const segmentsToAnalyze = candidateSegments.slice(0, maxAiCalls);
     
-    console.log(`Analyzing ${segmentsToAnalyze.length} segments with AI (max cost: $${maxCost})`);
+    console.log(`Validating ${segmentsToAnalyze.length} segments with AI`);
 
     const aiAnalyzedSegments = await analyzeSegmentsWithAI(
       segmentsToAnalyze,
       contentInstructions,
       highlightType,
-      apiKey
+      apiKey,
+      exampleTime
     );
 
     aiCallsMade = segmentsToAnalyze.length;
-    totalCost = aiCallsMade * 0.01; // Estimated cost per API call
+    totalCost = aiCallsMade * 0.01;
 
     analysisStages.push({
-      name: 'AI Content Analysis',
+      name: 'AI Pattern Validation',
       cost: totalCost,
       segments: aiAnalyzedSegments
     });
@@ -225,16 +259,29 @@ async function generateHighlightReel(params: {
   }
 
   // Select and optimize final segments
-  const selectedSegments = selectBestSegments(finalSegments, targetDuration);
-  const optimizedSegments = optimizeSegmentTiming(selectedSegments, targetDuration);
+  let selectedSegments = selectBestSegments(finalSegments, targetDuration, scene_count, exampleTime);
+
+  // If we still have fewer segments than requested scene_count, generate filler emergency segments
+  if (scene_count && selectedSegments.length < scene_count) {
+    const needed = scene_count - selectedSegments.length;
+    const fillerCandidates = createEmergencyHighlights(videoData, targetDuration).filter(f =>
+      !selectedSegments.some(s => Math.abs(s.startTime - f.startTime) < 0.1)
+    );
+    selectedSegments = [...selectedSegments, ...fillerCandidates.slice(0, needed)];
+  }
+
+  let optimizedSegments = optimizeSegmentTiming(selectedSegments, targetDuration);
+
+  // Final duration enforcement (±2s margin)
+  optimizedSegments = enforceDurationLimit(optimizedSegments, targetDuration);
 
   // Calculate final duration and confidence
   const actualDuration = optimizedSegments.reduce((sum, seg) => sum + (seg.endTime - seg.startTime), 0);
   const overallConfidence = optimizedSegments.reduce((sum, seg) => sum + seg.confidence, 0) / optimizedSegments.length;
 
-  // Generate mock output path (in production, this would be the actual video file)
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const outputPath = `/highlights/highlight_${mediaIds[0]}_${timestamp}.mp4`;
+  // Generate mock output path
+  // Use a real video file that exists in /public so the frontend can play it
+  const outputPath = `/videos/placeholder-video.mp4`;
 
   return {
     outputPath,
@@ -385,7 +432,8 @@ async function analyzeSegmentsWithAI(
   segments: HighlightSegment[],
   instructions: string,
   highlightType: string,
-  apiKey: string
+  apiKey: string,
+  exampleTime?: number
 ): Promise<HighlightSegment[]> {
   const analyzedSegments: HighlightSegment[] = [];
   
@@ -394,7 +442,7 @@ async function analyzeSegmentsWithAI(
     
     try {
       // Simulate AI analysis call to Gemini
-      const aiAnalysis = await callGeminiForSegmentAnalysis(segment, instructions, highlightType, apiKey);
+      const aiAnalysis = await callGeminiForSegmentAnalysis(segment, instructions, highlightType, apiKey, exampleTime);
       
       if (aiAnalysis.relevant) {
         analyzedSegments.push({
@@ -425,15 +473,33 @@ async function callGeminiForSegmentAnalysis(
   segment: HighlightSegment, 
   instructions: string, 
   highlightType: string, 
-  apiKey: string
+  apiKey: string,
+  exampleTime?: number
 ) {
   // Simulate AI analysis - in production, this would call actual Gemini API
   // with frame analysis from the video segment
   
   await new Promise(resolve => setTimeout(resolve, 100)); // Simulate API delay
   
-  const relevanceScore = Math.random() * 0.6 + 0.4; // 0.4 to 1.0
-  const confidence = Math.random() * 0.3 + 0.7; // 0.7 to 1.0
+  let relevanceScore = Math.random() * 0.6 + 0.4; // 0.4 to 1.0
+  let confidence = Math.random() * 0.3 + 0.7; // 0.7 to 1.0
+  
+  // Enhanced scoring with example time and instructions
+  if (instructions && instructions.length > 0) {
+    // Boost score based on instruction relevance
+    const instructionBoost = calculateInstructionRelevance(segment, instructions);
+    relevanceScore *= (1 + instructionBoost * 0.5);
+    confidence *= (1 + instructionBoost * 0.2);
+  }
+  
+  // If example time provided, boost segments that are temporally similar
+  if (exampleTime !== undefined) {
+    const timeSimilarity = calculateTemporalSimilarity(segment.startTime, exampleTime);
+    relevanceScore *= (1 + timeSimilarity * 0.3);
+    confidence *= (1 + timeSimilarity * 0.1);
+    
+    console.log(`Segment at ${segment.startTime}s vs example at ${exampleTime}s: ${timeSimilarity.toFixed(2)} temporal similarity`);
+  }
   
   // Boost score if segment matches highlight type
   const typeBoost = highlightType === 'dynamic' ? 1.2 : 
@@ -442,12 +508,68 @@ async function callGeminiForSegmentAnalysis(
   const finalScore = Math.min(1.0, relevanceScore * typeBoost);
   const isRelevant = finalScore > 0.5;
   
+  let description = `AI: ${highlightType} content (${finalScore.toFixed(2)} relevance)`;
+  if (instructions) {
+    description += ` - matches "${instructions.substring(0, 30)}..."`;
+  }
+  if (exampleTime !== undefined) {
+    description += ` - similar to ${exampleTime}s example`;
+  }
+  
   return {
     relevant: isRelevant,
     relevanceScore: finalScore,
-    confidence: confidence,
-    description: `AI: ${highlightType} content (${finalScore.toFixed(2)} relevance)`
+    confidence: Math.min(1.0, confidence),
+    description
   };
+}
+
+// Helper: Calculate instruction relevance for a segment
+function calculateInstructionRelevance(segment: HighlightSegment, instructions: string): number {
+  const keywords = extractKeywords(instructions);
+  const actionType = determineActionType(instructions);
+  
+  let relevance = 0.0;
+  
+  // Base relevance from action type
+  switch (actionType) {
+    case 'sports_action':
+      relevance += 0.3;
+      break;
+    case 'water_action':
+      relevance += 0.25;
+      break;
+    case 'jump_action':
+      relevance += 0.35;
+      break;
+    case 'speech_action':
+      relevance += 0.2;
+      break;
+    default:
+      relevance += 0.15;
+  }
+  
+  // Add relevance based on keywords
+  relevance += keywords.length * 0.05;
+  
+  // Add some randomness to simulate actual content analysis
+  relevance += Math.random() * 0.3;
+  
+  return Math.min(1.0, relevance);
+}
+
+// Helper: Calculate temporal similarity between segments
+function calculateTemporalSimilarity(segmentTime: number, exampleTime: number): number {
+  const timeDiff = Math.abs(segmentTime - exampleTime);
+  
+  // Segments very close to example get high similarity
+  if (timeDiff < 10) return 0.9;
+  if (timeDiff < 30) return 0.7;
+  if (timeDiff < 60) return 0.5;
+  if (timeDiff < 120) return 0.3;
+  
+  // Distant segments get low similarity
+  return 0.1;
 }
 
 // Stage 3: Emergency Fallback (NEVER FAIL)
@@ -481,28 +603,66 @@ function createEmergencyHighlights(videoData: any, targetDuration: number): High
 }
 
 // Final Selection and Optimization
-function selectBestSegments(segments: HighlightSegment[], targetDuration: number): HighlightSegment[] {
+function selectBestSegments(
+  segments: HighlightSegment[],
+  targetDuration: number,
+  sceneCount?: number,
+  exampleTime?: number
+): HighlightSegment[] {
   if (segments.length === 0) return [];
-  
-  // Greedy selection to fill target duration
+
+  // Ensure any segment that covers exampleTime gets a strong boost so it is always picked.
+  if (exampleTime !== undefined) {
+    segments = segments.map((s) => {
+      const coversExample = s.startTime <= exampleTime && s.endTime >= exampleTime;
+      return coversExample ? { ...s, score: s.score + 1 } : s; // big boost
+    });
+  }
+
+  // Sort by boosted score
+  const sorted = [...segments].sort((a, b) => (b.score * b.confidence) - (a.score * a.confidence));
+
+  const desiredScenes = sceneCount && sceneCount > 0 ? sceneCount : undefined;
   const selected: HighlightSegment[] = [];
-  let remainingDuration = targetDuration;
-  
-  // Sort by score/confidence combination
-  const sortedSegments = segments.sort((a, b) => (b.score * b.confidence) - (a.score * a.confidence));
-  
-  for (const segment of sortedSegments) {
-    const segmentDuration = segment.endTime - segment.startTime;
-    
-    if (segmentDuration <= remainingDuration && segmentDuration >= 2) {
-      selected.push(segment);
-      remainingDuration -= segmentDuration;
-      
-      if (remainingDuration <= 0) break;
+  let usedDuration = 0;
+
+  for (const seg of sorted) {
+    // Skip if we already have enough scenes
+    if (desiredScenes && selected.length >= desiredScenes) break;
+
+    const segDur = seg.endTime - seg.startTime;
+
+    // Skip segments that would push total over target
+    if (usedDuration + segDur > targetDuration) continue;
+
+    selected.push(seg);
+    usedDuration += segDur;
+  }
+
+  // If we still don't have enough scenes, fill with best remaining segments even if total duration slightly exceeds
+  if (desiredScenes && selected.length < desiredScenes) {
+    for (const seg of sorted) {
+      if (selected.includes(seg)) continue;
+      selected.push(seg);
+      if (selected.length >= desiredScenes) break;
     }
   }
-  
-  console.log(`Selected ${selected.length} segments for final highlight reel`);
+
+  // Trim total duration if it still exceeds target
+  if (selected.length > 0) {
+    let totalDur = selected.reduce((sum, s) => sum + (s.endTime - s.startTime), 0);
+    if (totalDur > targetDuration) {
+      const scale = targetDuration / totalDur;
+      selected.forEach((s) => {
+        const mid = (s.startTime + s.endTime) / 2;
+        const newHalfDur = ((s.endTime - s.startTime) * scale) / 2;
+        s.startTime = Math.max(0, mid - newHalfDur);
+        s.endTime = mid + newHalfDur;
+      });
+    }
+  }
+
+  console.log(`Selected ${selected.length} segments for final highlight reel (sceneCount target: ${sceneCount || 'auto'})`);
   return selected;
 }
 
@@ -522,4 +682,218 @@ function optimizeSegmentTiming(segments: HighlightSegment[], targetDuration: num
   
   console.log(`Optimized ${optimized.length} segments for smooth playback`);
   return optimized;
+}
+
+// NEW: NLP-driven pattern detection with example time
+async function findSimilarPatterns(
+  videoData: any, 
+  instructions: string, 
+  exampleTime: number
+): Promise<HighlightSegment[]> {
+  const segments: HighlightSegment[] = [];
+  const totalDuration = videoData.duration;
+  const windowSize = 8; // 8-second analysis windows
+  
+  console.log(`Looking for patterns similar to example at ${exampleTime}s`);
+  console.log(`Instructions: "${instructions}"`);
+  
+  // Analyze the example time area to understand the pattern
+  const exampleStart = Math.max(0, exampleTime - 4);
+  const exampleEnd = Math.min(totalDuration, exampleTime + 4);
+  
+  // Extract features from example segment (simulated)
+  const exampleFeatures = analyzeSegmentFeatures(exampleStart, exampleEnd, videoData);
+  
+  // Scan through video looking for similar patterns
+  for (let time = 0; time < totalDuration - windowSize; time += windowSize / 2) {
+    const segmentFeatures = analyzeSegmentFeatures(time, time + windowSize, videoData);
+    
+    // Calculate similarity to example
+    let similarity = calculatePatternSimilarity(exampleFeatures, segmentFeatures, instructions);
+
+    // Extra weight if this segment actually covers the example time.
+    if (time <= exampleTime && (time + windowSize) >= exampleTime) {
+      similarity += 0.3;
+    }
+    
+    if (similarity > 0.6) { // High similarity threshold
+      segments.push({
+        startTime: time,
+        endTime: Math.min(time + windowSize, totalDuration),
+        score: similarity,
+        confidence: similarity * 0.9, // High confidence for pattern matching
+        description: `Pattern match: ${similarity.toFixed(2)} similarity to example at ${exampleTime}s`
+      });
+    }
+  }
+  
+  // Sort by similarity score
+  segments.sort((a, b) => b.score - a.score);
+  
+  console.log(`Found ${segments.length} segments matching example pattern`);
+  return segments.slice(0, 20); // Top 20 matches
+}
+
+// NEW: NLP-driven pattern detection without example
+async function detectPatternsByInstructions(
+  videoData: any, 
+  instructions: string
+): Promise<HighlightSegment[]> {
+  const segments: HighlightSegment[] = [];
+  const totalDuration = videoData.duration;
+  const windowSize = 10;
+  
+  console.log(`Detecting patterns based on instructions: "${instructions}"`);
+  
+  // Parse instructions to understand what to look for
+  const keywords = extractKeywords(instructions);
+  const actionType = determineActionType(instructions);
+  
+  for (let time = 0; time < totalDuration - windowSize; time += windowSize / 3) {
+    // Simulate pattern detection based on instructions
+    const patternScore = simulateInstructionMatching(time, windowSize, keywords, actionType, videoData);
+    
+    if (patternScore > 0.5) {
+      segments.push({
+        startTime: time,
+        endTime: Math.min(time + windowSize, totalDuration),
+        score: patternScore,
+        confidence: patternScore * 0.8,
+        description: `Instruction match: "${instructions.substring(0, 50)}..."`
+      });
+    }
+  }
+  
+  segments.sort((a, b) => b.score - a.score);
+  console.log(`Found ${segments.length} segments matching instructions`);
+  return segments.slice(0, 25); // Top 25 matches
+}
+
+// Helper: Analyze segment features for pattern matching
+function analyzeSegmentFeatures(startTime: number, endTime: number, videoData: any) {
+  const duration = endTime - startTime;
+  const position = startTime / videoData.duration;
+  
+  // Simulate feature extraction (motion, audio, visual complexity)
+  return {
+    motionLevel: Math.random() * 0.8 + 0.1,
+    audioEnergy: Math.random() * 0.9 + 0.1,
+    visualComplexity: Math.random() * 0.7 + 0.2,
+    sceneChanges: Math.floor(Math.random() * 3),
+    duration,
+    position,
+    timestamp: startTime
+  };
+}
+
+// Helper: Calculate similarity between patterns
+function calculatePatternSimilarity(
+  exampleFeatures: any, 
+  segmentFeatures: any, 
+  instructions: string
+): number {
+  // Weight different features based on instructions
+  const motionWeight = instructions.toLowerCase().includes('motion') || 
+                      instructions.toLowerCase().includes('action') || 
+                      instructions.toLowerCase().includes('movement') ? 0.4 : 0.2;
+  
+  const audioWeight = instructions.toLowerCase().includes('sound') || 
+                     instructions.toLowerCase().includes('music') || 
+                     instructions.toLowerCase().includes('audio') ? 0.4 : 0.2;
+  
+  const visualWeight = 1.0 - motionWeight - audioWeight;
+  
+  // Calculate feature similarities
+  const motionSim = 1 - Math.abs(exampleFeatures.motionLevel - segmentFeatures.motionLevel);
+  const audioSim = 1 - Math.abs(exampleFeatures.audioEnergy - segmentFeatures.audioEnergy);
+  const visualSim = 1 - Math.abs(exampleFeatures.visualComplexity - segmentFeatures.visualComplexity);
+  
+  // Weighted similarity score
+  const similarity = (motionSim * motionWeight) + (audioSim * audioWeight) + (visualSim * visualWeight);
+  
+  return Math.min(1.0, similarity);
+}
+
+// Helper: Extract keywords from instructions
+function extractKeywords(instructions: string): string[] {
+  const commonWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'];
+  return instructions
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(word => word.length > 2 && !commonWords.includes(word))
+    .slice(0, 10); // Top 10 keywords
+}
+
+// Helper: Determine action type from instructions
+function determineActionType(instructions: string): string {
+  const lower = instructions.toLowerCase();
+  
+  if (lower.includes('basket') || lower.includes('score') || lower.includes('goal')) return 'sports_action';
+  if (lower.includes('fall') || lower.includes('water') || lower.includes('splash')) return 'water_action';
+  if (lower.includes('jump') || lower.includes('leap') || lower.includes('hop')) return 'jump_action';
+  if (lower.includes('run') || lower.includes('sprint') || lower.includes('race')) return 'running_action';
+  if (lower.includes('dance') || lower.includes('move') || lower.includes('rhythm')) return 'dance_action';
+  if (lower.includes('speak') || lower.includes('talk') || lower.includes('say')) return 'speech_action';
+  
+  return 'general_action';
+}
+
+// Helper: Simulate instruction-based pattern matching
+function simulateInstructionMatching(
+  time: number, 
+  windowSize: number, 
+  keywords: string[], 
+  actionType: string, 
+  videoData: any
+): number {
+  let score = 0.3; // Base score
+  
+  // Boost score based on action type
+  switch (actionType) {
+    case 'sports_action':
+      score += Math.random() * 0.4; // Sports actions are often high-motion
+      break;
+    case 'water_action':
+      score += Math.random() * 0.3; // Water actions have distinct audio/visual
+      break;
+    case 'jump_action':
+      score += Math.random() * 0.35; // Jump actions are brief but distinct
+      break;
+    case 'speech_action':
+      score += Math.random() * 0.25; // Speech has distinct audio patterns
+      break;
+    default:
+      score += Math.random() * 0.2;
+  }
+  
+  // Boost score for keywords presence (simulated)
+  score += keywords.length * 0.05;
+  
+  // Add some temporal variation
+  const timePosition = time / videoData.duration;
+  if (timePosition > 0.2 && timePosition < 0.8) {
+    score *= 1.1; // Boost middle sections
+  }
+  
+  return Math.min(1.0, score);
+}
+
+// Ensure the combined duration does not exceed targetDuration by more than 2s.
+function enforceDurationLimit(segments: HighlightSegment[], targetDuration: number): HighlightSegment[] {
+  const MAX_OVERSHOOT = 2; // seconds
+  let total = segments.reduce((sum, s) => sum + (s.endTime - s.startTime), 0);
+
+  if (total <= targetDuration + MAX_OVERSHOOT) return segments;
+
+  const scale = (targetDuration + MAX_OVERSHOOT) / total;
+
+  return segments.map((s) => {
+    const mid = (s.startTime + s.endTime) / 2;
+    const newHalf = ((s.endTime - s.startTime) * scale) / 2;
+    return {
+      ...s,
+      startTime: Math.max(0, mid - newHalf),
+      endTime: mid + newHalf,
+    };
+  });
 } 

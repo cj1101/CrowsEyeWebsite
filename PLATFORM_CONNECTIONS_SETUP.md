@@ -12,6 +12,7 @@ The platform connections system has been fully implemented with OAuth infrastruc
 - **TikTok** - Basic OAuth structure in place
 - **Pinterest** - Generic OAuth handler ready
 - **YouTube** - Generic OAuth handler ready  
+- **Google My Business** - Generic OAuth handler ready
 - **Snapchat** - Generic OAuth handler ready
 
 ### ❌ Removed Platforms
@@ -106,6 +107,13 @@ SNAPCHAT_CLIENT_SECRET=your_snapchat_client_secret
 ### YouTube (Google)
 1. Set up Google Cloud Console project
 2. Enable YouTube Data API v3
+3. Configure OAuth consent screen
+4. Submit for verification if needed
+5. Usually available immediately for testing
+
+### Google My Business
+1. Set up Google Cloud Console project
+2. Enable Google My Business API
 3. Configure OAuth consent screen
 4. Submit for verification if needed
 5. Usually available immediately for testing
