@@ -17,7 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useMediaStore } from '@/stores/mediaStore';
 import { usePostStore } from '@/stores/postStore';
-import { apiService } from '@/services/api';
+import { CrowsEyeAPI } from '@/services/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -131,45 +131,27 @@ export default function DashboardOverview() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('auth_token');
-      
-      if (!token) {
-        console.warn('No auth token found');
-        return;
-      }
+      // Use unified API client (handles auth & base URL)
+      const api = new CrowsEyeAPI();
 
-      // Fetch analytics data from API
-      const response = await fetch('/api/analytics', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const { data: analytics } = await api.getAnalyticsOverview();
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch analytics data');
-      }
-
-      const data = await response.json();
-      
-      if (data.success) {
-        const analytics = data.analytics;
-        
+      if (analytics) {
         // Update stats with real data
         setStats({
-          totalPosts: analytics.totalPosts || 0,
-          totalEngagement: analytics.totalEngagement || 0,
-          totalReach: analytics.totalReach || 0,
-          totalFollowers: analytics.totalFollowers || 0,
-          aiCreditsUsed: analytics.aiCreditsUsed || 0,
-          aiCreditsTotal: analytics.aiCreditsTotal || 150,
-          scheduledPosts: analytics.scheduledPosts || 0,
-          connectedPlatforms: analytics.connectedPlatforms || 0
+          totalPosts: analytics.total_posts || 0,
+          totalEngagement: analytics.total_engagement || 0,
+          totalReach: analytics.reach || 0,
+          totalFollowers: analytics.follower_growth || 0,
+          aiCreditsUsed: 0, // Placeholder – update when API provides this
+          aiCreditsTotal: 150,
+          scheduledPosts: 0,
+          connectedPlatforms: 0
         });
 
         // Set recent activity from API or default
-        setRecentActivity(analytics.recentActivity || [
+        // TODO: backend to supply activity; fallback to welcome activity
+        setRecentActivity((analytics as any).recentActivity || [
           {
             id: '1',
             type: 'post',
@@ -181,7 +163,7 @@ export default function DashboardOverview() {
         ]);
 
         // Set monthly changes from API or defaults
-        setMonthlyChanges(analytics.monthlyGrowth || {
+        setMonthlyChanges((analytics as any).monthlyGrowth || {
           engagement: 0,
           reach: 0,
           followers: 0,
@@ -189,16 +171,11 @@ export default function DashboardOverview() {
         });
         
         console.log('✅ Analytics data loaded successfully');
-        if (data.source) {
-          console.log(`📊 Data source: ${data.source}`);
-        }
-      } else {
-        throw new Error(data.error || 'Failed to load analytics');
       }
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
       
-      // Set minimal default data on error
+      // Clear stats and activity on failure instead of injecting demo content
       setStats({
         totalPosts: 0,
         totalEngagement: 0,
@@ -210,16 +187,7 @@ export default function DashboardOverview() {
         connectedPlatforms: 0
       });
       
-      setRecentActivity([
-        {
-          id: '1',
-          type: 'connect',
-          title: 'Connect Your Accounts',
-          description: 'Start by linking your social media platforms to begin tracking analytics',
-          timestamp: new Date().toISOString(),
-          status: 'pending' as const
-        }
-      ]);
+      setRecentActivity([]);
     } finally {
       setLoading(false);
     }

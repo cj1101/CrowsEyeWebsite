@@ -56,7 +56,6 @@ import CreatePostTab from '@/components/dashboard/CreatePostTab';
 import ScheduleTab from '@/components/dashboard/ScheduleTab';
 import AnalyticsTab from '@/components/dashboard/AnalyticsTab';
 import ConnectionsTab from '@/components/dashboard/ConnectionsTab';
-import BrandingTab from '@/components/dashboard/BrandingTab';
 
 export default function DashboardPage() {
   const { user, userProfile, loading, hasValidSubscription, requiresSubscription, needsPAYGSetup } = useAuth();
@@ -134,7 +133,6 @@ export default function DashboardPage() {
     { id: 'schedule', label: 'Scheduler', icon: Calendar, description: 'Manage scheduled posts' },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, description: 'Performance insights' },
     { id: 'connections', label: 'Platforms', icon: Link, description: 'Social media accounts' },
-    { id: 'branding', label: 'Branding', icon: Palette, description: 'Brand guidelines' },
   ];
 
   const quickActions = [
@@ -296,7 +294,6 @@ export default function DashboardPage() {
             {activeTab === 'schedule' && <ScheduleTab />}
             {activeTab === 'analytics' && <AnalyticsTab />}
             {activeTab === 'connections' && <ConnectionsTab />}
-            {activeTab === 'branding' && <BrandingTab />}
           </div>
         </main>
       </div>

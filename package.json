@@ -28,7 +28,7 @@
   "license": "MIT",
   "copyright": "Copyright © 2024 Crow's Eye Marketing Suite. All rights reserved.",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "scripts": {
     "dev": "next dev",
@@ -41,6 +41,7 @@
     "clean-build:unix": "rm -rf out .next && next build",
     "deploy": "npm run clean-build && firebase deploy --only hosting",
     "deploy:full": "npm run clean-build && firebase deploy",
+    "deploy:functions": "firebase deploy --only functions",
     "firebase:serve": "npm run clean-build && firebase serve",
     "translate": "node scripts/translate.js",
     "translate:force": "node scripts/translate.js --force",
@@ -50,6 +51,8 @@
     "prebuild": "npm run translate:check"
   },
   "dependencies": {
+    "@ffmpeg/core": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.15",
     "@google-cloud/translate": "^9.1.0",
     "@google/generative-ai": "^0.24.1",
     "@headlessui/react": "^2.2.4",
@@ -72,6 +75,7 @@
     "next": "^15.3.2",
     "openai": "^5.1.1",
     "react": "^19.0.0",
+    "react-colorful": "^5.6.1",
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.8",
     "react-hook-form": "^7.56.4",
