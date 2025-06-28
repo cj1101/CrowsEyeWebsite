@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,15 +9,10 @@ import {
   Image as ImageIcon, 
   Video, 
   Music, 
-  Wand2, 
-  Calendar, 
   Send, 
   Eye,
   Hash,
-  MapPin,
   Users,
-  Clock,
-  Sparkles,
   Upload,
   X,
   Play,
@@ -33,9 +28,14 @@ import {
   Crop,
   Filter,
   Volume2,
-  MessageSquare
+  MessageSquare,
+  ChevronLeft,
+  ChevronRight,
+  FolderOpen
 } from 'lucide-react';
 import MediaUpload from '@/components/media/MediaUpload';
+import BrandIcon from '@/components/ui/brand-icons';
+import { useMediaStore } from '@/stores/mediaStore';
 
 interface MediaFile {
   id: string;
@@ -51,7 +51,6 @@ interface MediaFile {
 interface PlatformOption {
   id: string;
   name: string;
-  icon: string;
   color: string;
   enabled: boolean;
   connected: boolean;
@@ -70,7 +69,6 @@ const platforms: PlatformOption[] = [
   {
     id: 'instagram',
     name: 'Instagram',
-    icon: '📷',
     color: 'from-purple-500 to-pink-500',
     enabled: false,
     connected: true,
@@ -87,7 +85,6 @@ const platforms: PlatformOption[] = [
   {
     id: 'facebook',
     name: 'Facebook',
-    icon: '📘',
     color: 'from-blue-600 to-blue-700',
     enabled: false,
     connected: true,
@@ -102,13 +99,12 @@ const platforms: PlatformOption[] = [
     }
   },
   {
-    id: 'twitter',
-    name: 'X (Twitter)',
-    icon: '🐦',
-    color: 'from-gray-800 to-black',
+    id: 'threads',
+    name: 'Threads',
+    color: 'from-gray-600 to-black',
     enabled: false,
     connected: true,
-    characterLimit: 280,
+    characterLimit: 500,
     features: {
       hashtags: true,
       location: false,
@@ -119,20 +115,83 @@ const platforms: PlatformOption[] = [
     }
   },
   {
-    id: 'linkedin',
-    name: 'LinkedIn',
-    icon: '💼',
-    color: 'from-blue-700 to-blue-800',
+    id: 'bluesky',
+    name: 'BlueSky',
+    color: 'from-blue-400 to-blue-500',
     enabled: false,
-    connected: false,
-    characterLimit: 3000,
+    connected: true,
+    characterLimit: 300,
     features: {
       hashtags: true,
       location: false,
       mentions: true,
       scheduling: true,
       stories: false,
+      multipleImages: true
+    }
+  },
+  {
+    id: 'google-mybusiness',
+    name: 'Google My Business',
+    color: 'from-blue-500 to-green-500',
+    enabled: false,
+    connected: true,
+    characterLimit: 1500,
+    features: {
+      hashtags: false,
+      location: true,
+      mentions: false,
+      scheduling: true,
+      stories: false,
       multipleImages: false
+    }
+  },
+  {
+    id: 'tiktok',
+    name: 'TikTok',
+    color: 'from-black to-gray-800',
+    enabled: false,
+    connected: true,
+    characterLimit: 2200,
+    features: {
+      hashtags: true,
+      location: false,
+      mentions: false,
+      scheduling: true,
+      stories: false,
+      multipleImages: false
+    }
+  },
+  {
+    id: 'youtube',
+    name: 'YouTube',
+    color: 'from-red-600 to-red-700',
+    enabled: false,
+    connected: true,
+    characterLimit: 10000,
+    features: {
+      hashtags: true,
+      location: false,
+      mentions: false,
+      scheduling: true,
+      stories: false,
+      multipleImages: false
+    }
+  },
+  {
+    id: 'pinterest',
+    name: 'Pinterest',
+    color: 'from-red-500 to-red-600',
+    enabled: false,
+    connected: true,
+    characterLimit: 500,
+    features: {
+      hashtags: true,
+      location: false,
+      mentions: false,
+      scheduling: true,
+      stories: false,
+      multipleImages: true
     }
   }
 ];
@@ -140,18 +199,18 @@ const platforms: PlatformOption[] = [
 export default function CreatePostTab() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<PlatformOption[]>(platforms);
   const [postContent, setPostContent] = useState('');
+  const [contextInput, setContextInput] = useState('');
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [hashtagInput, setHashtagInput] = useState('');
-  const [location, setLocation] = useState('');
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
-  const [isScheduled, setIsScheduled] = useState(false);
-  const [scheduleDate, setScheduleDate] = useState('');
-  const [scheduleTime, setScheduleTime] = useState('');
   const [showPreview, setShowPreview] = useState(false);
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [useBranding, setUseBranding] = useState(true);
-  const [aiTone, setAiTone] = useState<'professional' | 'casual' | 'engaging'>('casual');
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [contentType, setContentType] = useState<'single' | 'gallery'>('single');
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [showLibrary, setShowLibrary] = useState(false);
+  const { files: libraryFiles, addFiles } = useMediaStore();
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -173,11 +232,12 @@ export default function CreatePostTab() {
     }));
   };
 
-  const handleMediaUpload = async (files: FileList) => {
+  const handleMediaUpload = async (files: FileList | File[]) => {
     const newMediaFiles: MediaFile[] = [];
     
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    const fileArray: File[] = Array.isArray(files) ? files as File[] : Array.from(files as FileList);
+    for (let i = 0; i < fileArray.length; i++) {
+      const file = fileArray[i];
       const mediaFile: MediaFile = {
         id: Math.random().toString(36).substr(2, 9),
         file,
@@ -220,38 +280,65 @@ export default function CreatePostTab() {
 
   const handleGenerateAICaption = async () => {
     setIsGeneratingAI(true);
-    
+
     try {
-      // Mock AI generation - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const suggestions = {
-        professional: "Elevating your brand with innovative solutions. Our latest project showcases cutting-edge technology and thoughtful design.",
-        casual: "Just dropped something amazing! 🚀 Can't wait for you all to see what we've been working on. This is going to be epic!",
-        engaging: "Ready to be amazed? ✨ We've been cooking up something special and today's the day we share it with the world! What do you think? Drop your thoughts below! 👇"
-      } as Record<typeof aiTone, string>;
-      
-      // Inject brand context if enabled
+      /*
+       * 🚧 Placeholder logic — replace with real backend call.
+       * The payload now includes:
+       *  - contextInput (user guidance)
+       *  - an array describing each uploaded media file (type, duration, etc.)
+       */
+      const payload = {
+        context: contextInput,
+        media: mediaFiles.map((m) => ({
+          id: m.id,
+          type: m.type,
+          duration: m.duration,
+          filename: m.file?.name,
+        })),
+        branding: useBranding ? brandProfile : null,
+      };
+
+      console.log('[AI Caption] Request payload →', payload);
+
+      // Simulate network latency
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Naive mock: craft caption based on first media type
+      let captionBase = 'Check this out!';
+      if (payload.media.length) {
+        const firstType = payload.media[0].type;
+        if (firstType === 'video') captionBase = '🎥 New video drop!';
+        if (firstType === 'image') captionBase = '📸 Sneak peek photo!';
+        if (firstType === 'audio') captionBase = '🎶 Listen up!';
+      }
+
+      // Incorporate context if provided
+      if (contextInput.trim()) captionBase = `${contextInput.trim()} — ${captionBase}`;
+
+      // Add branding intro if toggled
       if (useBranding && brandProfile) {
-        const brandIntro = brandProfile.tagline || brandProfile.description || brandProfile.name;
-        suggestions.professional = `${brandIntro ? brandIntro + ' – ' : ''}${suggestions.professional}`;
-        suggestions.casual = `${brandIntro ? brandIntro + ' – ' : ''}${suggestions.casual}`;
-        suggestions.engaging = `${brandIntro ? brandIntro + ' – ' : ''}${suggestions.engaging}`;
+        const intro = brandProfile.tagline || brandProfile.description || brandProfile.name;
+        captionBase = `${intro ? intro + ' – ' : ''}${captionBase}`;
       }
-      
-      setPostContent(suggestions[aiTone]);
-      
-      // Generate relevant hashtags
-      let aiHashtags = ['AI', 'Innovation', 'Creative', 'Digital', 'Tech'];
-      if (useBranding && brandProfile?.hashtags) {
-        const brandTags = brandProfile.hashtags
-          .split(',')
-          .map((t: string) => t.trim().replace(/^#?/, ''))
-          .filter(Boolean);
-        aiHashtags = [...new Set([...brandTags, ...aiHashtags])].slice(0, 10);
+
+      setPostContent(captionBase);
+
+      // Simple hashtags: derive from context words
+      let tags: string[] = [];
+      if (contextInput) {
+        tags = contextInput
+          .split(/\s+/)
+          .filter((w) => w.length > 3)
+          .slice(0, 10)
+          .map((w) => w.replace(/[^a-zA-Z0-9]/g, ''));
       }
-      setHashtags(aiHashtags);
-      
+
+      if (tags.length === 0) {
+        tags = ['SocialMedia', 'Update'];
+      }
+
+      setHashtags(tags);
     } catch (error) {
       console.error('Failed to generate AI caption:', error);
     } finally {
@@ -281,11 +368,6 @@ export default function CreatePostTab() {
       // Reset form
       setPostContent('');
       setHashtags([]);
-      setLocation('');
-      setMediaFiles([]);
-      setIsScheduled(false);
-      setScheduleDate('');
-      setScheduleTime('');
       
       alert('Post published successfully!');
       
@@ -308,6 +390,40 @@ export default function CreatePostTab() {
   };
 
   const characterCount = getCharacterCount();
+
+  // Update content type when media changes
+  useEffect(() => {
+    if (mediaFiles.length > 1) {
+      setContentType('gallery');
+    } else {
+      setContentType('single');
+      setCurrentIndex(0);
+    }
+  }, [mediaFiles]);
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % mediaFiles.length);
+  };
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev - 1 + mediaFiles.length) % mediaFiles.length);
+  };
+
+  const handleAddFromLibrary = (fileId: string) => {
+    const libFile = libraryFiles.find(f => f.id === fileId);
+    if (!libFile) return;
+    const newMedia: MediaFile = {
+      id: libFile.id,
+      file: new File([], libFile.name),
+      type: libFile.type,
+      url: libFile.url,
+      thumbnail: libFile.preview,
+      processed: true,
+      processing: false
+    } as any;
+    setMediaFiles(prev => [...prev, newMedia]);
+    setShowLibrary(false);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -333,6 +449,51 @@ export default function CreatePostTab() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content Area */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Media Upload */}
+          <Card className="bg-gray-800/50 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center">
+                <Upload className="h-5 w-5 mr-2" />
+                Media Upload
+              </CardTitle>
+              <CardDescription>Add images, videos, or audio. Posts with multiple files will become a gallery carousel.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <MediaUpload onUpload={(files) => handleMediaUpload(files)} />
+              <Button variant="outline" className="border-gray-600 text-gray-300" onClick={() => setShowLibrary(true)}>
+                <FolderOpen className="h-4 w-4 mr-2" /> Add from Media Library
+              </Button>
+
+              {/* Media Preview / Carousel */}
+              {mediaFiles.length > 0 && (
+                <div className="relative w-full max-w-lg mx-auto">
+                  {contentType === 'gallery' && (
+                    <>
+                      <button onClick={handlePrev} className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/40 p-1 rounded-full">
+                        <ChevronLeft className="h-5 w-5 text-white" />
+                      </button>
+                      <button onClick={handleNext} className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/40 p-1 rounded-full">
+                        <ChevronRight className="h-5 w-5 text-white" />
+                      </button>
+                    </>
+                  )}
+
+                  {mediaFiles[currentIndex] && (
+                    <div className="rounded-lg overflow-hidden">
+                      {mediaFiles[currentIndex].type === 'image' ? (
+                        <img src={mediaFiles[currentIndex].url} alt="preview" className="w-full h-64 object-cover" />
+                      ) : mediaFiles[currentIndex].type === 'video' ? (
+                        <video src={mediaFiles[currentIndex].url} controls className="w-full h-64 object-cover" />
+                      ) : (
+                        <audio src={mediaFiles[currentIndex].url} controls className="w-full" />
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Platform Selection */}
           <Card className="bg-gray-800/50 border-gray-700">
             <CardHeader>
@@ -344,30 +505,38 @@ export default function CreatePostTab() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {selectedPlatforms.map((platform) => (
-                  <button
-                    key={platform.id}
-                    onClick={() => handlePlatformToggle(platform.id)}
-                    disabled={!platform.connected}
-                    className={`
-                      p-4 rounded-lg border-2 transition-all duration-200 text-center
-                      ${platform.enabled 
-                        ? `border-blue-500 bg-blue-500/10` 
-                        : `border-gray-600 hover:border-gray-500`
-                      }
-                      ${!platform.connected ? 'opacity-50 cursor-not-allowed' : ''}
-                    `}
-                  >
-                    <div className="text-2xl mb-2">{platform.icon}</div>
-                    <div className="text-sm font-medium text-white">{platform.name}</div>
-                    <div className="text-xs text-gray-400">
-                      {platform.connected ? 'Connected' : 'Not Connected'}
-                    </div>
-                    {platform.enabled && (
-                      <Badge className="mt-2 bg-blue-500/20 text-blue-300">Selected</Badge>
-                    )}
-                  </button>
-                ))}
+                {selectedPlatforms.map((platform) => {
+                  const uploadedTypes = new Set(mediaFiles.map(m => m.type));
+                  const supportsAll = Array.from(uploadedTypes).every(t => (platform as any).acceptedMedia?.includes(t));
+                  const galleryIncompatible = contentType === 'gallery' && !platform.features.multipleImages;
+                  const disabled = !platform.connected || !supportsAll || galleryIncompatible;
+                  return (
+                    <button
+                      key={platform.id}
+                      onClick={() => !disabled && handlePlatformToggle(platform.id)}
+                      disabled={disabled}
+                      className={`
+                        p-4 rounded-lg border-2 transition-all duration-200 text-center
+                        ${platform.enabled 
+                          ? `border-blue-500 bg-blue-500/10` 
+                          : `border-gray-600 hover:border-gray-500`
+                        }
+                        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                      `}
+                    >
+                      <div className="mb-2">
+                        <BrandIcon platform={platform.id} size={32} className="text-white" />
+                      </div>
+                      <div className="text-sm font-medium text-white">{platform.name}</div>
+                      <div className="text-xs text-gray-400">
+                        {platform.connected ? 'Connected' : 'Not Connected'}
+                      </div>
+                      {platform.enabled && (
+                        <Badge className="mt-2 bg-blue-500/20 text-blue-300">Selected</Badge>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -378,7 +547,7 @@ export default function CreatePostTab() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-white flex items-center">
                   <MessageSquare className="h-5 w-5 mr-2" />
-                  Post Content
+                  Caption & Hashtag Generation
                 </CardTitle>
                 <div className="flex items-center space-x-4">
                   {/* Branding toggle */}
@@ -390,38 +559,40 @@ export default function CreatePostTab() {
                       className="form-checkbox h-4 w-4 text-blue-500 rounded bg-gray-700 border-gray-600 focus:ring-blue-500" />
                     Use Brand Profile
                   </label>
-                  <select
-                    value={aiTone}
-                    onChange={(e) => setAiTone(e.target.value as any)}
-                    className="px-3 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-                  >
-                    <option value="professional">Professional</option>
-                    <option value="casual">Casual</option>
-                    <option value="engaging">Engaging</option>
-                  </select>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleGenerateAICaption}
-                    disabled={isGeneratingAI}
-                    className="border-purple-600 hover:border-purple-500 text-purple-400"
-                  >
-                    {isGeneratingAI ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-400"></div>
-                    ) : (
-                      <Wand2 className="h-4 w-4" />
-                    )}
-                    <span className="ml-2">AI Generate</span>
-                  </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <textarea
+                  value={contextInput}
+                  onChange={(e) => setContextInput(e.target.value)}
+                  placeholder="Describe the context, target audience, tone, or any specifics you want the AI to consider when crafting your caption and hashtags..."
+                  className="w-full h-32 px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 resize-none focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* Generate Caption & Hashtags Button */}
+              <Button
+                size="lg"
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold"
+                onClick={handleGenerateAICaption}
+                disabled={isGeneratingAI}
+              >
+                {isGeneratingAI ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : (
+                  'Generate Caption & Hashtags'
+                )}
+              </Button>
+
+              {/* Generated Caption Editor (always visible) */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">Generated Caption</label>
+                <textarea
                   value={postContent}
                   onChange={(e) => setPostContent(e.target.value)}
-                  placeholder="What's on your mind? Share your story..."
+                  placeholder="Your generated caption will appear here. Feel free to tweak it before publishing."
                   className="w-full h-32 px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 resize-none focus:outline-none focus:border-blue-500"
                 />
                 {characterCount && (
@@ -429,10 +600,13 @@ export default function CreatePostTab() {
                     <span className="text-gray-400">
                       {characterCount.current}/{characterCount.max} characters
                     </span>
-                    <div className={`text-right ${
-                      characterCount.current > characterCount.max ? 'text-red-400' : 'text-gray-400'
-                    }`}>
-                      {characterCount.current > characterCount.max && 'Exceeds limit for selected platforms'}
+                    <div
+                      className={`text-right ${
+                        characterCount.current > characterCount.max ? 'text-red-400' : 'text-gray-400'
+                      }`}
+                    >
+                      {characterCount.current > characterCount.max &&
+                        'Exceeds limit for selected platforms'}
                     </div>
                   </div>
                 )}
@@ -469,267 +643,131 @@ export default function CreatePostTab() {
                   </div>
                 )}
               </div>
-
-              {/* Location */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Location (Optional)</label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input
-                    type="text"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Add location"
-                    className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-              </div>
             </CardContent>
           </Card>
+        </div>
 
-          {/* Media Upload */}
-          <Card className="bg-gray-800/50 border-gray-700">
+        {/* Sidebar removed */}
+      </div>
+
+      {/* Publish & Preview controls */}
+      <div className="pt-4 flex justify-center">
+        <Button
+          size="lg"
+          className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold"
+          onClick={() => setShowPreview((prev) => !prev)}
+        >
+          {showPreview ? 'Hide Preview' : 'Create Post Preview'}
+        </Button>
+      </div>
+
+      {/* Preview Modal */}
+      {showPreview && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <Card className="bg-gray-800/50 border-gray-700 max-w-lg w-full">
             <CardHeader>
-              <CardTitle className="text-white flex items-center">
-                <Upload className="h-5 w-5 mr-2" />
-                Media
-              </CardTitle>
-              <CardDescription>Add images, videos, or audio to your post</CardDescription>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-white text-lg">Post Preview</CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => setShowPreview(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Upload Area */}
-              <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-gray-500 transition-colors">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*,video/*,audio/*"
-                  onChange={(e) => e.target.files && handleMediaUpload(e.target.files)}
-                  className="hidden"
-                />
-                <div className="space-y-2">
-                  <Upload className="h-8 w-8 text-gray-400 mx-auto" />
-                  <div className="text-gray-300">
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="text-blue-400 hover:text-blue-300 underline"
-                    >
-                      Click to upload
-                    </button>{' '}
-                    or drag and drop
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    PNG, JPG, MP4, MP3 up to 100MB
-                  </div>
-                </div>
-              </div>
-
-              {/* Media Preview */}
               {mediaFiles.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {mediaFiles.map((media) => (
-                    <div key={media.id} className="relative group">
-                      <div className="relative rounded-lg overflow-hidden bg-gray-700">
-                        {media.type === 'image' ? (
-                          <img
-                            src={media.url}
-                            alt=""
-                            className="w-full h-24 object-cover"
-                          />
-                        ) : media.type === 'video' ? (
-                          <div className="w-full h-24 bg-gray-600 flex items-center justify-center">
-                            <Play className="h-6 w-6 text-white" />
-                          </div>
-                        ) : (
-                          <div className="w-full h-24 bg-gray-600 flex items-center justify-center">
-                            <Music className="h-6 w-6 text-white" />
-                          </div>
-                        )}
-                        
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRemoveMedia(media.id)}
-                            className="border-red-500 text-red-400 hover:bg-red-500/10"
-                          >
-                            <X className="h-4 w-4" />
+                <div className="w-full rounded overflow-hidden">
+                  {contentType === 'gallery' ? (
+                    <div className="relative">
+                      {mediaFiles[currentIndex].type === 'image' ? (
+                        <img src={mediaFiles[currentIndex].url} className="w-full object-contain" />
+                      ) : (
+                        <video src={mediaFiles[currentIndex].url} className="w-full" controls />
+                      )}
+                      {mediaFiles.length > 1 && (
+                        <div className="absolute inset-0 flex justify-between items-center px-2">
+                          <Button variant="ghost" size="icon" onClick={handlePrev}>
+                            <ChevronLeft className="h-5 w-5" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={handleNext}>
+                            <ChevronRight className="h-5 w-5" />
                           </Button>
                         </div>
-                      </div>
-                      
-                      <div className="mt-1 text-xs text-gray-400 truncate">
-                        {media.file.name}
-                      </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Scheduling */}
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center">
-                <Calendar className="h-5 w-5 mr-2" />
-                Scheduling
-              </CardTitle>
-              <CardDescription>Post now or schedule for later</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="posting-time"
-                    checked={!isScheduled}
-                    onChange={() => setIsScheduled(false)}
-                    className="text-blue-500"
-                  />
-                  <span className="text-gray-300">Post Now</span>
-                </label>
-                
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="posting-time"
-                    checked={isScheduled}
-                    onChange={() => setIsScheduled(true)}
-                    className="text-blue-500"
-                  />
-                  <span className="text-gray-300">Schedule for Later</span>
-                </label>
-              </div>
-
-              {isScheduled && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Date</label>
-                    <input
-                      type="date"
-                      value={scheduleDate}
-                      onChange={(e) => setScheduleDate(e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Time</label>
-                    <input
-                      type="time"
-                      value={scheduleTime}
-                      onChange={(e) => setScheduleTime(e.target.value)}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Preview */}
-          {showPreview && (
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white text-lg">Preview</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-gray-700/50 rounded-lg p-4">
-                  <div className="text-white text-sm whitespace-pre-wrap">{postContent}</div>
-                  {hashtags.length > 0 && (
-                    <div className="mt-2 text-blue-400 text-sm">
-                      {hashtags.map(tag => `#${tag}`).join(' ')}
-                    </div>
-                  )}
-                  {location && (
-                    <div className="mt-2 text-gray-400 text-sm flex items-center">
-                      <MapPin className="h-3 w-3 mr-1" />
-                      {location}
-                    </div>
+                  ) : mediaFiles[0].type === 'image' ? (
+                    <img src={mediaFiles[0].url} className="w-full object-contain" />
+                  ) : (
+                    <video src={mediaFiles[0].url} className="w-full" controls />
                   )}
                 </div>
-                
-                {mediaFiles.length > 0 && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {mediaFiles.slice(0, 4).map((media) => (
-                      <div key={media.id} className="relative rounded overflow-hidden">
-                        {media.type === 'image' ? (
-                          <img src={media.url} alt="" className="w-full h-16 object-cover" />
-                        ) : (
-                          <div className="w-full h-16 bg-gray-600 flex items-center justify-center">
-                            <Play className="h-4 w-4 text-white" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
+              )}
+
+              <div className="bg-gray-700/50 rounded-lg p-4">
+                <div className="text-white text-sm whitespace-pre-wrap">{postContent}</div>
+                {hashtags.length > 0 && (
+                  <div className="mt-2 text-blue-400 text-sm">
+                    {hashtags.map((tag) => `#${tag}`).join(' ')}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Publishing Actions */}
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <Button
-                  onClick={handlePublish}
-                  disabled={isPublishing || selectedPlatforms.filter(p => p.enabled).length === 0}
-                  className={`w-full ${
-                    isScheduled 
-                      ? 'bg-blue-600 hover:bg-blue-700' 
-                      : 'bg-green-600 hover:bg-green-700'
-                  }`}
-                >
-                  {isPublishing ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  ) : isScheduled ? (
-                    <Clock className="h-4 w-4 mr-2" />
-                  ) : (
-                    <Send className="h-4 w-4 mr-2" />
-                  )}
-                  {isPublishing ? 'Publishing...' : isScheduled ? 'Schedule Post' : 'Publish Now'}
-                </Button>
-                
-                <div className="text-xs text-gray-400 text-center">
-                  {selectedPlatforms.filter(p => p.enabled).length > 0 
-                    ? `Publishing to ${selectedPlatforms.filter(p => p.enabled).length} platform(s)`
-                    : 'Select platforms to publish'
-                  }
-                </div>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Quick Actions */}
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white text-lg">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start border-gray-600">
-                <Copy className="h-4 w-4 mr-2" />
-                Save as Draft
-              </Button>
-              
-              <Button variant="outline" className="w-full justify-start border-gray-600">
-                <Download className="h-4 w-4 mr-2" />
-                Save Template
-              </Button>
-              
-              <Button variant="outline" className="w-full justify-start border-gray-600">
-                <Palette className="h-4 w-4 mr-2" />
-                Brand Kit
+              <Button
+                variant="outline"
+                className="w-full justify-center border-gray-600"
+                onClick={() => {
+                  if (mediaFiles.length === 0) return;
+                  const mapped = mediaFiles.map((m) => ({
+                    id: m.id,
+                    name: m.file?.name || 'untitled',
+                    type: m.type,
+                    url: m.url,
+                    preview: m.thumbnail || m.url,
+                    size: m.file?.size || 0,
+                    uploadedAt: new Date(),
+                    tags: hashtags,
+                    description: postContent,
+                  }));
+                  addFiles(mapped as any);
+                }}
+              >
+                Add to Library
               </Button>
             </CardContent>
           </Card>
         </div>
-      </div>
+      )}
+
+      {/* Media Library Modal */}
+      {showLibrary && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+          <div className="bg-gray-800 border border-gray-600 rounded-lg p-6 max-w-3xl w-full max-h-[80vh] overflow-y-auto space-y-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-white">Media Library</h3>
+              <Button variant="outline" size="sm" onClick={() => setShowLibrary(false)}>Close</Button>
+            </div>
+            {libraryFiles.length === 0 ? (
+              <p className="text-gray-400">No media in library.</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                {libraryFiles.map((item) => (
+                  <div key={item.id} className="cursor-pointer group" onClick={() => handleAddFromLibrary(item.id)}>
+                    <div className="rounded-lg overflow-hidden border border-gray-600 group-hover:border-blue-500">
+                      {item.type === 'image' ? (
+                        <img src={item.preview || item.url} alt="" className="w-full h-32 object-cover" />
+                      ) : item.type === 'video' ? (
+                        <video src={item.url} className="w-full h-32 object-cover" />
+                      ) : (
+                        <div className="w-full h-32 flex items-center justify-center bg-gray-700 text-white text-sm">Audio</div>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs truncate text-gray-300">{item.name}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
