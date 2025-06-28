@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -37,7 +37,7 @@ export default function MediaUpload({
 }: MediaUploadProps) {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
-  const { addFiles, setUploadProgress, setIsUploading } = useMediaStore();
+  const { addFiles, setUploadProgress, setIsUploading, isUploading } = useMediaStore();
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     // Handle rejected files
@@ -56,7 +56,9 @@ export default function MediaUpload({
     // Process accepted files
     const filesWithPreview = acceptedFiles.map((file, index) => {
       const fileWithPreview = Object.assign(file, {
-        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+        preview: (file.type.startsWith('image/') || file.type.startsWith('video/'))
+          ? URL.createObjectURL(file)
+          : undefined,
         id: `file-${Date.now()}-${index}`,
         progress: 0
       }) as FileWithPreview;
@@ -138,6 +140,9 @@ export default function MediaUpload({
                 tags: data?.tags || [],
                 aiGenerated: false,
                 description: data?.description || undefined,
+                preview: (file.type.startsWith('image/') || file.type.startsWith('video/'))
+                  ? URL.createObjectURL(file)
+                  : undefined,
               }
             ]);
           } catch (storeErr) {
@@ -203,6 +208,14 @@ export default function MediaUpload({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  /* Auto-upload when only a single file is allowed */
+  useEffect(() => {
+    if (!multiple && files.length > 0 && !isUploading) {
+      uploadFiles();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [files]);
+
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Drop Zone */}
@@ -265,13 +278,15 @@ export default function MediaUpload({
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
                 Files to Upload ({files.length})
               </h3>
-              <button
-                onClick={uploadFiles}
-                disabled={files.length === 0}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Upload All
-              </button>
+              {multiple && (
+                <button
+                  onClick={uploadFiles}
+                  disabled={files.length === 0}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Upload All
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

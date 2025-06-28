@@ -5,6 +5,7 @@ export interface MediaFile {
   name: string;
   type: 'image' | 'video' | 'audio';
   url: string;
+  preview?: string;
   size: number;
   uploadedAt: Date;
   tags: string[];
