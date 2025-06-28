@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleAuth } from 'google-auth-library';
+import { getGoogleCloudAccessToken } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
   console.log('🎬 Generate video route called');
@@ -17,18 +17,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get access token for Google Cloud authentication
+    // Get access token via Firebase Admin
     let accessToken;
     try {
       accessToken = await getGoogleCloudAccessToken();
-      console.log('✅ Got access token for video generation');
+      console.log('✅ Got access token via Firebase Admin for video generation');
     } catch (authError: any) {
-      console.warn('⚠️ Authentication failed, returning mock operation:', authError.message);
+      console.warn('⚠️ Firebase Admin authentication failed, returning mock operation:', authError.message);
       // Return a mock operation that will resolve to a video
       return NextResponse.json({
         success: true,
         operationName: `mock-operation-${Date.now()}`,
-        message: 'Video generation started (mock mode due to auth failure)'
+        message: 'Video generation started (mock mode due to Firebase auth failure)'
       });
     }
 
@@ -134,20 +134,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function getGoogleCloudAccessToken(): Promise<string> {
-  const auth = new GoogleAuth({
-    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
-  });
-  
-  const client = await auth.getClient();
-  const accessToken = await client.getAccessToken();
-  
-  if (!accessToken.token) {
-    throw new Error('Failed to get access token');
-  }
-  
-  return accessToken.token;
-}
+// Note: Authentication is now handled by Firebase Admin SDK in @/lib/firebase-admin
 
 async function extractAndSaveVideo(response: any): Promise<{ videoUrl: string | null; thumbnailUrl: string }> {
   const { promises: fs } = require('fs');

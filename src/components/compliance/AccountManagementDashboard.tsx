@@ -93,15 +93,12 @@ const AccountManagementDashboard: React.FC<AccountManagementDashboardProps> = ({
   } = useCompliance();
 
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
-  const [googlePhotosStatus, setGooglePhotosStatus] = useState<{
-    isConnected: boolean;
-    userEmail?: string;
-  }>({ isConnected: false });
+  // Google Photos functionality has been discontinued
 
   useEffect(() => {
     // Load initial data
     loadInitialData();
-    checkGooglePhotosConnection();
+    // Google Photos functionality discontinued
   }, []);
 
   const loadInitialData = async () => {
@@ -121,59 +118,10 @@ const AccountManagementDashboard: React.FC<AccountManagementDashboardProps> = ({
   const handleRefresh = () => {
     clearError();
     loadInitialData();
-    checkGooglePhotosConnection();
+    // Google Photos functionality discontinued
   };
 
-  const checkGooglePhotosConnection = async () => {
-    try {
-      const response = await fetch('/api/google-photos/connection');
-      const data = await response.json();
-      setGooglePhotosStatus(data);
-    } catch (error) {
-      console.error('Failed to check Google Photos connection:', error);
-      setGooglePhotosStatus({ isConnected: false });
-    }
-  };
-
-  const handleConnectGooglePhotos = async () => {
-    try {
-      const response = await fetch('/api/google-photos/auth/url');
-      const data = await response.json();
-      
-      if (data.authUrl) {
-        // Open OAuth popup
-        const popup = window.open(
-          data.authUrl,
-          'google-photos-auth',
-          'width=600,height=600,scrollbars=yes,resizable=yes'
-        );
-
-        // Monitor for completion
-        const pollTimer = setInterval(() => {
-          try {
-            if (popup?.closed) {
-              clearInterval(pollTimer);
-              // Refresh connection status
-              checkGooglePhotosConnection();
-            }
-          } catch (error) {
-            // Ignore cross-origin errors
-          }
-        }, 1000);
-      }
-    } catch (error) {
-      console.error('Failed to initiate Google Photos connection:', error);
-    }
-  };
-
-  const handleDisconnectGooglePhotos = async () => {
-    try {
-      await fetch('/api/google-photos/connection', { method: 'DELETE' });
-      setGooglePhotosStatus({ isConnected: false });
-    } catch (error) {
-      console.error('Failed to disconnect Google Photos:', error);
-    }
-  };
+  // Google Photos functionality has been discontinued
 
   const handleDisconnectPlatform = async (platform: string) => {
     try {
@@ -317,16 +265,7 @@ const AccountManagementDashboard: React.FC<AccountManagementDashboardProps> = ({
                 onConnect={() => window.open('/api/auth/instagram/start', '_blank')}
                 onDisconnect={() => handleDisconnectPlatform('instagram')}
               />
-              <PlatformConnectionRow
-                platform="google-photos"
-                name="Google Photos"
-                icon="📷"
-                color="bg-blue-600"
-                status={googlePhotosStatus?.isConnected ? 'connected' : 'disconnected'}
-                userInfo={googlePhotosStatus?.userEmail}
-                onConnect={handleConnectGooglePhotos}
-                onDisconnect={handleDisconnectGooglePhotos}
-              />
+              {/* Google Photos functionality has been discontinued */}
               <PlatformConnectionRow
                 platform="facebook"
                 name="Facebook"
