@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useMediaLibrary, MediaItem } from '@/hooks/api/useMediaLibrary';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import { useMediaLibrary } from '@/hooks/api/useMediaLibrary';
+import type { MediaItem } from '@/types/api';
 import MediaUpload from '@/components/media/MediaUpload';
+import GalleryManager from '@/components/media/GalleryManager';
 import { 
   PhotoIcon, 
   VideoCameraIcon, 
@@ -19,24 +21,41 @@ import {
   ListBulletIcon,
   DocumentCheckIcon,
   FilmIcon,
-  PlayIcon
+  PlayIcon,
+  FolderIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 type DashboardMode = 'completed' | 'unedited';
 
-export default function LibraryTab() {
+function LibraryTabContent() {
   const router = useRouter();
-  const { media, loading, uploadMedia, deleteMedia, processMedia, refetch } = useMediaLibrary();
-  const [dashboardMode, setDashboardMode] = useState<DashboardMode>('unedited');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const { 
+    media, 
+    galleries, 
+    loading, 
+    error: mediaError, 
+    uploadMedia, 
+    deleteMedia, 
+    fetchMedia 
+  } = useMediaLibrary();
+  const searchParams = useSearchParams();
+  const initialMode = (searchParams.get('mode') as DashboardMode) || 'completed';
+
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showProcessModal, setShowProcessModal] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
+  const [activeTab, setActiveTab] = useState<'library' | 'galleries'>('library');
+  const [dashboardMode, setDashboardMode] = useState<DashboardMode>(initialMode);
+
+  // Media fetch error from the useMediaLibrary hook – keep the descriptive name to avoid shadowing
+  const mediaFetchError = mediaError;
 
   // Debug: Log media changes
   React.useEffect(() => {
@@ -44,33 +63,74 @@ export default function LibraryTab() {
     console.log('Media items:', media);
   }, [media]);
 
-  // Filter media based on dashboard mode
-  const dashboardMedia = media.filter((item: MediaItem) => {
-    if (dashboardMode === 'completed') {
-      return item.status === 'completed' || item.isProcessed === true;
-    } else {
-      return item.status !== 'completed' && item.isProcessed !== true;
-    }
-  });
+  // Filter content based on dashboard mode
+  const filteredAllContent = useMemo(() => {
+    console.log('🔍 Filtering content for mode:', dashboardMode);
+    console.log('📊 All media items:', media.length);
+    
+    const filtered = media.filter((item) => {
+      // Updated logic to work with new unified MediaItem interface
+      const isCompleted = item.status === 'published' || 
+                         item.isPostReady === true ||
+                         (item.tags && item.tags.includes('completed-post')) ||
+                         (item.aiTags && item.aiTags.some(tag => 
+                           typeof tag === 'string' ? tag.includes('completed-post') : tag.tag.includes('completed-post')
+                         )) ||
+                         (item.tags && item.tags.includes('library')) ||
+                         item.isProcessed;
+      
+      const hasContent = !!(item.caption || item.description);
+      
+      console.log(`📝 Item ${item.id} (${item.filename || 'unnamed'}):`, {
+        isPostReady: item.isPostReady,
+        status: item.status,
+        isProcessed: item.isProcessed,
+        tags: item.tags,
+        aiTags: item.aiTags,
+        hasContent,
+        caption: item.caption,
+        description: item.description,
+        categorizedAs: isCompleted ? 'completed' : 'unedited',
+        shouldShow: dashboardMode === 'completed' ? isCompleted : !isCompleted
+      });
 
-  // Split media into video content and other content
-  const videoContent = dashboardMedia.filter((item: MediaItem) => 
+      if (dashboardMode === 'completed') {
+        // Show items that are marked as completed posts (status='completed' or is_post_ready=true)
+        return isCompleted;
+      } else {
+        // Show unedited/raw media (not completed posts)
+        return !isCompleted;
+      }
+    });
+    
+    console.log(`📋 Filtered ${filtered.length} items for ${dashboardMode} mode`);
+    return filtered;
+  }, [media, dashboardMode]);
+
+  // Apply search filter to the already categorized content
+  const searchFilteredContent = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return filteredAllContent;
+    }
+    
+    return filteredAllContent.filter((item: MediaItem) =>
+      (item.filename || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.caption && item.caption.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (item.aiTags && item.aiTags.some(tag => 
+        (typeof tag === 'string' ? tag : tag.tag).toLowerCase().includes(searchQuery.toLowerCase())
+      ))
+    );
+  }, [filteredAllContent, searchQuery]);
+
+  // Split search-filtered content into video and other content
+  const filteredVideoContent = searchFilteredContent.filter((item: MediaItem) => 
     item.type === 'video' || item.subtype === 'reel' || item.subtype === 'short'
   );
 
-  const otherContent = dashboardMedia.filter((item: MediaItem) => 
+  const filteredOtherContent = searchFilteredContent.filter((item: MediaItem) => 
     item.type !== 'video' && item.subtype !== 'reel' && item.subtype !== 'short'
-  );
-
-  // Apply search filter
-  const filteredVideoContent = videoContent.filter((item: MediaItem) => 
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
-  const filteredOtherContent = otherContent.filter((item: MediaItem) => 
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleUpload = async (files: File[]) => {
@@ -118,180 +178,271 @@ export default function LibraryTab() {
     }
   };
 
-  const MediaCard = ({ item }: { item: MediaItem }) => (
-    <div 
-      key={item.id} 
-      className={`bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer ${
-        selectedItems.includes(item.id) ? 'ring-2 ring-purple-500 bg-purple-500/10' : ''
-      }`}
-      onClick={() => toggleSelection(item.id)}
-    >
-      {/* Media Preview */}
-      <div className="aspect-video bg-gray-800 rounded-lg mb-3 flex items-center justify-center overflow-hidden relative">
-        {item.type === 'image' && item.url ? (
-          <>
-            <img 
-              src={item.url} 
-              alt={item.name} 
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                // Fallback to placeholder if image fails to load
-                (e.target as HTMLImageElement).src = '/images/placeholder-image.jpg';
-              }}
-            />
-          </>
-        ) : (item.type === 'video' || item.subtype === 'reel' || item.subtype === 'short') && item.thumbnail ? (
-          <>
-            <img 
-              src={item.thumbnail}
-              alt={item.name}
-              className="w-full h-full object-cover"
-              loading="lazy"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/images/video-thumb.jpg';
-              }}
-            />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="bg-black/60 backdrop-blur-sm rounded-full p-3">
-                <PlayIcon className="h-6 w-6 text-white" />
-              </div>
+  const MediaCard = ({ item }: { item: MediaItem }) => {
+    const [imageError, setImageError] = useState<string | null>(null);
+    const [imageLoaded, setImageLoaded] = useState(false);
+
+    // Debug logging for media URLs
+    useEffect(() => {
+      console.log('🖼️ MediaCard for item:', {
+        id: item.id,
+        name: item.name,
+        type: item.type,
+        url: item.url,
+        thumbnail: item.thumbnail,
+        gcs_path: item.gcs_path,
+        filename: item.filename
+      });
+    }, [item]);
+
+    return (
+      <div 
+        key={item.id} 
+        className={`bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all cursor-pointer group ${
+          selectedItems.includes(item.id) ? 'ring-2 ring-purple-500 bg-purple-500/10' : ''
+        }`}
+        onClick={() => toggleSelection(item.id)}
+      >
+        {/* Media Preview */}
+        <div className="aspect-video bg-gray-800 rounded-lg mb-3 flex items-center justify-center overflow-hidden relative">
+          {/* Debug info overlay in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="absolute top-0 left-0 bg-black/80 text-white text-xs p-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity max-w-full">
+              <div>ID: {item.id}</div>
+              <div>URL: {item.url?.substring(0, 50)}...</div>
+              {imageError && <div className="text-red-400">Error: {imageError}</div>}
             </div>
-          </>
-        ) : item.type === 'video' && item.url ? (
-          <>
-            <video 
-              src={item.url}
-              className="w-full h-full object-cover"
-              muted
-              preload="none"
-              onError={(e) => {
-                console.error('Video preview error:', e);
-              }}
-            />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="bg-black/60 backdrop-blur-sm rounded-full p-4 hover:bg-black/80 transition-colors">
-                <PlayIcon className="h-8 w-8 text-white" />
-              </div>
-            </div>
-          </>
-        ) : item.thumbnail ? (
-          <>
-            <img src={item.thumbnail} alt={item.name} className="w-full h-full object-cover" />
-            {(item.type === 'video' || item.subtype === 'reel' || item.subtype === 'short') && (
+          )}
+
+          {item.type === 'image' && (item.url || item.thumbnail) ? (
+            <>
+              {(() => {
+                const rawUrl = (item.url && item.url !== '#' ? item.url : undefined) || item.thumbnail;
+                const displayUrl = rawUrl && rawUrl !== '#' ? rawUrl : '/images/placeholder-image.jpg';
+                return (
+                  <img
+                    src={displayUrl}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    onLoad={() => {
+                      console.log('✅ Image loaded successfully for:', item.name);
+                      setImageLoaded(true);
+                      setImageError(null);
+                    }}
+                    onError={(e) => {
+                      const error = `Failed to load image: ${displayUrl}`;
+                      console.error('❌ Image load error for:', item.name, error);
+                      setImageError(error);
+                      setImageLoaded(false);
+                      (e.target as HTMLImageElement).src = '/images/placeholder-image.jpg';
+                    }}
+                  />
+                );
+              })()}
+              {!imageLoaded && !imageError && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                </div>
+              )}
+            </>
+          ) : (item.type === 'video' || item.subtype === 'reel' || item.subtype === 'short') && item.thumbnail ? (
+            <>
+              <img 
+                src={item.thumbnail}
+                alt={item.name}
+                className="w-full h-full object-cover"
+                loading="lazy"
+                onLoad={() => {
+                  console.log('✅ Thumbnail loaded successfully for:', item.name);
+                }}
+                onError={(e) => {
+                  console.error('❌ Thumbnail load error for:', item.name, item.thumbnail);
+                  (e.target as HTMLImageElement).src = '/images/video-thumb.jpg';
+                }}
+              />
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-black/50 backdrop-blur-sm rounded-full p-3">
+                <div className="bg-black/60 backdrop-blur-sm rounded-full p-3">
                   <PlayIcon className="h-6 w-6 text-white" />
                 </div>
               </div>
+            </>
+          ) : item.type === 'video' && item.url ? (
+            <>
+              <video 
+                src={item.url}
+                className="w-full h-full object-cover"
+                muted
+                preload="none"
+                onLoadedData={() => {
+                  console.log('✅ Video loaded successfully for:', item.name);
+                }}
+                onError={(e) => {
+                  console.error('❌ Video load error for:', item.name, item.url);
+                }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="bg-black/60 backdrop-blur-sm rounded-full p-4 hover:bg-black/80 transition-colors">
+                  <PlayIcon className="h-8 w-8 text-white" />
+                </div>
+              </div>
+            </>
+          ) : item.thumbnail ? (
+            <>
+              <img 
+                src={item.thumbnail} 
+                alt={item.name} 
+                className="w-full h-full object-cover"
+                onLoad={() => {
+                  console.log('✅ Fallback thumbnail loaded for:', item.name);
+                }}
+                onError={(e) => {
+                  console.error('❌ Fallback thumbnail error for:', item.name, item.thumbnail);
+                  (e.target as HTMLImageElement).src = '/images/video-thumb.jpg';
+                }}
+              />
+              {(item.type === 'video' || item.subtype === 'reel' || item.subtype === 'short') && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-black/50 backdrop-blur-sm rounded-full p-3">
+                    <PlayIcon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-4xl text-gray-500">
+              {item.subtype === 'reel' || item.subtype === 'short' ? '🎬' : 
+               item.type === 'image' ? '🖼️' : 
+               item.type === 'video' ? '🎥' : '🎵'}
+            </div>
+          )}
+          
+          {/* Type indicator */}
+          <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+            {item.subtype || item.type}
+          </div>
+        </div>
+
+        {/* Media Info */}
+        <div className="space-y-2">
+          <h3 className="text-white font-medium truncate" title={item.name}>{item.name}</h3>
+          
+          <div className="flex items-center justify-between text-sm text-gray-400">
+            <div className="flex items-center gap-1">
+              {getFileIcon(item.type, item.subtype)}
+              <span>{item.subtype || item.type}</span>
+            </div>
+            <span>{(item.size / 1024 / 1024).toFixed(1)} MB</span>
+          </div>
+
+          {item.dimensions && item.dimensions.width > 0 && (
+            <p className="text-xs text-gray-500">{item.dimensions.width} × {item.dimensions.height}</p>
+          )}
+
+          {/* Status indicator for completed posts */}
+          {dashboardMode === 'completed' && (
+            <div className="flex items-center gap-1 text-xs text-green-400">
+              <DocumentCheckIcon className="h-3 w-3" />
+              <span>Ready to publish</span>
+            </div>
+          )}
+
+          {/* Duration for video content */}
+          {(item.type === 'video' || item.subtype === 'reel' || item.subtype === 'short') && item.duration && (
+            <p className="text-xs text-blue-400">Duration: {item.duration}s</p>
+          )}
+
+          {/* Tags */}
+          <div className="flex flex-wrap gap-1">
+            {/* Show local storage indicator for local uploads */}
+            {(item.id?.startsWith('local-') || item.tags?.includes('local-storage')) && (
+              <span className="text-xs bg-yellow-600/30 text-yellow-200 px-2 py-1 rounded border border-yellow-500/30">
+                📱 Local Only
+              </span>
             )}
-          </>
-        ) : (
-          <div className="text-4xl text-gray-500">
-            {item.subtype === 'reel' || item.subtype === 'short' ? '🎬' : 
-             item.type === 'image' ? '🖼️' : 
-             item.type === 'video' ? '🎥' : '🎵'}
+            {item.tags?.filter(tag => tag !== 'local-storage').slice(0, 2).map((tag, index) => (
+              <span key={index} className="text-xs bg-purple-600/30 text-purple-200 px-2 py-1 rounded">
+                {tag}
+              </span>
+            ))}
+            {(item.tags?.filter(tag => tag !== 'local-storage').length || 0) > 2 && (
+              <span className="text-xs text-gray-400">+{(item.tags?.filter(tag => tag !== 'local-storage').length || 0) - 2}</span>
+            )}
           </div>
-        )}
-        
-        {/* Type indicator */}
-        <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-          {item.subtype || item.type}
-        </div>
-      </div>
-
-      {/* Media Info */}
-      <div className="space-y-2">
-        <h3 className="text-white font-medium truncate" title={item.name}>{item.name}</h3>
-        
-        <div className="flex items-center justify-between text-sm text-gray-400">
-          <div className="flex items-center gap-1">
-            {getFileIcon(item.type, item.subtype)}
-            <span>{item.subtype || item.type}</span>
-          </div>
-          <span>{(item.size / 1024 / 1024).toFixed(1)} MB</span>
         </div>
 
-        {item.dimensions && item.dimensions.width > 0 && (
-          <p className="text-xs text-gray-500">{item.dimensions.width} × {item.dimensions.height}</p>
-        )}
-
-        {/* Status indicator for completed posts */}
-        {dashboardMode === 'completed' && (
-          <div className="flex items-center gap-1 text-xs text-green-400">
-            <DocumentCheckIcon className="h-3 w-3" />
-            <span>Ready to publish</span>
-          </div>
-        )}
-
-        {/* Duration for video content */}
-        {(item.type === 'video' || item.subtype === 'reel' || item.subtype === 'short') && item.duration && (
-          <p className="text-xs text-blue-400">Duration: {item.duration}s</p>
-        )}
-
-        {/* Tags */}
-        <div className="flex flex-wrap gap-1">
-          {/* Show local storage indicator for local uploads */}
-          {(item.id?.startsWith('local-') || item.tags?.includes('local-storage')) && (
-            <span className="text-xs bg-yellow-600/30 text-yellow-200 px-2 py-1 rounded border border-yellow-500/30">
-              📱 Local Only
-            </span>
+        {/* Action buttons overlay on hover */}
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewMedia(item);
+            }}
+            className="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white p-2 rounded-lg transition-colors"
+            title={dashboardMode === 'completed' ? 'Preview Post' : 'View Media'}
+          >
+            <EyeIcon className="h-4 w-4" />
+          </button>
+          
+          {/* Generate thumbnail button for placeholder thumbnails */}
+          {(item.thumbnail === '/images/placeholder-image.jpg' || 
+            item.thumbnail === '/static/img/placeholder-image.jpg' ||
+            item.thumbnail_url === '/images/placeholder-image.jpg' || 
+            item.thumbnail_url === '/static/img/placeholder-image.jpg') && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleGenerateThumbnail(item);
+              }}
+              className="bg-yellow-500/20 backdrop-blur-sm hover:bg-yellow-500/40 text-yellow-300 p-2 rounded-lg transition-colors"
+              title="Generate Thumbnail"
+            >
+              <PhotoIcon className="h-4 w-4" />
+            </button>
           )}
-          {item.tags?.filter(tag => tag !== 'local-storage').slice(0, 2).map((tag, index) => (
-            <span key={index} className="text-xs bg-purple-600/30 text-purple-200 px-2 py-1 rounded">
-              {tag}
-            </span>
-          ))}
-          {(item.tags?.filter(tag => tag !== 'local-storage').length || 0) > 2 && (
-            <span className="text-xs text-gray-400">+{(item.tags?.filter(tag => tag !== 'local-storage').length || 0) - 2}</span>
+          
+          {dashboardMode === 'completed' && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const caption = item.caption || item.description || '';
+                const hashtags = item.ai_tags?.filter(tag => tag.startsWith('#')).join(' ') || '';
+                const content = `${caption}${hashtags ? '\n\n' + hashtags : ''}`;
+                navigator.clipboard.writeText(content);
+                // Could add toast notification here
+              }}
+              className="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white p-2 rounded-lg transition-colors"
+              title="Copy Caption & Hashtags"
+            >
+              <DocumentCheckIcon className="h-4 w-4" />
+            </button>
           )}
+          
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDownloadMedia(item);
+            }}
+            className="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white p-2 rounded-lg transition-colors"
+            title="Download"
+          >
+            <ArrowDownTrayIcon className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteMedia(item);
+            }}
+            className="bg-red-500/20 backdrop-blur-sm hover:bg-red-500/40 text-red-300 p-2 rounded-lg transition-colors"
+            title="Delete"
+          >
+            <TrashIcon className="h-4 w-4" />
+          </button>
         </div>
       </div>
-
-      {/* Action buttons */}
-      <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/10">
-        <button 
-          className="text-gray-400 hover:text-white transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleViewMedia(item);
-          }}
-          title="View media"
-        >
-          <EyeIcon className="h-4 w-4" />
-        </button>
-        <button 
-          className="text-gray-400 hover:text-white transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleEditMedia(item);
-          }}
-          title="Edit/Process media"
-        >
-          <PencilIcon className="h-4 w-4" />
-        </button>
-        <button 
-          className="text-gray-400 hover:text-white transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDownloadMedia(item);
-          }}
-          title="Download media"
-        >
-          <ArrowDownTrayIcon className="h-4 w-4" />
-        </button>
-        <button 
-          className="text-gray-400 hover:text-red-400 transition-colors"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDeleteMedia(item);
-          }}
-          title="Delete media"
-        >
-          <TrashIcon className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const handleViewMedia = (item: MediaItem) => {
     setSelectedMedia(item);
@@ -326,6 +477,179 @@ export default function LibraryTab() {
     setShowProcessModal(true);
   };
 
+  const handleGenerateThumbnail = async (item: MediaItem) => {
+    try {
+      console.log('🎬 Generating thumbnail for:', item.name);
+      // TODO: Implement thumbnail generation API call
+      // This could call a backend endpoint that generates a proper thumbnail
+      // For now, show a placeholder message
+      alert(`Thumbnail generation for "${item.name}" will be implemented soon. This feature will automatically generate a proper thumbnail for this media item.`);
+    } catch (error) {
+      console.error('Failed to generate thumbnail:', error);
+      alert('Failed to generate thumbnail. Please try again.');
+    }
+  };
+
+  // Enhanced completed post preview modal
+  const CompletedPostPreviewModal = ({ item, onClose }: { item: MediaItem | null; onClose: () => void }) => {
+    if (!item) return null;
+
+    // Extract post metadata - updated for new backend structure
+    const caption = item.caption || item.description || '';
+    const hashtags = item.ai_tags?.filter(tag => tag.startsWith('#')) || [];
+    const regularTags = item.ai_tags?.filter(tag => !tag.startsWith('#')) || [];
+    const postMetadata = item.post_metadata || {};
+    
+    return (
+      <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div className="bg-gray-900 border border-gray-600 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+          {/* Header */}
+          <div className="flex justify-between items-center p-6 border-b border-gray-700">
+            <h3 className="text-xl font-semibold text-white">Completed Post Preview</h3>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <XMarkIcon className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {/* Content */}
+          <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+            {/* Media Preview */}
+            <div className="rounded-xl overflow-hidden bg-gray-800">
+              {item.type === 'image' ? (
+                <img 
+                  src={item.url} 
+                  alt={item.name} 
+                  className="w-full max-h-96 object-contain"
+                />
+              ) : item.type === 'video' ? (
+                <video 
+                  src={item.url} 
+                  controls 
+                  className="w-full max-h-96"
+                />
+              ) : (
+                <div className="w-full h-64 flex items-center justify-center text-white">
+                  <MusicalNoteIcon className="h-16 w-16 text-gray-400" />
+                  <span className="ml-2">Audio File: {item.name}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Post Content */}
+            <div className="bg-gray-800/50 rounded-lg p-4 space-y-4">
+              <h4 className="text-white font-medium flex items-center gap-2">
+                <DocumentCheckIcon className="h-5 w-5 text-green-400" />
+                Post Caption & Content
+              </h4>
+              
+              {caption ? (
+                <div className="text-white whitespace-pre-wrap bg-gray-700/30 rounded p-3">
+                  {caption}
+                </div>
+              ) : (
+                <div className="text-gray-400 italic">No caption provided</div>
+              )}
+
+              {/* Hashtags */}
+              {hashtags.length > 0 && (
+                <div className="space-y-2">
+                  <h5 className="text-blue-400 font-medium text-sm">Hashtags:</h5>
+                  <div className="flex flex-wrap gap-2">
+                    {hashtags.map((tag, index) => (
+                      <span 
+                        key={index} 
+                        className="bg-blue-500/20 text-blue-300 px-2 py-1 rounded text-sm"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Regular Tags */}
+              {regularTags.length > 0 && (
+                <div className="space-y-2">
+                  <h5 className="text-purple-400 font-medium text-sm">Tags:</h5>
+                  <div className="flex flex-wrap gap-2">
+                    {regularTags.map((tag, index) => (
+                      <span 
+                        key={index} 
+                        className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded text-sm"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Post Metadata */}
+            <div className="bg-gray-800/30 rounded-lg p-4 space-y-3">
+              <h4 className="text-white font-medium">Post Information</h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400">File Name:</span>
+                  <span className="text-white ml-2">{item.name}</span>
+                </div>
+                
+                <div>
+                  <span className="text-gray-400">Size:</span>
+                  <span className="text-white ml-2">{(item.size / 1024 / 1024).toFixed(1)} MB</span>
+                </div>
+                
+                {item.dimensions && (
+                  <div>
+                    <span className="text-gray-400">Dimensions:</span>
+                    <span className="text-white ml-2">{item.dimensions.width} × {item.dimensions.height}</span>
+                  </div>
+                )}
+                
+                <div>
+                  <span className="text-gray-400">Created:</span>
+                  <span className="text-white ml-2">{new Date(item.createdAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={() => handleDownloadMedia(item)}
+                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+              >
+                <ArrowDownTrayIcon className="h-4 w-4" />
+                Download
+              </Button>
+              
+              <Button
+                onClick={() => handleEditMedia(item)}
+                variant="outline"
+                className="border-gray-600 text-white hover:bg-gray-700 flex items-center gap-2"
+              >
+                <PencilIcon className="h-4 w-4" />
+                Edit Post
+              </Button>
+              
+              <Button
+                onClick={() => {
+                  navigator.clipboard.writeText(`${caption}\n\n${hashtags.join(' ')}`);
+                  // Could add a toast notification here
+                }}
+                variant="outline"
+                className="border-gray-600 text-white hover:bg-gray-700 flex items-center gap-2"
+              >
+                Copy Caption
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -336,8 +660,45 @@ export default function LibraryTab() {
 
   return (
     <div className="space-y-6">
-      {/* Header Controls */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+      {/* Tab Navigation */}
+      <div className="flex items-center bg-white/5 rounded-lg p-1 w-fit">
+        <button
+          onClick={() => setActiveTab('library')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === 'library' 
+              ? 'bg-purple-500 text-white' 
+              : 'text-gray-400 hover:text-white hover:bg-white/10'
+          }`}
+        >
+          <PhotoIcon className="h-4 w-4 inline mr-2" />
+          Media Library
+        </button>
+        <button
+          onClick={() => setActiveTab('galleries')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === 'galleries' 
+              ? 'bg-purple-500 text-white' 
+              : 'text-gray-400 hover:text-white hover:bg-white/10'
+          }`}
+        >
+          <FolderIcon className="h-4 w-4 inline mr-2" />
+          Gallery Manager
+        </button>
+      </div>
+
+      {/* Gallery Manager View */}
+      {activeTab === 'galleries' && (
+        <GalleryManager 
+          selectedMediaIds={selectedItems}
+          onSelectionChange={setSelectedItems}
+        />
+      )}
+
+      {/* Traditional Library View */}
+      {activeTab === 'library' && (
+        <>
+          {/* Header Controls */}
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div className="flex items-center gap-4">
           <div className="flex bg-white/10 rounded-lg p-1">
             <button
@@ -369,7 +730,7 @@ export default function LibraryTab() {
               {dashboardMode === 'completed' ? 'Completed Posts' : 'Unedited Media'}
             </h2>
             <p className="text-sm text-gray-400">
-              Total: {dashboardMedia.length} items • Videos: {filteredVideoContent.length} • Other: {filteredOtherContent.length}
+              Total: {searchFilteredContent.length} items • Videos: {filteredVideoContent.length} • Other: {filteredOtherContent.length}
             </p>
           </div>
         </div>
@@ -474,101 +835,77 @@ export default function LibraryTab() {
       {/* Combined Media Display */}
       <div className="space-y-6">
         {/* All Media in One Area */}
-        {(filteredVideoContent.length === 0 && filteredOtherContent.length === 0) ? (
-          <div className="bg-white/5 border border-white/10 rounded-xl p-12 text-center">
-            <div className="max-w-md mx-auto">
-              <div className="flex justify-center mb-6">
-                <div className="relative">
-                  <VideoCameraIcon className="h-16 w-16 text-gray-400" />
-                  <PhotoIcon className="h-12 w-12 text-gray-500 absolute -bottom-2 -right-2" />
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">
-                {dashboardMode === 'completed' 
-                  ? 'No completed content yet' 
-                  : 'No media uploaded yet'}
-              </h3>
-              <p className="text-gray-400 mb-6">
-                {dashboardMode === 'completed' 
-                  ? 'Complete some posts to see them here' 
-                  : 'Upload your first images, videos, or audio files to get started'}
-              </p>
-              <div className="flex justify-center gap-3">
-                <Button
-                  onClick={() => setShowUploadModal(true)}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                >
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  Upload Media
-                </Button>
-                {/* Google Photos functionality has been discontinued */}
-              </div>
+        {searchFilteredContent.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="text-gray-400 text-6xl mb-4">
+              {dashboardMode === 'completed' ? '📝' : '📁'}
             </div>
+            <h3 className="text-xl font-semibold text-white mb-2">
+              {dashboardMode === 'completed' ? 'No Completed Posts' : 'No Media Files'}
+            </h3>
+            <p className="text-gray-400 mb-6">
+              {dashboardMode === 'completed' 
+                ? 'Create posts in the Create tab and add them to your library to see them here.'
+                : 'Upload some media files to get started with your content creation.'
+              }
+            </p>
+            {dashboardMode === 'unedited' && (
+              <Button onClick={() => setShowUploadModal(true)} className="bg-purple-600 hover:bg-purple-700">
+                <PlusIcon className="h-4 w-4 mr-2" />
+                Upload Media
+              </Button>
+            )}
           </div>
         ) : (
-          <div className="space-y-8">
-            {/* Video Content Section */}
-            {filteredVideoContent.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 border-b border-white/10 pb-2">
-                  <FilmIcon className="h-5 w-5 text-red-400" />
-                  <h3 className="text-lg font-semibold text-white">
-                    Video Content ({filteredVideoContent.length})
-                  </h3>
-                </div>
-                
-                <div className={viewMode === 'grid' 
-                  ? "grid grid-cols-1 xl:grid-cols-2 gap-4" 
-                  : "space-y-4"
-                }>
-                  {filteredVideoContent.map((item) => (
-                    <MediaCard key={item.id} item={item} />
-                  ))}
-                </div>
+          <>
+            {/* Content Display */}
+            {dashboardMode === 'completed' ? (
+              // Show all completed posts in a unified grid
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {searchFilteredContent.map((item) => (
+                  <MediaCard key={item.id} item={item} />
+                ))}
               </div>
-            )}
-
-            {/* Divider - Only show if both sections have content */}
-            {filteredVideoContent.length > 0 && filteredOtherContent.length > 0 && (
-              <div className="relative py-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-                </div>
-                <div className="relative flex justify-center">
-                  <div className="bg-gray-900 px-4 py-2 rounded-full border border-white/10">
-                    <div className="flex items-center gap-2 text-sm text-gray-400">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
-                      <span>Other Media</span>
-                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
+            ) : (
+              // Show unedited content split by type
+              <>
+                {/* Video Content Section */}
+                {filteredVideoContent.length > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                      <VideoCameraIcon className="h-5 w-5 mr-2" />
+                      Video Content ({filteredVideoContent.length})
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {filteredVideoContent.map((item) => (
+                        <MediaCard key={item.id} item={item} />
+                      ))}
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
+                )}
 
-            {/* Other Media Section */}
-            {filteredOtherContent.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 border-b border-white/10 pb-2">
-                  <PhotoIcon className="h-5 w-5 text-blue-400" />
-                  <h3 className="text-lg font-semibold text-white">
-                    Other Media ({filteredOtherContent.length})
-                  </h3>
-                </div>
-                
-                <div className={viewMode === 'grid' 
-                  ? "grid grid-cols-1 xl:grid-cols-2 gap-4" 
-                  : "space-y-4"
-                }>
-                  {filteredOtherContent.map((item) => (
-                    <MediaCard key={item.id} item={item} />
-                  ))}
-                </div>
-              </div>
+                {/* Other Content Section */}
+                {filteredOtherContent.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                      <PhotoIcon className="h-5 w-5 mr-2" />
+                      Images & Audio ({filteredOtherContent.length})
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {filteredOtherContent.map((item) => (
+                        <MediaCard key={item.id} item={item} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
-          </div>
+          </>
         )}
       </div>
+      
+      </>
+      )}
 
       {/* Upload Modal */}
       {showUploadModal && (
@@ -686,6 +1023,18 @@ export default function LibraryTab() {
               )}
             </div>
 
+            {/* Post Preview (caption + hashtags) for completed items */}
+            {dashboardMode === 'completed' && (
+              <div className="bg-gray-700/40 rounded-lg p-4 mb-4 text-white text-sm whitespace-pre-wrap">
+                {selectedMedia.description || 'No caption available.'}
+                {selectedMedia.tags && selectedMedia.tags.length > 0 && (
+                  <div className="mt-2 text-blue-400 text-sm">
+                    {selectedMedia.tags.map((tag: string) => `#${tag}`).join(' ')}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Media Info */}
             <div className="space-y-3 text-gray-300">
               <div className="grid grid-cols-2 gap-4">
@@ -753,6 +1102,27 @@ export default function LibraryTab() {
           </div>
         </div>
       )}
+
+      {/* Completed Post Preview Modal */}
+      {showMediaModal && dashboardMode === 'completed' && (
+        <CompletedPostPreviewModal
+          item={selectedMedia}
+          onClose={() => setShowMediaModal(false)}
+        />
+      )}
     </div>
+  );
+}
+
+// Wrapper component with Suspense boundary for useSearchParams
+export default function LibraryTab() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+      </div>
+    }>
+      <LibraryTabContent />
+    </Suspense>
   );
 } 

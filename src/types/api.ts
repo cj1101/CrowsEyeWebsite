@@ -4,14 +4,21 @@
  * Updated to match backend implementation exactly
  */
 
-// Base Types
+// Re-export User type from services/api to avoid duplication
+export type { User } from '@/services/api';
+
+// Import Firestore types for compatibility
+import type { MediaDocument } from '@/lib/firestore/types';
+import { Timestamp } from 'firebase/firestore';
+
+// Base types for API entities
 export interface BaseEntity {
   id: string;
   created_at: string;
   updated_at: string;
 }
 
-// Authentication Types
+// Authentication types
 export interface AuthResponse {
   access_token: string;
   token_type: string;
@@ -22,15 +29,6 @@ export interface AuthResponse {
       tier: string;
     };
   };
-}
-
-export interface User {
-  user_id: string;
-  email: string;
-  username?: string;
-  subscription: SubscriptionInfo;
-  usage_stats: UsageStats;
-  preferences: Record<string, any>;
 }
 
 export interface SubscriptionInfo {
@@ -420,21 +418,181 @@ export interface PreviewResponse {
   expires_at: string;
 }
 
-// === LEGACY TYPES (keeping for backward compatibility) ===
+// === UNIFIED MEDIA TYPES (Compatible with Firestore) ===
 
+/**
+ * Unified MediaItem interface - compatible with both Firestore MediaDocument 
+ * and legacy API format. This is the primary interface used throughout the frontend.
+ */
 export interface MediaItem {
+  // Core identifiers
   id: string;
-  name: string;
-  type: 'image' | 'video' | 'audio';
-  url: string;
-  thumbnail?: string;
-  size: number;
-  createdAt: string;
-  tags: string[];
-  status?: 'completed' | 'unedited';
+  
+  // File information
+  filename: string;
+  originalFilename: string;
+  mediaType: 'image' | 'video' | 'audio';
+  fileSize: number;
+  
+  // URLs and paths
+  url: string; // For frontend display (computed from gcsPath)
+  gcsPath: string; // Cloud Storage path
+  thumbnailPath?: string;
+  thumbnail?: string; // Legacy compatibility - same as thumbnailPath
+  
+  // Metadata
+  width?: number;
+  height?: number;
+  duration?: number;
+  caption?: string;
+  description?: string;
+  
+  // AI and tags
+  aiTags: Array<{ tag: string; confidence: number }>;
+  tags: string[]; // Computed simplified tags for legacy compatibility
+  
+  // Status and workflow
+  isPostReady: boolean;
+  status: 'draft' | 'published' | 'scheduled';
+  postMetadata?: Record<string, any>;
+  platforms?: string[];
+  
+  // Import information  
+  googlePhotosId?: string;
+  googlePhotosMetadata?: Record<string, any>;
+  importSource?: 'manual' | 'google_photos' | 'upload';
+  importDate?: Date;
+  
+  // Timestamps
+  uploadDate: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  
+  // Legacy compatibility fields
+  name?: string; // Computed from filename
+  type?: 'image' | 'video' | 'audio'; // Same as mediaType
+  size?: number; // Same as fileSize  
   subtype?: string;
-  isProcessed?: boolean;
+  isProcessed?: boolean; // Computed from isPostReady
 }
+
+/**
+ * Conversion utilities for MediaDocument <-> MediaItem transformations
+ */
+export const MediaConversions = {
+  /**
+   * Convert Firestore MediaDocument to frontend MediaItem
+   */
+  documentToItem(mediaDoc: MediaDocument): MediaItem {
+    // Helper to convert Firestore timestamp to Date
+    const toDate = (timestamp: Timestamp | Date | undefined): Date => {
+      if (!timestamp) return new Date();
+      if (timestamp instanceof Date) return timestamp;
+      return timestamp.toDate?.() || new Date();
+    };
+
+    // Helper to normalize AI tags
+    const normalizeAiTags = (aiTags?: Array<{ tag: string; confidence: number }>): { aiTags: Array<{ tag: string; confidence: number }>; tags: string[] } => {
+      if (!Array.isArray(aiTags)) {
+        return { aiTags: [], tags: [] };
+      }
+      
+      const tags = aiTags.map(tag => 
+        typeof tag === 'string' ? tag : tag.tag || ''
+      ).filter(Boolean);
+      
+      return { aiTags, tags };
+    };
+
+    const { aiTags, tags } = normalizeAiTags(mediaDoc.aiTags);
+
+    return {
+      // Core identifiers
+      id: mediaDoc.id || '',
+      
+      // File information
+      filename: mediaDoc.filename,
+      originalFilename: mediaDoc.originalFilename,
+      mediaType: mediaDoc.mediaType,
+      fileSize: mediaDoc.fileSize,
+      
+      // URLs and paths - URL would be computed by the service
+      url: mediaDoc.gcsPath, // This should be converted to a public URL by the service
+      gcsPath: mediaDoc.gcsPath,
+      thumbnailPath: mediaDoc.thumbnailPath,
+      thumbnail: mediaDoc.thumbnailPath, // Legacy compatibility
+      
+      // Metadata
+      width: mediaDoc.width,
+      height: mediaDoc.height,
+      duration: mediaDoc.duration,
+      caption: mediaDoc.caption || '',
+      description: mediaDoc.description || '',
+      
+      // AI and tags
+      aiTags,
+      tags,
+      
+      // Status and workflow
+      isPostReady: mediaDoc.isPostReady,
+      status: mediaDoc.status,
+      postMetadata: mediaDoc.postMetadata || {},
+      platforms: mediaDoc.platforms || [],
+      
+      // Import information
+      googlePhotosId: mediaDoc.googlePhotosId,
+      googlePhotosMetadata: mediaDoc.googlePhotosMetadata,
+      importSource: mediaDoc.importSource,
+      importDate: mediaDoc.importDate ? toDate(mediaDoc.importDate) : undefined,
+      
+      // Timestamps
+      uploadDate: toDate(mediaDoc.uploadDate),
+      createdAt: toDate(mediaDoc.createdAt),
+      updatedAt: toDate(mediaDoc.updatedAt),
+      
+      // Legacy compatibility fields
+      name: mediaDoc.filename,
+      type: mediaDoc.mediaType,
+      size: mediaDoc.fileSize,
+      isProcessed: mediaDoc.isPostReady,
+    };
+  },
+
+  /**
+   * Convert frontend MediaItem to Firestore MediaDocument (for updates)
+   */
+  itemToDocument(mediaItem: MediaItem): Partial<MediaDocument> {
+    // Helper to convert Date to Firestore timestamp
+    const toTimestamp = (date: Date | undefined): Date | undefined => {
+      return date instanceof Date ? date : undefined;
+    };
+
+    return {
+      filename: mediaItem.filename,
+      originalFilename: mediaItem.originalFilename,
+      gcsPath: mediaItem.gcsPath,
+      thumbnailPath: mediaItem.thumbnailPath,
+      mediaType: mediaItem.mediaType,
+      fileSize: mediaItem.fileSize,
+      width: mediaItem.width,
+      height: mediaItem.height,
+      duration: mediaItem.duration,
+      caption: mediaItem.caption,
+      description: mediaItem.description,
+      aiTags: mediaItem.aiTags,
+      isPostReady: mediaItem.isPostReady,
+      status: mediaItem.status,
+      postMetadata: mediaItem.postMetadata,
+      platforms: mediaItem.platforms,
+      googlePhotosId: mediaItem.googlePhotosId,
+      googlePhotosMetadata: mediaItem.googlePhotosMetadata,
+      importSource: mediaItem.importSource,
+      importDate: toTimestamp(mediaItem.importDate),
+      uploadDate: toTimestamp(mediaItem.uploadDate),
+      // Note: id, createdAt, updatedAt are managed by Firestore
+    };
+  },
+};
 
 export interface MediaSearchResponse {
   items: MediaFile[];

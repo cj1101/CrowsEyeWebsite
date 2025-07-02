@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -58,10 +58,11 @@ import AnalyticsTab from '@/components/dashboard/AnalyticsTab';
 import ConnectionsTab from '@/components/dashboard/ConnectionsTab';
 import BrandingTab from '@/components/dashboard/BrandingTab';
 
-export default function DashboardPage() {
+function DashboardContent() {
   const { user, userProfile, loading, hasValidSubscription, requiresSubscription, needsPAYGSetup } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('overview');
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<string>(searchParams.get('tab') || 'overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Temporarily bypass authentication for production testing
@@ -88,6 +89,14 @@ export default function DashboardPage() {
       }
     }
   }, [shouldBypassAuth, user, userProfile, loading, hasValidSubscription, needsPAYGSetup, router]);
+
+  // Sync activeTab when URL param changes (e.g. redirects)
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams, activeTab]);
 
   if (!shouldBypassAuth && loading) {
     return (
@@ -127,6 +136,11 @@ export default function DashboardPage() {
     }
   };
 
+  const handleTabSelect = (tabId: string) => {
+    setActiveTab(tabId);
+    router.push(`/dashboard?tab=${tabId}`);
+  };
+
   const navigationItems = [
     { id: 'overview', label: 'Dashboard', icon: BarChart3, description: 'Overview & Analytics' },
     { id: 'library', label: 'Media Library', icon: FolderOpen, description: 'Manage your content' },
@@ -141,28 +155,28 @@ export default function DashboardPage() {
     { 
       label: 'Upload Media', 
       icon: Upload, 
-      action: () => setActiveTab('library'),
+      action: () => handleTabSelect('library'),
       color: 'blue',
       description: 'Add new photos and videos'
     },
     { 
       label: 'Create Post', 
       icon: Plus, 
-      action: () => setActiveTab('create'),
+      action: () => handleTabSelect('create'),
       color: 'green',
       description: 'Start creating content'
     },
     { 
       label: 'AI Tools', 
       icon: Wand2, 
-      action: () => setActiveTab('create'),
+      action: () => handleTabSelect('create'),
       color: 'purple',
       description: 'Use AI to enhance content'
     },
     { 
       label: 'Connect Platform', 
       icon: Link, 
-      action: () => setActiveTab('connections'),
+      action: () => handleTabSelect('connections'),
       color: 'orange',
       description: 'Link social accounts'
     }
@@ -243,7 +257,7 @@ export default function DashboardPage() {
             {navigationItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => handleTabSelect(item.id)}
                 className={`
                   w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200
                   ${activeTab === item.id 
@@ -290,6 +304,8 @@ export default function DashboardPage() {
         {/* Main Content */}
         <main className="flex-1 overflow-hidden">
           <div className="h-full overflow-y-auto">
+            {/* Debug tools removed - Media library integration fixed! */}
+            
             {activeTab === 'overview' && <DashboardOverview />}
             {activeTab === 'library' && <LibraryTab />}
             {activeTab === 'create' && <CreatePostTab />}
@@ -301,5 +317,21 @@ export default function DashboardPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+// Wrapper component with Suspense boundary for useSearchParams
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
+          <p className="text-gray-300">Loading dashboard...</p>
+        </div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   );
 } 

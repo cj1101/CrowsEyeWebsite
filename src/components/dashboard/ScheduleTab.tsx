@@ -36,8 +36,10 @@ import {
   Copy,
   Archive
 } from 'lucide-react';
-import { CrowsEyeAPI } from '@/services/api';
+import { ScheduleService, PostService } from '@/lib/firestore';
+import { auth } from '@/lib/firebase';
 import { useMediaLibrary } from '@/hooks/api/useMediaLibrary';
+import type { ScheduleDocument, PostDocument } from '@/lib/firestore/types';
 
 // Campaign interface for managing multiple posts as a cohesive unit
 interface Campaign {
@@ -115,14 +117,18 @@ const statusColors = {
   failed: 'bg-red-500/20 text-red-300 border-red-500/30',
   paused: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
   completed: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-  archived: 'bg-gray-600/20 text-gray-400 border-gray-600/30'
+  archived: 'bg-gray-600/20 text-gray-400 border-gray-600/30',
+  pending: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+  processing: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30'
 };
 
 export default function ScheduleTab() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleDocument[]>([]);
+  const [posts, setPosts] = useState<PostDocument[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedView, setSelectedView] = useState<'campaigns' | 'calendar' | 'posts'>('campaigns');
+  const [selectedView, setSelectedView] = useState<'campaigns' | 'calendar' | 'posts'>('posts'); // Default to posts view
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -130,81 +136,47 @@ export default function ScheduleTab() {
   const [showCreatePostModal, setShowCreatePostModal] = useState(false);
   const [showCampaignDetails, setShowCampaignDetails] = useState(false);
   
-  const api = new CrowsEyeAPI();
   const { media } = useMediaLibrary();
 
   useEffect(() => {
-    loadCampaigns();
+    loadScheduleData();
   }, []);
 
-  const loadCampaigns = async () => {
+  const loadScheduleData = async () => {
     try {
       setLoading(true);
-      // For now, using mock data - replace with actual API call
-      const mockCampaigns: Campaign[] = [
-        {
-          id: '1',
-          name: 'Product Launch Campaign',
-          description: 'Comprehensive campaign for new product launch with countdown posts and feature highlights',
-          status: 'active',
-          startDate: new Date().toISOString(),
-          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          platforms: ['instagram', 'facebook', 'twitter', 'google-mybusiness'],
-          totalPosts: 15,
-          scheduledPosts: 8,
-          publishedPosts: 5,
-          failedPosts: 0,
-          tags: ['product-launch', 'marketing', 'announcement'],
-          createdAt: new Date().toISOString(),
-          lastUpdated: new Date().toISOString(),
-          posts: [],
-          settings: {
-            autoOptimize: true,
-            skipWeekends: false,
-            timezone: 'UTC',
-            postingTimes: ['09:00', '13:00', '17:00'],
-            minInterval: 120
-          },
-          analytics: {
-            totalReach: 12500,
-            totalEngagement: 850,
-            avgEngagementRate: 6.8,
-            topPerformingPost: 'post-1'
-          }
-        },
-        {
-          id: '2',
-          name: 'Weekly Content Series',
-          description: 'Regular weekly content showcasing behind-the-scenes and team highlights',
-          status: 'active',
-          startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          endDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-          platforms: ['instagram', 'snapchat'],
-          totalPosts: 24,
-          scheduledPosts: 12,
-          publishedPosts: 8,
-          failedPosts: 1,
-          tags: ['weekly-series', 'behind-the-scenes', 'team'],
-          createdAt: new Date().toISOString(),
-          lastUpdated: new Date().toISOString(),
-          posts: [],
-          settings: {
-            autoOptimize: false,
-            skipWeekends: true,
-            timezone: 'UTC',
-            postingTimes: ['10:00', '15:00'],
-            minInterval: 240
-          },
-          analytics: {
-            totalReach: 8900,
-            totalEngagement: 620,
-            avgEngagementRate: 7.2
-          }
-        }
-      ];
-      setCampaigns(mockCampaigns);
+      
+      const user = auth.currentUser;
+      if (!user) {
+        console.log('⚠️ No authenticated user found');
+        setLoading(false);
+        return;
+      }
+
+      console.log('📅 Loading schedule data for user:', user.uid);
+      
+      // Load schedules from Firestore
+      const { data: schedulesData } = await ScheduleService.listUserSchedules(user.uid, {
+        limit: 50
+      });
+      setSchedules(schedulesData);
+      
+      // Load posts from Firestore
+      const { data: postsData } = await PostService.listUserPosts(user.uid, {
+        limit: 50
+      });
+      setPosts(postsData);
+      
+      console.log('✅ Schedule data loaded:', {
+        schedules: schedulesData.length,
+        posts: postsData.length
+      });
+      
+      // For now, we'll use a simplified approach without campaigns
+      // You can extend this later to create campaign functionality
+      
     } catch (error) {
-      console.error('Failed to load campaigns:', error);
+      console.error('❌ Failed to load schedule data:', error);
     } finally {
       setLoading(false);
     }
@@ -284,12 +256,17 @@ export default function ScheduleTab() {
         return campaign;
       }));
 
-      // Also schedule via API
-      await api.createSchedule({
-        content: newPost.content,
-        platforms: newPost.platforms,
-        schedule_date: newPost.scheduledFor
-      });
+              // Also create schedule in Firestore
+        const currentUser = auth.currentUser;
+        if (currentUser) {
+          await ScheduleService.createSchedule({
+            userId: currentUser.uid,
+            contentId: newPost.id,
+            scheduledTime: new Date(newPost.scheduledFor),
+            platforms: newPost.platforms,
+            status: 'pending'
+          });
+        }
 
       return newPost;
     } catch (error) {
@@ -347,15 +324,11 @@ export default function ScheduleTab() {
         }).filter(post => action !== 'delete' || post.id !== postId)
       })));
 
-      // Handle API calls for post actions
+      // Handle post actions
       if (action === 'publish') {
-        // Implement immediate publishing
-        await api.publishPost({
-          content: '',
-          media_ids: [],
-          platforms: [],
-          hashtags: []
-        });
+        // Mark schedule as processing for immediate publishing
+        // This would typically trigger a publishing workflow
+        console.log('Publishing post:', postId);
       }
     } catch (error) {
       console.error(`Failed to ${action} post:`, error);

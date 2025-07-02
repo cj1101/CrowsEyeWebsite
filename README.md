@@ -371,9 +371,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Backend (FastAPI)
 - **Framework**: FastAPI with async support
-- **Database**: SQLite (development) / PostgreSQL (production)
+- **Database**: PostgreSQL 
+
 - **Authentication**: JWT tokens
-- **AI Integration**: OpenAI, Google AI, Anthropic
+- **AI Integration**: Google AI (Gemini) only
 - **File Storage**: Local/Cloud storage
 - **Task Queue**: Background tasks with FastAPI
 

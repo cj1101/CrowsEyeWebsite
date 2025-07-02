@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable static export for Firebase hosting
-  output: 'export',
+  // Add a conditional flag so that `output: 'export'` is only enabled when
+  // the build is explicitly targeting a static export (e.g. Firebase Hosting).
+  // By default in local development (`next dev`) we disable this to ensure
+  // dynamic API routes such as `/api/media-proxy/[id]` work correctly.
+  ...(process.env.STATIC_EXPORT === 'true' ? { output: 'export' } : {}),
   trailingSlash: true,
   images: {
     unoptimized: true

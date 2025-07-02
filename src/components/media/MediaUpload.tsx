@@ -12,7 +12,8 @@ import {
   DocumentIcon
 } from '@heroicons/react/24/outline';
 import { useMediaStore } from '@/stores/mediaStore';
-import { apiService } from '@/services/api';
+import { MediaService } from '@/lib/firestore';
+import { auth } from '@/lib/firebase';
 
 interface MediaUploadProps {
   onUpload?: (files: File[]) => void;
@@ -30,7 +31,7 @@ interface FileWithPreview extends File {
 
 export default function MediaUpload({ 
   onUpload,
-  acceptedTypes = ['image/*', 'video/*', 'audio/*'],
+  acceptedTypes = ['image/*', 'image/heic', 'image/heif', 'video/*', 'audio/*'],
   maxSize = 100 * 1024 * 1024, // 100MB
   multiple = true,
   className = ''
@@ -39,7 +40,7 @@ export default function MediaUpload({
   const [errors, setErrors] = useState<string[]>([]);
   const { addFiles, setUploadProgress, setIsUploading, isUploading } = useMediaStore();
 
-  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
+  const onDrop = useCallback(async (acceptedFiles: File[], rejectedFiles: any[]) => {
     // Handle rejected files
     const newErrors: string[] = [];
     rejectedFiles.forEach(({ file, errors }) => {
@@ -54,25 +55,41 @@ export default function MediaUpload({
     setErrors(newErrors);
 
     // Process accepted files
-    const filesWithPreview = acceptedFiles.map((file, index) => {
-      const fileWithPreview = Object.assign(file, {
-        preview: (file.type.startsWith('image/') || file.type.startsWith('video/'))
-          ? URL.createObjectURL(file)
+    const filesWithPreview = await Promise.all(acceptedFiles.map(async (file, index) => {
+      let workingFile: File = file;
+      const ext = file.name.split('.').pop()?.toLowerCase();
+
+      // If HEIC/HEIF convert for preview & upload compatibility
+      if (['heic', 'heif', 'heic-sequence', 'heif-sequence'].includes(ext || '')) {
+        try {
+          // @ts-ignore – heic2any has no types
+          const heic2any = (await import('heic2any')).default as any;
+          const convertedBlob: Blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+          workingFile = new File([convertedBlob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+        } catch (convErr) {
+          console.warn('HEIC conversion failed in MediaUpload:', convErr);
+        }
+      }
+
+      const fileWithPreview = Object.assign(workingFile, {
+        preview: (workingFile.type.startsWith('image/') || workingFile.type.startsWith('video/'))
+          ? URL.createObjectURL(workingFile)
           : undefined,
         id: `file-${Date.now()}-${index}`,
         progress: 0
       }) as FileWithPreview;
       
       return fileWithPreview;
-    });
+    }));
 
     setFiles(prev => [...prev, ...filesWithPreview]);
     
     // Auto-trigger upload if onUpload callback is provided
-    if (onUpload && acceptedFiles.length > 0) {
-      // Call the parent's upload handler immediately for seamless experience
+    if (onUpload && filesWithPreview.length > 0) {
+      // Convert FileWithPreview back to File instances (they already are)
+      const processedFiles = filesWithPreview as File[];
       setTimeout(() => {
-        onUpload(acceptedFiles);
+        onUpload(processedFiles);
         // Clear the files from our local state since parent is handling the upload
         setFiles([]);
       }, 100);
@@ -96,83 +113,62 @@ export default function MediaUpload({
   const uploadFiles = async () => {
     if (files.length === 0) return;
 
+    console.log('🚀 Starting upload of', files.length, 'files');
     setIsUploading(true);
     
     try {
+      // Check authentication before attempting upload
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('Authentication required. Please sign in to upload media.');
+      }
+      console.log('🔑 User authenticated, proceeding with upload');
+      
       for (const file of files) {
-        const formData = new FormData();
-        formData.append('file', file);
+        console.log('📤 Uploading file:', file.name, 'Size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
         
-        // Add additional metadata that the backend expects
-        formData.append('title', file.name);
-        formData.append('description', `Uploaded ${file.name}`);
-        formData.append('tags', JSON.stringify(['uploaded', 'media']));
-
         try {
-          const response: any = await apiService.uploadMedia(formData, (progress: number) => {
-            setFiles(prev => prev.map(f =>
-              f.id === file.id ? { ...f, progress } : f
-            ));
+          // Use Firestore MediaService for upload
+          const response = await MediaService.uploadMedia(user.uid, file, {
+            caption: '',
+            platforms: [],
+            aiTags: [
+              { tag: 'uploaded', confidence: 1.0 },
+              { tag: 'media', confidence: 1.0 }
+            ],
+            status: 'draft',
           });
           
-          console.log('Upload successful:', response);
+          console.log('✅ Upload successful for', file.name, ':', response);
 
-          // Add uploaded media to global media store so other components can access it
-          try {
-            const data = response.data;
-            const mediaId = data?.id || data?.media_id || `media-${Date.now()}`;
-            // Determine media type based on file mime type
-            let mediaType: 'image' | 'video' | 'audio' = 'image';
-            if (file.type.startsWith('video/')) {
-              mediaType = 'video';
-            } else if (file.type.startsWith('audio/')) {
-              mediaType = 'audio';
-            }
-
-            addFiles([
-              {
-                id: mediaId.toString(),
-                name: file.name,
-                type: mediaType,
-                url: data?.url || data?.fileUrl || data?.downloadUrl || '',
-                size: file.size,
-                uploadedAt: new Date(),
-                tags: data?.tags || [],
-                aiGenerated: false,
-                description: data?.description || undefined,
-                preview: (file.type.startsWith('image/') || file.type.startsWith('video/'))
-                  ? URL.createObjectURL(file)
-                  : undefined,
-              }
-            ]);
-          } catch (storeErr) {
-            console.error('Failed to add uploaded media to store:', storeErr);
-          }
+          // Update progress for this file
+          setFiles(prev => prev.map(f =>
+            f.id === file.id ? { ...f, progress: 100 } : f
+          ));
         } catch (uploadError: any) {
-          console.error('Upload error:', uploadError);
+          console.error('❌ Upload error for', file.name, ':', uploadError);
           
-          // Check if it's an authentication error
-          if (uploadError.response?.status === 401) {
-            setErrors([`Authentication required. Please sign in to upload media.`]);
-            // Don't redirect to login, just show the error
-            return;
-          } else if (uploadError.response?.status === 422) {
-            const errorDetail = uploadError.response?.data?.detail;
-            const errorMessage = Array.isArray(errorDetail) 
-              ? errorDetail.map(err => err.msg || err.message || 'Validation error').join(', ')
-              : typeof errorDetail === 'string' 
-                ? errorDetail 
-                : 'Upload validation failed';
-            setErrors([`Upload validation error: ${errorMessage}`]);
-            return;
+          // Enhanced error handling with specific error types
+          if (uploadError.code === 'permission-denied') {
+            throw new Error(`Permission denied. Please check your authentication and try again.`);
+          } else if (uploadError.code === 'storage/unauthorized') {
+            throw new Error(`Unauthorized access to storage. Please sign in again.`);
+          } else if (uploadError.code === 'storage/quota-exceeded') {
+            throw new Error(`Storage quota exceeded. Please free up space or upgrade your plan.`);
+          } else if (uploadError.code === 'storage/invalid-format') {
+            throw new Error(`File "${file.name}" has an invalid format.`);
+          } else if (uploadError.code === 'storage/object-not-found') {
+            throw new Error(`Upload target not found. Please try again.`);
           } else {
-            setErrors([`Upload failed for ${file.name}: ${uploadError.message}`]);
+            const errorMsg = uploadError.message || 'Unknown error';
+            throw new Error(`Upload failed for "${file.name}": ${errorMsg}`);
           }
         }
       }
 
       // Call onUpload callback with all successfully uploaded files if provided
       if (onUpload && files.length > 0) {
+        console.log('📞 Calling onUpload callback with', files.length, 'files');
         // Convert FileWithPreview back to File array
         const fileArray = files.map(f => {
           const { preview, id, progress, ...fileProps } = f;
@@ -184,16 +180,24 @@ export default function MediaUpload({
       // Clear files after successful upload
       setFiles([]);
       setErrors([]);
+      console.log('🎉 All uploads completed successfully');
+      
     } catch (error: any) {
-      console.error('General upload error:', error);
-      setErrors([`Upload failed: ${error.message || 'Unknown error'}`]);
+      console.error('❌ Upload process failed:', error);
+      setErrors(prev => [...prev, error.message]);
     } finally {
       setIsUploading(false);
     }
   };
 
   const getFileIcon = (file: File) => {
-    if (!file.type) return DocumentIcon;
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    if (!file.type) {
+      if (['heic', 'heif', 'heic-sequence', 'heif-sequence'].includes(extension || '')) {
+        return PhotoIcon;
+      }
+      return DocumentIcon;
+    }
     if (file.type.startsWith('image/')) return PhotoIcon;
     if (file.type.startsWith('video/')) return VideoCameraIcon;
     if (file.type.startsWith('audio/')) return MusicalNoteIcon;

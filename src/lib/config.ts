@@ -89,4 +89,37 @@ export default {
   isClient,
   isServer,
   getConfigDebug,
-}; 
+};
+
+// Centralized configuration for API endpoints
+export const getApiConfig = () => {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  // For local development, use localhost API
+  if (isDevelopment) {
+    return {
+      baseURL: 'http://localhost:8001',
+      environment: 'development',
+      timeout: 30000, // 30 seconds for local testing
+    };
+  }
+  
+  // For production, use Google Cloud API
+  return {
+    baseURL: 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com',
+    environment: 'production',
+    timeout: 60000, // 60 seconds for production
+  };
+};
+
+export const API_CONFIG = getApiConfig();
+
+// Only log on client side to avoid SSR issues
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  console.log('🔧 API Configuration:', {
+    ...API_CONFIG,
+    note: API_CONFIG.environment === 'development' ? 
+      'Using localhost backend for development' : 
+      'Using production Google Cloud backend'
+  });
+} 

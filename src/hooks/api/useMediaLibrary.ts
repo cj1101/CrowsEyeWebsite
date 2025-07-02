@@ -1,282 +1,192 @@
-import { useState, useEffect } from 'react';
-import { apiService } from '@/services/api';
+import { useState, useEffect, useCallback } from 'react';
+import { MediaService, GalleryService } from '@/lib/firestore';
+import { auth } from '@/lib/firebase';
+import type { MediaDocument } from '@/lib/firestore/types';
+import type { MediaItem } from '@/types/api';
+import { MediaConversions } from '@/types/api';
 
-export interface MediaItem {
+// Gallery interface for frontend use
+export interface Gallery {
   id: string;
   name: string;
-  type: 'image' | 'video' | 'audio';
-  url: string;
-  thumbnail?: string;
-  size: number;
+  caption?: string;
   createdAt: string;
-  tags: string[];
-  platforms: string[];
-  dimensions?: { width: number; height: number };
-  duration?: number;
-  status?: 'completed' | 'processing' | 'draft';
-  isProcessed?: boolean;
-  subtype?: 'reel' | 'short' | 'story' | 'post';
+  mediaItems: MediaItem[];
+  // Backend fields
+  created_date?: string;
+  user_id?: string;
 }
 
-export function useMediaLibrary() {
+// Utility – safely normalize any value into a hashtag-prefixed string.
+// • Converts numbers/booleans/etc. to strings.
+// • Trims surrounding whitespace.
+// • Adds leading '#' if missing.
+// • Returns null for nullish / empty values so callers can filter them out.
+const normalizeTag = (value: unknown): string | null => {
+  if (value === null || value === undefined) return null;
+  const str = String(value).trim();
+  if (!str) return null;
+  return str.startsWith('#') ? str : `#${str}`;
+};
+
+// Transform Firestore document to MediaItem using unified conversion utility
+const transformMediaItem = (mediaDoc: MediaDocument): MediaItem => {
+  return MediaConversions.documentToItem(mediaDoc);
+};
+
+export const useMediaLibrary = () => {
   const [media, setMedia] = useState<MediaItem[]>([]);
+  const [galleries, setGalleries] = useState<Gallery[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchMedia = async () => {
-    setLoading(true);
-    setError(null);
-    
+  const fetchMedia = useCallback(async () => {
     try {
-      console.log('Fetching media library...');
+      setLoading(true);
+      setError(null);
       
-      // Load local uploads from localStorage
-      const localUploads = JSON.parse(localStorage.getItem('localMediaLibrary') || '[]');
-      console.log('Found', localUploads.length, 'local uploads in localStorage');
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
       
-      // Convert stored metadata back to MediaItem format
-      // Note: Object URLs are lost on page refresh, so these will show as placeholders
-      const localMedia: MediaItem[] = localUploads.map((upload: any) => ({
-        id: upload.id,
-        name: upload.name,
-        type: upload.type,
-        url: upload.url || '/images/placeholder-image.jpg', // Fallback for lost object URLs
-        thumbnail: upload.type === 'image' ? (upload.url || '/images/placeholder-image.jpg') : undefined,
-        size: upload.size,
-        createdAt: upload.createdAt,
-        tags: upload.tags || ['local-storage', 'raw-media'],
-        platforms: upload.platforms || [],
-        dimensions: upload.dimensions,
-        duration: upload.duration,
-        status: upload.status || 'draft',
-        isProcessed: upload.isProcessed || false
-      }));
-
-      // Combine only local uploads; remove demo/mock media
-      const combinedMedia = [...localMedia];
-      setMedia(combinedMedia);
-      console.log('Loaded media library with', localMedia.length, 'local uploads');
-    } catch (err) {
-      console.error('Error fetching media:', err);
-      setError('Failed to load media library');
+      const { data } = await MediaService.listUserMedia(user.uid);
+      setMedia(data.map(transformMediaItem));
+    } catch (error: any) {
+      console.error('Failed to fetch media:', error);
+      setError(error.message || 'Failed to fetch media');
       setMedia([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchMedia();
   }, []);
 
-  const uploadMedia = async (file: File): Promise<MediaItem> => {
+  const fetchGalleries = async () => {
     try {
-      if (!file || !file.name) {
-        throw new Error('Invalid file provided');
-      }
-
-      console.log('📁 Processing media file locally:', file.name, 'Size:', file.size);
+      console.log('🔍 Fetching galleries from Firestore...');
       
-      // Create object URL for immediate display
-      const objectUrl = URL.createObjectURL(file);
-      
-      // Generate thumbnail based on file type
-      let thumbnail: string | undefined = undefined;
-      let dimensions: { width: number; height: number } | undefined = undefined;
-      
-      if (file.type.startsWith('image/')) {
-        thumbnail = objectUrl;
-        dimensions = await getImageDimensions(file);
-      } else if (file.type.startsWith('video/')) {
-        thumbnail = await generateVideoThumbnail(file);
-        dimensions = await getVideoDimensions(file);
+      const user = auth.currentUser;
+      if (!user) {
+        console.error('❌ No authenticated user found for galleries');
+        setGalleries([]);
+        return;
       }
       
-      // Always use local storage for raw media files
-      // Only finished/published posts should be stored on server
-      const uploadedItem: MediaItem = {
-        id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        name: file.name,
-        type: (file.type.startsWith('image/') ? 'image' : 
-              file.type.startsWith('video/') ? 'video' : 'audio') as 'image' | 'video' | 'audio',
-        url: objectUrl,
-        thumbnail: thumbnail,
-        size: file.size,
-        createdAt: new Date().toISOString(),
-        tags: ['local-storage', 'raw-media'],
-        platforms: [],
-        status: 'draft',
-        isProcessed: false,
-        dimensions: dimensions
-      };
-
-      // Store metadata in localStorage (without the heavy file data)
       try {
-        const localUploads = JSON.parse(localStorage.getItem('localMediaLibrary') || '[]');
-        const localUploadData = {
-          id: uploadedItem.id,
-          name: uploadedItem.name,
-          type: uploadedItem.type,
-          size: uploadedItem.size,
-          createdAt: uploadedItem.createdAt,
-          tags: uploadedItem.tags,
-          platforms: uploadedItem.platforms,
-          status: uploadedItem.status,
-          isProcessed: uploadedItem.isProcessed,
-          dimensions: uploadedItem.dimensions,
-          uploadedAt: new Date().toISOString()
-        };
+        const response = await GalleryService.listUserGalleries(user.uid);
+        const galleryDocs = response.data || [];
         
-        localUploads.unshift(localUploadData);
-        // Keep only last 50 items to prevent localStorage overflow
-        localStorage.setItem('localMediaLibrary', JSON.stringify(localUploads.slice(0, 50)));
-        
-        console.log('✅ Media metadata saved to local library:', uploadedItem.name);
-      } catch (storageError) {
-        console.warn('⚠️ localStorage full, continuing without persistence:', storageError);
-        // Continue without localStorage - file will still work in current session
-      }
-      
-      // Add to local state immediately for instant feedback
-      setMedia(prev => {
-        // Check if item already exists to avoid duplicates
-        const exists = prev.find(item => item.id === uploadedItem.id);
-        if (exists) {
-          return prev;
+        if (galleryDocs.length > 0) {
+          // Fetch media items for each gallery
+          const galleryData: Gallery[] = await Promise.all(
+            galleryDocs.map(async (galleryDoc) => {
+              // Fetch media items for this gallery
+              const mediaItems: MediaItem[] = [];
+              
+              if (galleryDoc.mediaIds && galleryDoc.mediaIds.length > 0) {
+                const mediaPromises = galleryDoc.mediaIds.map(async (mediaId) => {
+                  try {
+                    const mediaDoc = await MediaService.getMedia(mediaId);
+                    return mediaDoc ? transformMediaItem(mediaDoc) : null;
+                  } catch (error) {
+                    console.warn(`Failed to fetch media ${mediaId}:`, error);
+                    return null;
+                  }
+                });
+                
+                const mediaResults = await Promise.all(mediaPromises);
+                mediaItems.push(...mediaResults.filter((item): item is MediaItem => item !== null));
+              }
+              
+              return {
+                id: galleryDoc.id || '',
+                name: galleryDoc.name,
+                caption: galleryDoc.caption,
+                createdAt: galleryDoc.createdDate instanceof Date 
+                  ? galleryDoc.createdDate.toISOString()
+                  : galleryDoc.createdDate?.toDate?.()?.toISOString() || new Date().toISOString(),
+                mediaItems,
+                // Keep some backend compatibility fields
+                created_date: galleryDoc.createdDate instanceof Date 
+                  ? galleryDoc.createdDate.toISOString()
+                  : galleryDoc.createdDate?.toDate?.()?.toISOString() || new Date().toISOString(),
+                user_id: galleryDoc.userId,
+              };
+            })
+          );
+          
+          setGalleries(galleryData);
+          console.log('✅ Loaded', galleryData.length, 'galleries from Firestore');
+        } else {
+          console.log('📭 No galleries found in Firestore');
+          setGalleries([]);
         }
-        return [uploadedItem, ...prev];
-      });
-      
-      return uploadedItem;
-    } catch (err) {
-      console.error('❌ Upload error:', err);
-      throw err;
+      } catch (err: any) {
+        console.warn('⚠️ Error fetching galleries, treating as no galleries:', err);
+        setGalleries([]);
+      }
+    } catch (err: any) {
+      console.error('❌ Error in fetchGalleries:', err);
+      setGalleries([]);
     }
   };
 
-  // Helper function to get image dimensions
-  const getImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
-    return new Promise((resolve) => {
-      if (!file.type.startsWith('image/')) {
-        resolve({ width: 0, height: 0 });
-        return;
-      }
-      
-      const img = new Image();
-      img.onload = () => {
-        resolve({ width: img.naturalWidth, height: img.naturalHeight });
-      };
-      img.onerror = () => {
-        resolve({ width: 0, height: 0 });
-      };
-      img.src = URL.createObjectURL(file);
+  const uploadMedia = async (file: File, metadata?: Partial<MediaDocument>): Promise<MediaItem> => {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Not authenticated');
+    
+    const mediaDoc = await MediaService.uploadMedia(user.uid, file, {
+      caption: '',
+      platforms: [],
+      ...metadata,
     });
+    
+    const newItem = transformMediaItem(mediaDoc);
+    setMedia(prev => [newItem, ...prev]);
+    return newItem;
   };
 
-  // Helper function to get video dimensions
-  const getVideoDimensions = (file: File): Promise<{ width: number; height: number }> => {
-    return new Promise((resolve) => {
-      if (!file.type.startsWith('video/')) {
-        resolve({ width: 0, height: 0 });
-        return;
-      }
-      
-      const video = document.createElement('video');
-      video.onloadedmetadata = () => {
-        resolve({ width: video.videoWidth, height: video.videoHeight });
-      };
-      video.onerror = () => {
-        resolve({ width: 0, height: 0 });
-      };
-      video.src = URL.createObjectURL(file);
-    });
-  };
-
-  // Helper function to generate video thumbnail
-  const generateVideoThumbnail = (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      if (!file.type.startsWith('video/')) {
-        resolve('/images/video-thumb.jpg');
-        return;
-      }
-      
-      const video = document.createElement('video');
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      video.onloadeddata = () => {
-        // Set video to middle of the video for thumbnail
-        video.currentTime = Math.min(video.duration / 2, 2);
-      };
-      
-      video.onseeked = () => {
-        try {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-          
-          const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.8);
-          resolve(thumbnailUrl);
-        } catch (error) {
-          console.error('Error generating video thumbnail:', error);
-          resolve('/images/video-thumb.jpg');
-        }
-      };
-      
-      video.onerror = () => {
-        resolve('/images/video-thumb.jpg');
-      };
-      
-      video.src = URL.createObjectURL(file);
-    });
+  const updateMedia = async (id: string, updates: Partial<MediaItem>): Promise<void> => {
+    // Convert MediaItem updates to MediaDocument format
+    const docUpdates: Partial<MediaDocument> = {
+      caption: updates.caption,
+      description: updates.description,
+      platforms: updates.platforms,
+      isPostReady: updates.isPostReady,
+      status: updates.status as 'draft' | 'published' | 'scheduled',
+      postMetadata: updates.postMetadata,
+    };
+    
+    await MediaService.updateMedia(id, docUpdates);
+    
+    setMedia(prev => prev.map(item => 
+      item.id === id 
+        ? { ...item, ...updates, updatedAt: new Date() }
+        : item
+    ));
   };
 
   const deleteMedia = async (id: string): Promise<void> => {
-    try {
-      if (!id) {
-        throw new Error('Invalid media ID provided');
-      }
-      
-      // If it's a local upload, remove from localStorage
-      if (id.startsWith('local-')) {
-        const localUploads = JSON.parse(localStorage.getItem('localMediaLibrary') || '[]');
-        const updatedUploads = localUploads.filter((upload: any) => upload.id !== id);
-        localStorage.setItem('localMediaLibrary', JSON.stringify(updatedUploads));
-        console.log('Removed local upload from localStorage:', id);
-      }
-      
-      // Remove from local state
-      setMedia(prev => prev.filter(item => item.id !== id));
-      console.log('Removed media from library:', id);
-    } catch (err) {
-      console.error('Delete error:', err);
-      throw err;
-    }
+    await MediaService.deleteMedia(id);
+    
+    setMedia(prev => prev.filter(item => item.id !== id));
   };
 
-  const processMedia = async (mediaId: string, instructions: string): Promise<void> => {
-    try {
-      console.log(`Processing media ${mediaId} with instructions: ${instructions}`);
-      
-      // Simulate processing by updating the media item
-      setMedia(prev => prev.map(item => 
-        item.id === mediaId 
-          ? { ...item, tags: [...item.tags, 'ai-processed'] }
-          : item
-      ));
-    } catch (err) {
-      console.error('Process media error:', err);
-      throw err;
-    }
-  };
+  // Load media on mount and when auth state changes
+  useEffect(() => {
+    fetchMedia();
+    fetchGalleries();
+  }, [fetchMedia, fetchGalleries]);
 
-  return { 
+  return {
     media,
-    loading, 
+    galleries,
+    loading,
     error,
-    uploadMedia, 
+    fetchMedia,
+    uploadMedia,
+    updateMedia,
     deleteMedia,
-    processMedia,
-    refetch: fetchMedia
+    fetchGalleries,
   };
-} 
+}; 

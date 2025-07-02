@@ -16,7 +16,7 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
-      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif',
       'video/mp4', 'video/webm',
       'audio/mp3', 'audio/wav'
     ];
@@ -163,6 +163,72 @@ router.post('/', authenticateToken, upload.single('file'), async (req: Authentic
       error: {
         code: 'UPLOAD_FAILED',
         message: 'Failed to upload file'
+      }
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /media/{id}:
+ *   get:
+ *     summary: Get specific media file
+ *     tags: [Media]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Media file retrieved successfully
+ *       404:
+ *         description: Media file not found
+ */
+router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Check if media item exists and belongs to user
+    const mediaItem = await prisma.mediaItem.findFirst({
+      where: {
+        id,
+        userId: req.user!.id
+      }
+    });
+
+    if (!mediaItem) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'MEDIA_NOT_FOUND',
+          message: 'Media file not found'
+        }
+      });
+    }
+
+    const formattedItem: MediaItem = {
+      id: mediaItem.id,
+      name: mediaItem.name,
+      type: mediaItem.type.toLowerCase() as 'image' | 'video' | 'audio',
+      url: mediaItem.url,
+      thumbnail: mediaItem.thumbnail || undefined,
+      size: mediaItem.size,
+      createdAt: mediaItem.createdAt.toISOString(),
+      tags: mediaItem.tags,
+    };
+
+    res.json(formattedItem);
+  } catch (error) {
+    logger.error('Get specific media error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to retrieve media file'
       }
     });
   }

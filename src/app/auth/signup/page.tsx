@@ -188,7 +188,7 @@ function SignUpForm() {
           if (redirectTo) {
             router.push(redirectTo);
           } else {
-            router.push('/marketing-tool');
+            router.push('/dashboard');
           }
         }, 3000);
       } else {

@@ -240,9 +240,13 @@ router.post('/signup', signupValidation, async (req: Request<{}, AuthResponse, S
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Determine plan from subscription_tier
+    // Determine plan from subscription_tier with special handling for admin/pro users
     let plan: UserPlan = 'FREE';
-    if (subscription_tier) {
+    
+    // Special handling for pro user emails
+    if (email === 'charlie@suarezhouse.net') {
+      plan = 'PRO';
+    } else if (subscription_tier) {
       plan = subscription_tier.toUpperCase() as UserPlan;
     }
 

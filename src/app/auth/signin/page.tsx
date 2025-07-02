@@ -20,25 +20,28 @@ export default function SignInPage() {
   const { login, loading, error, isAuthenticated } = useAuth();
   const router = useRouter();
 
-  // Check for remembered email on component mount
+  // Check for remembered email on component mount (client-side only)
   useEffect(() => {
-    const rememberedEmail = localStorage.getItem('rememberedEmail');
-    if (rememberedEmail) {
-      setFormData(prev => ({ ...prev, email: rememberedEmail }));
-      setRememberMe(true);
+    // Only access localStorage on client side to avoid hydration mismatch
+    if (typeof window !== 'undefined') {
+      const rememberedEmail = localStorage.getItem('rememberedEmail');
+      if (rememberedEmail) {
+        setFormData(prev => ({ ...prev, email: rememberedEmail }));
+        setRememberMe(true);
+      }
     }
   }, []);
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && typeof window !== 'undefined') {
       const redirectPath = localStorage.getItem('redirectAfterLogin');
       if (redirectPath) {
         localStorage.removeItem('redirectAfterLogin');
         router.push(redirectPath);
       } else {
         // Already authenticated, redirect to dashboard
-        router.push('/marketing-tool');
+        router.push('/dashboard');
       }
     }
   }, [isAuthenticated, router]);
@@ -91,18 +94,20 @@ export default function SignInPage() {
       const result = await login(formData.email, formData.password);
       
       if (result.success) {
-        // Handle remember me functionality
-        if (rememberMe) {
-          localStorage.setItem('rememberedEmail', formData.email);
-        } else {
-          localStorage.removeItem('rememberedEmail');
+        // Handle remember me functionality (client-side only)
+        if (typeof window !== 'undefined') {
+          if (rememberMe) {
+            localStorage.setItem('rememberedEmail', formData.email);
+          } else {
+            localStorage.removeItem('rememberedEmail');
+          }
         }
 
         setSuccessMessage('Login successful! Redirecting to dashboard...');
         
         // Check for stored redirect path first, otherwise redirect to dashboard
-        const redirectPath = localStorage.getItem('redirectAfterLogin');
-        if (redirectPath) {
+        const redirectPath = typeof window !== 'undefined' ? localStorage.getItem('redirectAfterLogin') : null;
+        if (redirectPath && typeof window !== 'undefined') {
           localStorage.removeItem('redirectAfterLogin');
           
           // Small delay for success message visibility
@@ -112,7 +117,7 @@ export default function SignInPage() {
         } else {
           // Default redirect to dashboard
           setTimeout(() => {
-            router.push('/marketing-tool');
+            router.push('/dashboard');
           }, 1500);
         }
       } else {

@@ -36,6 +36,12 @@ import {
 import MediaUpload from '@/components/media/MediaUpload';
 import BrandIcon from '@/components/ui/brand-icons';
 import { useMediaStore } from '@/stores/mediaStore';
+import { usePostStore } from '@/stores/postStore';
+import { useRouter } from 'next/navigation';
+import { useMediaLibrary } from '@/hooks/api/useMediaLibrary';
+import type { MediaItem } from '@/types/api';
+import { PostService } from '@/lib/firestore';
+import { auth } from '@/lib/firebase';
 
 interface MediaFile {
   id: string;
@@ -210,7 +216,10 @@ export default function CreatePostTab() {
   const [contentType, setContentType] = useState<'single' | 'gallery'>('single');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showLibrary, setShowLibrary] = useState(false);
-  const { files: libraryFiles, addFiles } = useMediaStore();
+  const { files: libraryFilesInStore, addFiles } = useMediaStore();
+  const { media: allLibraryMedia, uploadMedia } = useMediaLibrary();
+  const { addPost } = usePostStore();
+  const router = useRouter();
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -223,6 +232,37 @@ export default function CreatePostTab() {
     }
   }, []);
 
+  // Filter unedited media (not post-ready/processed)
+  const uneditedLibraryFiles: MediaItem[] = React.useMemo(() => {
+    return allLibraryMedia.filter((item) => !item.isPostReady && !item.isProcessed);
+  }, [allLibraryMedia]);
+
+  // Allow multi-selection in modal
+  const [selectedLibraryIds, setSelectedLibraryIds] = useState<string[]>([]);
+
+  const toggleLibrarySelection = (id: string) => {
+    setSelectedLibraryIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const addSelectedFromLibrary = () => {
+    const items = uneditedLibraryFiles.filter((f) => selectedLibraryIds.includes(f.id));
+    if (items.length === 0) return;
+    const mapped: MediaFile[] = items.map((libFile) => ({
+      id: libFile.id,
+      file: new File([], libFile.filename || 'unnamed'), // placeholder – we only need URL for preview/posting
+      type: libFile.mediaType as 'image' | 'video' | 'audio',
+      url: libFile.url,
+      thumbnail: libFile.thumbnail || libFile.url,
+      processed: libFile.isProcessed,
+      processing: false,
+    })) as any;
+    setMediaFiles((prev) => [...prev, ...mapped]);
+    setShowLibrary(false);
+    setSelectedLibraryIds([]);
+  };
+
   const handlePlatformToggle = (platformId: string) => {
     setSelectedPlatforms(prev => prev.map(platform => {
       if (platform.id === platformId && platform.connected) {
@@ -233,34 +273,104 @@ export default function CreatePostTab() {
   };
 
   const handleMediaUpload = async (files: FileList | File[]) => {
-    const newMediaFiles: MediaFile[] = [];
+    console.log('📁 Media upload started:', files.length, 'files');
     
-    const fileArray: File[] = Array.isArray(files) ? files as File[] : Array.from(files as FileList);
-    for (let i = 0; i < fileArray.length; i++) {
-      const file = fileArray[i];
-      const mediaFile: MediaFile = {
-        id: Math.random().toString(36).substr(2, 9),
-        file,
-        type: file.type.startsWith('image/') ? 'image' : 
-              file.type.startsWith('video/') ? 'video' : 'audio',
-        url: URL.createObjectURL(file),
-        processing: false,
-        processed: false
-      };
+    try {
+      const newMediaFiles: MediaFile[] = [];
       
-      if (file.type.startsWith('video/')) {
-        // Get video duration and create thumbnail
-        const video = document.createElement('video');
-        video.src = mediaFile.url;
-        video.onloadedmetadata = () => {
-          mediaFile.duration = video.duration;
-        };
+      const fileArray: File[] = Array.isArray(files) ? files as File[] : Array.from(files as FileList);
+      
+      // Validate files first
+      for (const file of fileArray) {
+        console.log('📄 Processing file:', file.name, 'Size:', file.size, 'Type:', file.type);
+        
+        // Check file size (100MB limit)
+        if (file.size > 100 * 1024 * 1024) {
+          throw new Error(`File "${file.name}" is too large. Maximum size is 100MB.`);
+        }
+        
+        // Check file type
+        const extFile = file.name.split('.').pop()?.toLowerCase();
+        const img = file.type.startsWith('image/') || ['heic', 'heif', 'heic-sequence', 'heif-sequence'].includes(extFile || '');
+        const vid = file.type.startsWith('video/');
+        const isAud = file.type.startsWith('audio/');
+
+        if (!img && !vid && !isAud) {
+          throw new Error(`File "${file.name}" is not a supported media type. Please use images (including HEIC/HEIF), videos, or audio files.`);
+        }
       }
       
-      newMediaFiles.push(mediaFile);
+      // Process files if validation passes
+      for (let i = 0; i < fileArray.length; i++) {
+        let file = fileArray[i];
+
+        try {
+          const extFile = file.name.split('.').pop()?.toLowerCase();
+          const img = file.type.startsWith('image/') || ['heic', 'heif', 'heic-sequence', 'heif-sequence'].includes(extFile || '');
+          const vid = file.type.startsWith('video/');
+
+          // If HEIC/HEIF, convert to JPEG for preview & downstream compatibility
+          if (img && ['heic', 'heif', 'heic-sequence', 'heif-sequence'].includes(extFile || '')) {
+            // @ts-ignore – heic2any has no types
+            const heic2any = (await import('heic2any')).default as any;
+            const convertedBlob: Blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+            const convertedFile = new File([convertedBlob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+            file = convertedFile; // replace original
+          }
+
+          const mediaFile: MediaFile = {
+            id: Math.random().toString(36).substr(2, 9),
+            file,
+            type: img ? 'image' : vid ? 'video' : 'audio',
+            url: URL.createObjectURL(file),
+            processing: false,
+            processed: false
+          };
+          
+          if (vid) {
+            // Get video duration and create thumbnail
+            try {
+              const video = document.createElement('video');
+              video.src = mediaFile.url;
+              video.onloadedmetadata = () => {
+                mediaFile.duration = video.duration;
+                console.log('🎥 Video duration loaded:', video.duration, 'seconds');
+              };
+            } catch (videoError) {
+              console.warn('⚠️ Failed to load video metadata:', videoError);
+            }
+          }
+          
+          newMediaFiles.push(mediaFile);
+          console.log('✅ Media file prepared:', file.name, 'Type:', mediaFile.type);
+          
+        } catch (fileError) {
+          console.error('❌ Failed to process file:', file.name, fileError);
+          throw new Error(`Failed to process file "${file.name}": ${fileError instanceof Error ? fileError.message : 'Unknown error'}`);
+        }
+      }
+      
+      // Add files to state
+      setMediaFiles(prev => {
+        const updated = [...prev, ...newMediaFiles];
+        console.log('📚 Total media files now:', updated.length);
+        return updated;
+      });
+      
+      // Show success message
+      if (newMediaFiles.length === 1) {
+        console.log('🎉 Successfully added 1 file for post creation');
+      } else {
+        console.log(`🎉 Successfully added ${newMediaFiles.length} files for post creation`);
+      }
+      
+    } catch (error) {
+      console.error('❌ Media upload error:', error);
+      
+      // Show user-friendly error
+      const errorMessage = error instanceof Error ? error.message : 'Failed to process media files';
+      alert(`Upload Error: ${errorMessage}`);
     }
-    
-    setMediaFiles(prev => [...prev, ...newMediaFiles]);
   };
 
   const handleRemoveMedia = (mediaId: string) => {
@@ -278,69 +388,128 @@ export default function CreatePostTab() {
     setHashtags(prev => prev.filter(h => h !== hashtag));
   };
 
+  // Helper function to convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
   const handleGenerateAICaption = async () => {
     setIsGeneratingAI(true);
 
     try {
-      /*
-       * 🚧 Placeholder logic — replace with real backend call.
-       * The payload now includes:
-       *  - contextInput (user guidance)
-       *  - an array describing each uploaded media file (type, duration, etc.)
-       */
+      // Prepare media data with base64 encoding for images
+      const mediaData = await Promise.all(
+        mediaFiles.map(async (m) => {
+          let data: string | undefined = undefined;
+          
+          // Convert images to base64 for analysis
+          const ext2 = m.file?.name.split('.').pop()?.toLowerCase();
+          const isImg2 = m.type === 'image' || ['heic', 'heif', 'heic-sequence', 'heif-sequence'].includes(ext2 || '');
+
+          if (
+            isImg2 &&
+            m.file &&
+            m.file.size > 0
+          ) {
+            try {
+              data = await fileToBase64(m.file);
+            } catch (error) {
+              console.warn('Failed to convert image to base64:', error);
+            }
+          }
+
+          return {
+            id: m.id,
+            type: m.type,
+            duration: m.duration,
+            filename: m.file?.name,
+            data: data
+          };
+        })
+      );
+
+      // Determine the primary platform for tailored captions
+      const enabledPlatforms = selectedPlatforms.filter(p => p.enabled);
+      const primaryPlatform = enabledPlatforms.length > 0 ? enabledPlatforms[0].name.toLowerCase() : 'general';
+
+      // Determine style from context input
+      let style: 'professional' | 'casual' | 'funny' | 'engaging' | 'creative' = 'engaging';
+      const contextLower = contextInput.toLowerCase();
+      if (contextLower.includes('funny') || contextLower.includes('humor')) {
+        style = 'funny';
+      } else if (contextLower.includes('professional')) {
+        style = 'professional';
+      } else if (contextLower.includes('creative')) {
+        style = 'creative';
+      } else if (contextLower.includes('casual')) {
+        style = 'casual';
+      }
+
       const payload = {
-        context: contextInput,
-        media: mediaFiles.map((m) => ({
-          id: m.id,
-          type: m.type,
-          duration: m.duration,
-          filename: m.file?.name,
-        })),
+        context: contextInput || 'Create an engaging social media post',
+        media: mediaData,
         branding: useBranding ? brandProfile : null,
+        platform: primaryPlatform,
+        style: style,
+        includeHashtags: true
       };
 
-      console.log('[AI Caption] Request payload →', payload);
+      console.log('[AI Caption] Calling Gemini API with payload:', {
+        ...payload,
+        media: payload.media.map(m => ({ ...m, data: m.data ? '[BASE64_DATA]' : undefined }))
+      });
 
-      // Simulate network latency
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Call the actual Gemini API endpoint
+      const response = await fetch('/api/ai/generate-caption', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-      // Naive mock: craft caption based on first media type
-      let captionBase = 'Check this out!';
-      if (payload.media.length) {
-        const firstType = payload.media[0].type;
-        if (firstType === 'video') captionBase = '🎥 New video drop!';
-        if (firstType === 'image') captionBase = '📸 Sneak peek photo!';
-        if (firstType === 'audio') captionBase = '🎶 Listen up!';
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
-      // Incorporate context if provided
-      if (contextInput.trim()) captionBase = `${contextInput.trim()} — ${captionBase}`;
+      const result = await response.json();
 
-      // Add branding intro if toggled
-      if (useBranding && brandProfile) {
-        const intro = brandProfile.tagline || brandProfile.description || brandProfile.name;
-        captionBase = `${intro ? intro + ' – ' : ''}${captionBase}`;
+      if (result.success) {
+        // Set the generated caption
+        setPostContent(result.caption || result.fullCaption);
+        
+        // Set hashtags (clean up the # symbols for our UI)
+        if (result.hashtags && result.hashtags.length > 0) {
+          const cleanHashtags = result.hashtags.map((tag: string) => tag.replace('#', ''));
+          setHashtags(cleanHashtags);
+        }
+
+        console.log('[AI Caption] Successfully generated:', {
+          caption: result.caption?.substring(0, 100),
+          hashtags: result.hashtags,
+          metadata: result.metadata
+        });
+      } else {
+        throw new Error(result.details || 'Failed to generate caption');
       }
 
-      setPostContent(captionBase);
-
-      // Simple hashtags: derive from context words
-      let tags: string[] = [];
-      if (contextInput) {
-        tags = contextInput
-          .split(/\s+/)
-          .filter((w) => w.length > 3)
-          .slice(0, 10)
-          .map((w) => w.replace(/[^a-zA-Z0-9]/g, ''));
-      }
-
-      if (tags.length === 0) {
-        tags = ['SocialMedia', 'Update'];
-      }
-
-      setHashtags(tags);
     } catch (error) {
       console.error('Failed to generate AI caption:', error);
+      
+      // Show user-friendly error message
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to generate caption: ${errorMessage}`);
+      
+      // Fallback: at least use the user's context input if available
+      if (contextInput.trim()) {
+        setPostContent(contextInput.trim());
+      }
     } finally {
       setIsGeneratingAI(false);
     }
@@ -362,18 +531,45 @@ export default function CreatePostTab() {
     setIsPublishing(true);
     
     try {
-      // Mock publishing process
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('Authentication required. Please sign in to create posts.');
+      }
+
+      console.log('🚀 Creating post with Firestore...');
+      
+      // Create the post in Firestore
+      const postData = {
+        userId: user.uid,
+        title: postContent.substring(0, 50) + (postContent.length > 50 ? '...' : ''),
+        content: postContent,
+        tags: hashtags,
+        platforms: enabledPlatforms.map(p => p.id),
+        status: 'published' as const,
+        publishedAt: new Date(),
+      };
+
+      const newPost = await PostService.createPost(postData);
+      console.log('✅ Post created successfully:', newPost);
+
+      // If there are media files, mark them as part of this post
+      if (mediaFiles.length > 0) {
+        console.log('📎 Updating media items to link with post...');
+        // This would typically involve updating media items to reference the post
+        // For now, we'll keep this as a placeholder since media linking can be complex
+      }
       
       // Reset form
       setPostContent('');
       setHashtags([]);
+      setMediaFiles([]);
       
-      alert('Post published successfully!');
+      alert('Post created successfully!');
       
     } catch (error) {
-      console.error('Failed to publish post:', error);
-      alert('Failed to publish post');
+      console.error('Failed to create post:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to create post: ${errorMessage}`);
     } finally {
       setIsPublishing(false);
     }
@@ -407,22 +603,6 @@ export default function CreatePostTab() {
 
   const handlePrev = () => {
     setCurrentIndex((prev) => (prev - 1 + mediaFiles.length) % mediaFiles.length);
-  };
-
-  const handleAddFromLibrary = (fileId: string) => {
-    const libFile = libraryFiles.find(f => f.id === fileId);
-    if (!libFile) return;
-    const newMedia: MediaFile = {
-      id: libFile.id,
-      file: new File([], libFile.name),
-      type: libFile.type,
-      url: libFile.url,
-      thumbnail: libFile.preview,
-      processed: true,
-      processing: false
-    } as any;
-    setMediaFiles(prev => [...prev, newMedia]);
-    setShowLibrary(false);
   };
 
   return (
@@ -459,38 +639,116 @@ export default function CreatePostTab() {
               <CardDescription>Add images, videos, or audio. Posts with multiple files will become a gallery carousel.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <MediaUpload onUpload={(files) => handleMediaUpload(files)} />
-              <Button variant="outline" className="border-gray-600 text-gray-300" onClick={() => setShowLibrary(true)}>
-                <FolderOpen className="h-4 w-4 mr-2" /> Add from Media Library
-              </Button>
-
-              {/* Media Preview / Carousel */}
-              {mediaFiles.length > 0 && (
-                <div className="relative w-full max-w-lg mx-auto">
-                  {contentType === 'gallery' && (
-                    <>
-                      <button onClick={handlePrev} className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/40 p-1 rounded-full">
-                        <ChevronLeft className="h-5 w-5 text-white" />
-                      </button>
-                      <button onClick={handleNext} className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/40 p-1 rounded-full">
-                        <ChevronRight className="h-5 w-5 text-white" />
-                      </button>
-                    </>
-                  )}
-
-                  {mediaFiles[currentIndex] && (
-                    <div className="rounded-lg overflow-hidden">
-                      {mediaFiles[currentIndex].type === 'image' ? (
-                        <img src={mediaFiles[currentIndex].url} alt="preview" className="w-full h-64 object-cover" />
-                      ) : mediaFiles[currentIndex].type === 'video' ? (
-                        <video src={mediaFiles[currentIndex].url} controls className="w-full h-64 object-cover" />
-                      ) : (
-                        <audio src={mediaFiles[currentIndex].url} controls className="w-full" />
-                      )}
-                    </div>
-                  )}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-white">Add Media</h3>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => setShowLibrary(true)}
+                      variant="outline"
+                      size="sm"
+                      className="border-gray-600 text-white hover:bg-gray-700"
+                    >
+                      <FolderOpen className="h-4 w-4 mr-1" />
+                      Add from Media Library
+                    </Button>
+                    <Button
+                      onClick={() => fileInputRef.current?.click()}
+                      variant="outline"
+                      size="sm"
+                      className="border-gray-600 text-white hover:bg-gray-700"
+                    >
+                      <Upload className="h-4 w-4 mr-1" />
+                      Upload New
+                    </Button>
+                  </div>
                 </div>
-              )}
+
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,video/*,audio/*"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      handleMediaUpload(e.target.files);
+                    }
+                  }}
+                  className="hidden"
+                />
+
+                {/* Debug Information */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="bg-gray-800/50 rounded-lg p-3 text-xs text-gray-400">
+                    <div className="font-medium text-gray-300 mb-1">Debug Info:</div>
+                    <div>Auth Token: {typeof window !== 'undefined' && localStorage.getItem('auth_token') ? '✅ Present' : '❌ Missing'}</div>
+                    <div>Media Files: {mediaFiles.length} loaded</div>
+                    <div>Flow: Upload files → Create caption → Click "Add to Library" → Save to database</div>
+                  </div>
+                )}
+
+                {/* Info Message */}
+                {mediaFiles.length === 0 && (
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="text-blue-400 mt-0.5">
+                        <Upload className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-blue-300 font-medium text-sm mb-1">How to create a post:</h4>
+                        <div className="text-blue-200 text-sm space-y-1">
+                          <div>1. Upload media files or select from your library</div>
+                          <div>2. Write your caption and add hashtags</div>
+                          <div>3. Preview your post</div>
+                          <div>4. Click "Add to Library" to save as a completed post</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Media Files Display */}
+                {mediaFiles.length > 0 && (
+                  <div className="bg-gray-800/30 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-white font-medium">Selected Media ({mediaFiles.length})</h4>
+                      <div className="text-xs text-gray-400">
+                        Ready for post creation • Not yet saved to library
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {mediaFiles.map((media) => (
+                        <div key={media.id} className="relative group">
+                          <div className="aspect-square bg-gray-700 rounded-lg overflow-hidden">
+                            {media.type === 'image' ? (
+                              <img src={media.url} alt="" className="w-full h-full object-cover" />
+                            ) : media.type === 'video' ? (
+                              <video src={media.url} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Music className="h-8 w-8 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          
+                          <button
+                            onClick={() => handleRemoveMedia(media.id)}
+                            className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                          
+                          <div className="mt-1 text-xs text-gray-400 truncate" title={media.file?.name}>
+                            {media.file?.name}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
@@ -714,20 +972,136 @@ export default function CreatePostTab() {
               <Button
                 variant="outline"
                 className="w-full justify-center border-gray-600"
-                onClick={() => {
+                onClick={async () => {
                   if (mediaFiles.length === 0) return;
-                  const mapped = mediaFiles.map((m) => ({
-                    id: m.id,
-                    name: m.file?.name || 'untitled',
-                    type: m.type,
-                    url: m.url,
-                    preview: m.thumbnail || m.url,
-                    size: m.file?.size || 0,
-                    uploadedAt: new Date(),
-                    tags: hashtags,
-                    description: postContent,
-                  }));
-                  addFiles(mapped as any);
+                  
+                  // Show loading state
+                  const button = document.activeElement as HTMLButtonElement;
+                  const originalText = button.textContent;
+                  button.textContent = 'Uploading...';
+                  button.disabled = true;
+                  
+                  try {
+                    console.log('📤 Uploading completed post media to library...');
+                    
+                    // Upload each media file to the backend database
+                    const uploadPromises = mediaFiles.map(async (mediaFile) => {
+                      if (!mediaFile.file) {
+                        console.warn('Skipping media without file:', mediaFile.id);
+                        return null;
+                      }
+                      
+                      try {
+                        // Create FormData for upload
+                        const formData = new FormData();
+                        formData.append('file', mediaFile.file);
+                        
+                        // Add comprehensive metadata including caption and hashtags
+                        const metadata = {
+                          tags: [...hashtags, 'completed-post', 'library'],
+                          caption: postContent,
+                          platforms: selectedPlatforms.filter((p) => p.enabled).map((p) => p.id),
+                          status: 'completed', // Mark as completed post
+                          post_type: 'completed',
+                          hashtags: hashtags,
+                          content: postContent,
+                          is_post_ready: true, // This should mark it as a completed post
+                          created_from: 'create-tab',
+                          media_type: mediaFile.type,
+                          original_filename: mediaFile.file.name,
+                          // Add additional fields to ensure proper categorization
+                          post_status: 'completed',
+                          ready_to_publish: true,
+                          has_caption: postContent ? true : false,
+                          has_hashtags: hashtags.length > 0,
+                          platform_count: selectedPlatforms.filter((p) => p.enabled).length
+                        };
+                        formData.append('metadata', JSON.stringify(metadata));
+                        
+                        // Also append individual fields for backend compatibility
+                        formData.append('caption', postContent || '');
+                        formData.append('is_post_ready', 'true');
+                        formData.append('post_status', 'completed');
+                        const aiTags = [
+                          ...hashtags.map(tag => (tag.startsWith('#') ? tag : `#${tag}`)),
+                          '#completed-post',
+                          '#library'
+                        ];
+                        formData.append('ai_tags', JSON.stringify(aiTags));
+                        if (selectedPlatforms.filter((p) => p.enabled).length > 0) {
+                          formData.append('platforms', JSON.stringify(selectedPlatforms.filter((p) => p.enabled).map((p) => p.id)));
+                        }
+                        
+                        // Upload to database via MediaService
+                        const response = await uploadMedia(mediaFile.file, {
+                          caption: postContent || '',
+                          platforms: selectedPlatforms.filter((p) => p.enabled).map((p) => p.id),
+                          isPostReady: true,
+                          status: 'published',
+                          postMetadata: metadata,
+                          aiTags: hashtags.map(tag => ({
+                            tag: tag.startsWith('#') ? tag : `#${tag}`,
+                            confidence: 1.0
+                          }))
+                        });
+                        const uploadedData = (response as any).data || (response as any);
+                        
+                        console.log('✅ Completed post media uploaded:', uploadedData.id);
+                        return uploadedData;
+                      } catch (uploadError) {
+                        console.error('❌ Failed to upload media:', mediaFile.file.name, uploadError);
+                        throw uploadError;
+                      }
+                    });
+                    
+                    // Wait for all uploads to complete
+                    const uploadResults = await Promise.all(uploadPromises);
+                    const successfulUploads = uploadResults.filter(result => result !== null);
+                    
+                    if (successfulUploads.length > 0) {
+                      console.log(`✅ Successfully uploaded ${successfulUploads.length} completed post media files to library`);
+                      
+                      // Create a post entry in the post store to preserve caption & hashtags
+                      const postId = `post-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+                      addPost({
+                        id: postId,
+                        title: postContent?.substring(0, 50) || 'Untitled Post',
+                        content: postContent,
+                        mediaIds: successfulUploads.map((upload) => {
+                          const rawId =
+                            upload?.id ||
+                            upload?.media_id ||
+                            upload?.mediaId ||
+                            upload?.uuid ||
+                            upload?._id;
+
+                          const safeId = rawId ?? `media-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+
+                          return safeId.toString();
+                        }),
+                        platforms: selectedPlatforms.filter((p) => p.enabled).map((p) => p.id),
+                        scheduledFor: undefined,
+                        status: 'draft',
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                        tags: hashtags,
+                        aiGenerated: false,
+                      });
+                      
+                      // Close preview modal and redirect to Media Library – Completed view
+                      setShowPreview(false);
+                      router.push('/dashboard?tab=library&mode=completed');
+                    } else {
+                      throw new Error('No media files were successfully uploaded');
+                    }
+                  } catch (error) {
+                    console.error('❌ Failed to upload completed post to library:', error);
+                    alert('Failed to upload to library. Please try again.');
+                  } finally {
+                    // Restore button state
+                    button.textContent = originalText;
+                    button.disabled = false;
+                  }
                 }}
               >
                 Add to Library
@@ -740,29 +1114,61 @@ export default function CreatePostTab() {
       {/* Media Library Modal */}
       {showLibrary && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
-          <div className="bg-gray-800 border border-gray-600 rounded-lg p-6 max-w-3xl w-full max-h-[80vh] overflow-y-auto space-y-4">
+          <div className="bg-gray-800 border border-gray-600 rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto space-y-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-white">Media Library</h3>
-              <Button variant="outline" size="sm" onClick={() => setShowLibrary(false)}>Close</Button>
+              <h3 className="text-xl font-semibold text-white">Select Media</h3>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={selectedLibraryIds.length === 0}
+                  onClick={addSelectedFromLibrary}
+                >
+                  Add {selectedLibraryIds.length > 0 ? `(${selectedLibraryIds.length})` : ''} Selected
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setShowLibrary(false)}>
+                  Close
+                </Button>
+              </div>
             </div>
-            {libraryFiles.length === 0 ? (
-              <p className="text-gray-400">No media in library.</p>
+            {uneditedLibraryFiles.length === 0 ? (
+              <p className="text-gray-400">No unedited media available.</p>
             ) : (
-              <div className="grid grid-cols-3 gap-4">
-                {libraryFiles.map((item) => (
-                  <div key={item.id} className="cursor-pointer group" onClick={() => handleAddFromLibrary(item.id)}>
-                    <div className="rounded-lg overflow-hidden border border-gray-600 group-hover:border-blue-500">
-                      {item.type === 'image' ? (
-                        <img src={item.preview || item.url} alt="" className="w-full h-32 object-cover" />
-                      ) : item.type === 'video' ? (
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+                {uneditedLibraryFiles.map((item) => {
+                  const selected = selectedLibraryIds.includes(item.id);
+                  return (
+                    <div
+                      key={item.id}
+                      className={`relative cursor-pointer group border rounded-lg overflow-hidden ${
+                        selected ? 'ring-2 ring-blue-500' : 'border-gray-600'
+                      }`}
+                      onClick={() => toggleLibrarySelection(item.id)}
+                    >
+                      {item.mediaType === 'image' ? (
+                        <img src={item.thumbnail || item.url} alt="" className="w-full h-32 object-cover" />
+                      ) : item.mediaType === 'video' ? (
                         <video src={item.url} className="w-full h-32 object-cover" />
                       ) : (
                         <div className="w-full h-32 flex items-center justify-center bg-gray-700 text-white text-sm">Audio</div>
                       )}
+                      {selected && (
+                        <div className="absolute inset-0 bg-blue-500/40 flex items-center justify-center">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-8 w-8 text-white"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                      <p className="mt-1 text-xs truncate text-gray-300 px-1 pb-1">{item.filename}</p>
                     </div>
-                    <p className="mt-1 text-xs truncate text-gray-300">{item.name}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

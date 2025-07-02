@@ -34,26 +34,15 @@ class RateLimiter {
 
 const rateLimiter = new RateLimiter();
 
-// Determine the API base URL dynamically for cross-platform compatibility
-const getApiBaseUrl = (): string => {
-  // Use Google Cloud API endpoint for production deployment
-  return 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com';
-};
+import { API_CONFIG } from '@/lib/config';
 
-const API_BASE_URL = getApiBaseUrl();
+const API_BASE_URL = API_CONFIG.baseURL;
 const DEVELOPMENT_FALLBACK = false; // Disabled development fallback mode
-
-console.log('🌐 API Configuration:', {
-  baseUrl: API_BASE_URL,
-  environment: getEnvVar('NODE_ENV', 'production'),
-  fallbackEnabled: DEVELOPMENT_FALLBACK,
-  hostname: typeof window !== 'undefined' ? window.location.hostname : 'server'
-});
 
 // Enhanced API instance with better timeout handling and interceptors
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 60000, // 60 seconds for video processing
+  timeout: API_CONFIG.timeout,
   headers: {
     'Content-Type': 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
@@ -97,16 +86,49 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Add response interceptor for error handling
+// Retry configuration
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // Start with 1 second
+
+// Add response interceptor for error handling with retry logic
 api.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
+    const config = error.config as any;
+    
+    // Initialize retry count
+    if (!config._retryCount) {
+      config._retryCount = 0;
+    }
+    
+    // Check if we should retry
+    const shouldRetry = (
+      config._retryCount < MAX_RETRIES &&
+      (error.code === 'ECONNREFUSED' ||
+       error.code === 'NETWORK_ERROR' ||
+       (error.response?.status && error.response.status >= 500))
+    );
+    
+    if (shouldRetry) {
+      config._retryCount++;
+      const delay = RETRY_DELAY * Math.pow(2, config._retryCount - 1); // Exponential backoff
+      
+      console.warn(`⚠️ API request failed, retrying in ${delay}ms (attempt ${config._retryCount}/${MAX_RETRIES})`);
+      
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, delay));
+      
+      // Retry the request
+      return api(config);
+    }
+    
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
       // Clear token and redirect to login
       if (typeof window !== 'undefined') {
         localStorage.removeItem('auth_token');
         localStorage.removeItem('refresh_token');
+        console.warn('🔐 Session expired, redirecting to login...');
         window.location.href = '/auth/signin';
       }
     }
@@ -396,6 +418,42 @@ export interface ProcessingJob {
   estimatedCompletion?: string;
 }
 
+// Media Library Types (matching new backend structure)
+export interface MediaItem {
+  id: string;
+  name: string;
+  type: 'image' | 'video' | 'audio';
+  url: string;
+  thumbnail?: string;
+  size: number;
+  createdAt: string;
+  tags: string[];
+  // Legacy fields for compatibility
+  filename?: string;
+  gcs_path?: string;
+  thumbnail_url?: string;
+  media_type?: 'image' | 'video' | 'audio';
+  file_size?: number;
+  width?: number;
+  height?: number;
+  duration?: number;
+  caption?: string;
+  ai_tags?: string[];
+  is_post_ready?: boolean;
+  upload_date?: string;
+  user_id?: string;
+  description?: string;
+  status?: 'draft' | 'completed' | 'published' | 'processing';
+  post_metadata?: any;
+}
+
+export interface Gallery {
+  id: string;
+  title: string;
+  images: string[];
+  createdAt: string;
+}
+
 // Enhanced mock data with Google Photos examples
 const mockData = {
   media: [
@@ -513,9 +571,17 @@ const apiWithFallback = async (
       return await apiCall();
     } catch (error: any) {
       console.error(`❌ ${operationName} failed in production:`, error?.message || error);
+      console.log('🔍 Error details:', {
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        url: error?.config?.url,
+        method: error?.config?.method,
+        headers: error?.config?.headers,
+        responseData: error?.response?.data
+      });
       
       // For media uploads, handle gracefully with local storage
-      if (operationName.includes('upload') || operationName.includes('Media')) {
+      if (operationName.toLowerCase().includes('upload')) {
         console.log('📱 Using local storage fallback for media');
         return mockResponse(mockResponseData);
       }
@@ -679,17 +745,28 @@ export class CrowsEyeAPI {
   
   async register(userData: RegisterData): Promise<AuthResponse> {
     try {
-      console.log('📝 Attempting user registration...');
+      console.log('📝 Attempting user registration...', { 
+        url: `${API_BASE_URL}/api/v1/auth/register`,
+        environment: API_CONFIG.environment 
+      });
+      
+      // Test connectivity first
+      try {
+        await this.api.get('/health');
+        console.log('✅ API connectivity confirmed');
+      } catch (healthError: any) {
+        console.warn('⚠️ API health check failed, proceeding anyway:', healthError.message);
+      }
       
       // Map frontend data to backend format
       const requestData = {
         email: userData.email,
         password: userData.password,
-        displayName: userData.name,
+        name: userData.name, // Changed from displayName to name
         subscription_tier: userData.subscription_tier || 'free'
       };
       
-      const response = await this.api.post('/auth/signup', requestData);
+      const response = await this.api.post('/api/v1/auth/register', requestData);
       console.log('✅ Registration successful');
       
       // Handle both new and legacy backend response formats
@@ -717,12 +794,56 @@ export class CrowsEyeAPI {
       
       return response.data;
     } catch (error: any) {
-      console.error('❌ Registration API failed:', error.message);
-      console.log('📊 Error details:', {
+      const errorInfo = {
+        message: error.message,
+        code: error.code,
         status: error?.response?.status,
         statusText: error?.response?.statusText,
-        data: error?.response?.data
-      });
+        data: error?.response?.data,
+        url: error?.config?.url,
+        method: error?.config?.method,
+        baseURL: API_BASE_URL,
+        environment: API_CONFIG.environment
+      };
+      
+      console.error('❌ Registration API failed:', error.message);
+      console.log('📊 Detailed error info:', errorInfo);
+      
+      // Specific error handling
+      if (error.code === 'ECONNREFUSED') {
+        return {
+          success: false,
+          error: `Cannot connect to API server at ${API_BASE_URL}. Please ensure the backend is running.`
+        };
+      }
+      
+      if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
+        return {
+          success: false,
+          error: `Network error connecting to ${API_BASE_URL}. Check your connection and backend status.`
+        };
+      }
+      
+      if (error.response?.status === 400) {
+        return {
+          success: false,
+          error: error.response.data?.detail || 'Invalid registration data'
+        };
+      }
+      
+      if (error.response?.status === 422) {
+        return {
+          success: false,
+          error: error.response.data?.detail || 'Invalid registration data format'
+        };
+      }
+      
+      if (error.response?.status === 409) {
+        return {
+          success: false,
+          error: 'User already exists with this email'
+        };
+      }
       
       // Return the error response from the API
       if (error.response?.data) {
@@ -739,8 +860,20 @@ export class CrowsEyeAPI {
   
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      console.log('🔐 Attempting user login...');
-      const response = await this.api.post('/auth/login', credentials);
+      console.log('🔐 Attempting user login...', { 
+        url: `${API_BASE_URL}/api/v1/auth/login`,
+        environment: API_CONFIG.environment 
+      });
+      
+      // Test connectivity first
+      try {
+        await this.api.get('/health');
+        console.log('✅ API connectivity confirmed');
+      } catch (healthError: any) {
+        console.warn('⚠️ API health check failed, proceeding anyway:', healthError.message);
+      }
+      
+      const response = await this.api.post('/api/v1/auth/login', credentials);
       console.log('✅ Login successful');
       
       // Handle both new and legacy backend response formats
@@ -768,12 +901,49 @@ export class CrowsEyeAPI {
       
       return response.data;
     } catch (error: any) {
-      console.error('❌ Login API failed:', error.message);
-      console.log('📊 Error details:', {
+      const errorInfo = {
+        message: error.message,
+        code: error.code,
         status: error?.response?.status,
         statusText: error?.response?.statusText,
-        data: error?.response?.data
-      });
+        data: error?.response?.data,
+        url: error?.config?.url,
+        method: error?.config?.method,
+        baseURL: API_BASE_URL,
+        environment: API_CONFIG.environment
+      };
+      
+      console.error('❌ Login API failed:', error.message);
+      console.log('📊 Detailed error info:', errorInfo);
+      
+      // Specific error handling
+      if (error.code === 'ECONNREFUSED') {
+        return {
+          success: false,
+          error: `Cannot connect to API server at ${API_BASE_URL}. Please ensure the backend is running.`
+        };
+      }
+      
+      if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
+        return {
+          success: false,
+          error: `Network error connecting to ${API_BASE_URL}. Check your connection and backend status.`
+        };
+      }
+      
+      if (error.response?.status === 401) {
+        return {
+          success: false,
+          error: 'Invalid email or password'
+        };
+      }
+      
+      if (error.response?.status === 422) {
+        return {
+          success: false,
+          error: error.response.data?.detail || 'Invalid login data format'
+        };
+      }
       
       // Return the error response from the API
       if (error.response?.data) {
@@ -791,7 +961,7 @@ export class CrowsEyeAPI {
   async getCurrentUser(): Promise<APIResponse<User>> {
     try {
       console.log('🔍 Getting current user from API...');
-      const response = await this.api.get('/auth/me');
+      const response = await this.api.get('/api/v1/auth/me');
       
       if (response.data.success && response.data.data) {
         return {
@@ -1189,7 +1359,7 @@ export class CrowsEyeAPI {
   // === GOOGLE PHOTOS INTEGRATION ===
   async connectGooglePhotos(): Promise<AxiosResponse> {
     return apiWithFallback(
-      () => this.api.post('/google-photos/auth'),
+      () => this.api.post('/api/v1/google-photos/auth'),
       { authUrl: 'https://accounts.google.com/oauth2/auth?...' },
       'Google Photos OAuth initiation'
     );
@@ -1197,7 +1367,7 @@ export class CrowsEyeAPI {
 
   async getGooglePhotosStatus(): Promise<AxiosResponse> {
     return apiWithFallback(
-      () => this.api.get('/google-photos/status'),
+      () => this.api.get('/api/v1/google-photos/status'),
       mockData.googlePhotos.auth,
       'Google Photos auth status'
     );
@@ -1205,7 +1375,7 @@ export class CrowsEyeAPI {
 
   async listGooglePhotosAlbums(): Promise<AxiosResponse> {
     return apiWithFallback(
-      () => this.api.get('/google-photos/albums'),
+      () => this.api.get('/api/v1/google-photos/albums'),
       mockData.googlePhotos.albums,
       'Google Photos albums list'
     );
@@ -1222,7 +1392,7 @@ export class CrowsEyeAPI {
 
   async importFromGooglePhotos(albumId: string, mediaIds: string[]): Promise<AxiosResponse> {
     return apiWithFallback(
-      () => this.api.post('/google-photos/import', { albumId, mediaIds }),
+      () => this.api.post('/api/v1/google-photos/import', { albumId, mediaIds }),
       { jobId: 'import-job-123', status: 'queued', itemCount: mediaIds.length },
       'Google Photos media import'
     );
@@ -1230,7 +1400,7 @@ export class CrowsEyeAPI {
 
   async searchGooglePhotos(query: string): Promise<AxiosResponse> {
     return apiWithFallback(
-      () => this.api.get('/google-photos/search', { params: { q: query } }),
+      () => this.api.get('/api/v1/google-photos/search', { params: { q: query } }),
       mockData.googlePhotos.mediaItems.filter(item => 
         item.filename.toLowerCase().includes(query.toLowerCase())
       ),
@@ -1240,7 +1410,7 @@ export class CrowsEyeAPI {
 
   async syncGooglePhotos(): Promise<AxiosResponse> {
     return apiWithFallback(
-      () => this.api.post('/google-photos/sync'),
+      () => this.api.post('/api/v1/google-photos/sync'),
       { jobId: 'sync-job-456', status: 'queued' },
       'Google Photos sync'
     );
@@ -1339,7 +1509,7 @@ export class CrowsEyeAPI {
   async listProcessingJobs(userId?: string): Promise<AxiosResponse> {
     const params = userId ? { userId } : {};
     return apiWithFallback(
-      () => this.api.get('/jobs', { params }),
+      () => this.api.get('/api/v1/bulk/status', { params }),
       mockData.processingJobs,
       'Processing jobs list'
     );
@@ -1355,53 +1525,168 @@ export class CrowsEyeAPI {
 
   // === MEDIA MANAGEMENT ===
   async uploadMedia(file: File, tags: string[] = []): Promise<AxiosResponse> {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('tags', JSON.stringify(tags));
+    const uploadCall = () => {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Backend expects metadata as JSON string
+      if (tags.length > 0) {
+        const metadata = { tags };
+        formData.append('metadata', JSON.stringify(metadata));
+      }
+      
+      return this.api.post('/api/v1/media/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 180000, // 3 minutes for large files
+      });
+    };
 
+    try {
+      // Try backend API first
+      return await uploadCall();
+    } catch (error) {
+      console.warn('Backend API unavailable, using local Next.js API:', error);
+      
+      // Fallback to local Next.js API
+      const formData = new FormData();
+      formData.append('file', file);
+      if (tags.length > 0) {
+        formData.append('caption', tags.join(', '));
+      }
+      
+      const response = await fetch('/api/media/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      // Transform the result to match the expected format
+      return {
+        data: result.data,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any
+      } as AxiosResponse;
+    }
+  }
+
+  // Enhanced method for uploading completed posts with full metadata
+  async uploadCompletedPost(formData: FormData): Promise<AxiosResponse> {
+    const uploadCall = () => {
+      return this.api.post('/api/v1/media/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 180000, // 3 minutes for large files
+      });
+    };
+
+    // Extract metadata for mock response
+    const metadataStr = formData.get('metadata') as string;
+    let metadata = {};
+    try {
+      metadata = metadataStr ? JSON.parse(metadataStr) : {};
+    } catch (e) {
+      console.warn('Failed to parse metadata:', e);
+    }
+
+    const file = formData.get('file') as File;
+    const mockData = {
+      id: Math.floor(Math.random() * 1000000).toString(),
+      name: file?.name || 'unknown',
+      type: file?.type.startsWith('video') ? 'video' : file?.type.startsWith('image') ? 'image' : 'audio',
+      url: `mock-url-${Date.now()}`,
+      thumbnail: undefined,
+      size: file?.size || 0,
+      createdAt: new Date().toISOString(),
+      tags: (metadata as any)?.tags || []
+    };
+
+    return apiWithFallback(uploadCall, mockData, `Upload completed post: ${file?.name || 'unknown'}`);
+  }
+
+  async getMediaLibrary(): Promise<AxiosResponse> {
+    try {
+      // Try backend API first
+      return await this.api.get('/api/v1/media/');
+    } catch (error) {
+      console.warn('Backend API unavailable, using local Next.js API:', error);
+      
+      // Fallback to local Next.js API
+      const response = await fetch('/api/media');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch media library: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      // Transform the result to match the expected format
+      return {
+        data: result,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any
+      } as AxiosResponse;
+    }
+  }
+
+  async getMediaGalleries(): Promise<AxiosResponse> {
     return apiWithFallback(
-      () => this.api.post('/media/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      }),
-      {
-        id: `media-${Date.now()}`,
-        name: file.name,
-        content_type: file.type,
-        file_size: file.size,
-        created_at: new Date().toISOString(),
-        tags,
-        source: 'upload'
-      },
-      'Media upload'
+      () => this.api.get('/api/v1/galleries'),
+      [],
+      'Media galleries fetch'
     );
   }
 
-  async getMediaLibrary(page: number = 1, limit: number = 20): Promise<AxiosResponse> {
+  async createMediaGallery(name: string, caption?: string): Promise<AxiosResponse> {
     return apiWithFallback(
-      () => this.api.get('/media', { params: { page, limit } }),
-      {
-        media: mockData.media,
-        pagination: { page, limit, total: mockData.media.length, hasMore: false }
-      },
-      'Media library fetch'
+      () => this.api.post('/api/v1/galleries', { name: name, caption: caption }),
+      { id: Date.now(), name: name, caption: caption, created_date: new Date().toISOString() },
+      'Create media gallery'
+    );
+  }
+
+  async addMediaToGallery(galleryId: string, mediaIds: string[]): Promise<AxiosResponse> {
+    return apiWithFallback(
+      () => this.api.post(`/api/v1/galleries/${galleryId}/media`, mediaIds.map(id => parseInt(id))),
+      { added_count: mediaIds.length },
+      'Add media to gallery'
+    );
+  }
+
+  async removeMediaFromGallery(galleryId: string, mediaIds: string[]): Promise<AxiosResponse> {
+    return apiWithFallback(
+      () => this.api.delete(`/api/v1/galleries/${galleryId}/media`, { data: mediaIds.map(id => parseInt(id)) }),
+      { removed_count: mediaIds.length },
+      'Remove media from gallery'
     );
   }
 
   async searchMedia(query: string): Promise<AxiosResponse> {
     return apiWithFallback(
-      () => this.api.get('/media/search', { params: { q: query } }),
-      mockData.media.filter(item => 
-        item.name.toLowerCase().includes(query.toLowerCase()) ||
-        item.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
-      ),
+      () => this.api.post('/api/v1/media/search', { query: query }),
+      { items: [], total: 0 },
       'Media search'
     );
   }
 
   async deleteMedia(mediaId: string): Promise<AxiosResponse> {
     return apiWithFallback(
-      () => this.api.delete(`/media/${mediaId}`),
-      { message: 'Media deleted successfully' },
+      () => this.api.delete(`/api/v1/media/${mediaId}`),
+      { success: true },
       `Delete media ${mediaId}`
     );
   }
@@ -1497,7 +1782,16 @@ export class CrowsEyeAPI {
 
   async createMarketingPost(postData: CreatePostRequest): Promise<AxiosResponse<CreatePostResponse>> {
     try {
-      const response = await this.api.post('/api/v1/marketing-tool/posts', postData);
+      // Transform to backend schema
+      const transformed: any = {
+        caption: postData.content,
+        platforms: postData.platforms,
+        mediaId: Array.isArray((postData as any).media_ids) ? (postData as any).media_ids[0] : (postData as any).media_id,
+        // Optional extended fields
+        hashtags: postData.hashtags,
+        customInstructions: undefined
+      };
+      const response = await this.api.post('/api/v1/posts', transformed);
       return response;
     } catch (error) {
       console.error('Error creating marketing post:', error);
@@ -1577,7 +1871,16 @@ export class CrowsEyeAPI {
 
   async createPost(postData: PostData): Promise<AxiosResponse> {
     try {
-      const response = await this.api.post('/api/v1/posts', postData);
+      // Transform to backend schema
+      const transformed: any = {
+        caption: postData.content,
+        platforms: postData.platforms,
+        mediaId: Array.isArray((postData as any).media_ids) ? (postData as any).media_ids[0] : (postData as any).media_id,
+        // Optional extended fields
+        hashtags: postData.hashtags,
+        customInstructions: undefined
+      };
+      const response = await this.api.post('/api/v1/posts', transformed);
       return response;
     } catch (error) {
       console.error('Error creating post:', error);
@@ -1681,7 +1984,7 @@ export const apiService = {
   ),
 
   createMarketingPost: (postData: CreatePostRequest) => apiWithFallback(
-    () => api.post('/api/v1/marketing-tool/posts', postData),
+    () => api.post('/api/v1/posts', postData),
     {
       success: true,
       postId: `post_${Date.now()}`
@@ -1827,9 +2130,20 @@ export const apiService = {
     console.log('📝 Development fallback mode:', DEVELOPMENT_FALLBACK);
     console.log('🌐 API Base URL:', API_BASE_URL);
     
+    // Check authentication status
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    console.log('🔑 Auth token present:', !!token);
+    if (token) {
+      console.log('🔐 Token length:', token.length);
+      console.log('🔐 Token starts with:', token.substring(0, 20) + '...');
+    } else {
+      console.log('⚠️ No authentication token found - will use local proxy as fallback');
+    }
+    
     const uploadCall = () => {
-      console.log('📤 Making actual API call to /api/v1/media/upload');
-      return api.post('/api/v1/media/upload', formData, {
+                      console.log('📤 Making actual API call to /api/v1/media/upload');
+        console.log('📡 Full URL:', `${API_BASE_URL}/api/v1/media/upload`);
+        return api.post('/api/v1/media/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 30000, // 30 second timeout for uploads
         onUploadProgress: (progressEvent) => {
@@ -1890,19 +2204,151 @@ export const apiService = {
         console.log('🎯 Direct apiWithFallback result:', result);
         return result;
       })
-      .catch((error) => {
+      .catch(async (error) => {
         console.error('❌ Direct apiWithFallback error:', error);
-        throw error;
+        console.log('🔄 Trying local proxy as last resort...');
+        
+        // Try local proxy as last resort
+        try {
+          const response = await fetch('/api/media-proxy/upload', {
+            method: 'POST',
+            body: formData,
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.error || 'Upload failed');
+          }
+          console.log('✅ Local proxy upload succeeded:', data);
+          return { data };
+        } catch (proxyError) {
+          console.error('❌ Local proxy also failed:', proxyError);
+          throw error; // Throw original error
+        }
       });
   },
 
+  // Enhanced method for uploading completed posts with full metadata
+  uploadCompletedPost: async (formData: FormData) => {
+    console.log('🚀 uploadCompletedPost called in API service');
+    
+    // Check authentication status
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    if (!token) {
+      console.log('⚠️ No authentication token found - using local proxy');
+      // Use local proxy endpoint that doesn't require authentication
+      try {
+        const response = await fetch('/api/media-proxy/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Upload failed');
+        }
+        return { data };
+      } catch (error) {
+        console.error('❌ Local proxy upload failed:', error);
+        throw error;
+      }
+    }
+    
+    const uploadCall = () => {
+      console.log('📤 Making API call to /media for completed post');
+      return api.post('/api/v1/media/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60000, // 60 second timeout for completed posts
+      });
+    };
+
+    // Extract metadata for mock response
+    const metadataStr = formData.get('metadata') as string;
+    let metadata = {};
+    try {
+      metadata = metadataStr ? JSON.parse(metadataStr) : {};
+    } catch (e) {
+      console.warn('Failed to parse metadata:', e);
+    }
+
+    const file = formData.get('file') as File;
+    const mockData = {
+      id: Math.floor(Math.random() * 1000000).toString(),
+      name: file?.name || 'unknown',
+      type: file?.type.startsWith('video') ? 'video' : file?.type.startsWith('image') ? 'image' : 'audio',
+      url: `mock-url-${Date.now()}`,
+      thumbnail: undefined,
+      size: file?.size || 0,
+      createdAt: new Date().toISOString(),
+      tags: (metadata as any)?.tags || []
+    };
+
+    return apiWithFallback(uploadCall, mockData, `Upload completed post: ${file?.name || 'unknown'}`);
+  },
+
   // Get Media (Updated to match backend)
-  getMedia: (mediaId: string) => apiWithFallback(() => api.get(`/api/v1/media/${mediaId}`), 
+  getMedia: (mediaId: string) => apiWithFallback(() => api.get(`/media/${mediaId}`), 
     mockData.media.find(m => m.id === mediaId) || mockData.media[0]
   ),
   
   // Get All Media/Library (New method)
-  getMediaLibrary: () => apiWithFallback(() => api.get('/api/v1/media'), mockData.media),
+  getMediaLibrary: async () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    console.log('📚 getMediaLibrary called - Auth token present:', !!token);
+          console.log('📡 Full URL for media library:', `${API_BASE_URL}/media`);
+    
+    // Test backend health first
+    try {
+      console.log('🏥 Testing backend health...');
+      const healthResponse = await api.get('/health');
+      console.log('✅ Backend health check passed:', healthResponse.status);
+    } catch (healthError: any) {
+      console.error('❌ Backend health check failed:', {
+        status: healthError?.response?.status,
+        message: healthError?.message,
+        url: `${API_BASE_URL}/health`
+      });
+    }
+    
+    // Test authentication if token exists
+    if (token) {
+      try {
+        console.log('🔐 Testing authentication with /api/v1/auth/me...');
+        const authResponse = await api.get('/api/v1/auth/me');
+        console.log('✅ Authentication check passed:', authResponse.status);
+      } catch (authError: any) {
+        console.error('❌ Authentication check failed:', {
+          status: authError?.response?.status,
+          message: authError?.message,
+          url: `${API_BASE_URL}/api/v1/auth/me`,
+          responseData: authError?.response?.data
+        });
+      }
+    } else {
+      console.warn('⚠️ No authentication token found in localStorage');
+    }
+    
+    return apiWithFallback(() => api.get('/api/v1/media/'), []);
+  },
+  
+  // Delete Media
+      deleteMedia: (mediaId: string) => apiWithFallback(() => api.delete(`/api/v1/media/${mediaId}`), { success: true }),
+
+  // Gallery Management
+  getMediaGalleries: () => apiWithFallback(() => api.get('/api/v1/galleries'), []),
+  
+  createMediaGallery: (name: string, caption?: string) => apiWithFallback(
+    () => api.post('/api/v1/galleries', { title: name, images: [] }),
+    { id: Date.now(), title: name, images: [], created_date: new Date().toISOString() }
+  ),
+  
+  addMediaToGallery: (galleryId: string, mediaIds: string[]) => apiWithFallback(
+    () => api.post(`/api/v1/galleries/${galleryId}/items`, { media_ids: mediaIds }),
+    { added_count: mediaIds.length }
+  ),
+  
+  removeMediaFromGallery: (galleryId: string, mediaIds: string[]) => apiWithFallback(
+    () => api.delete(`/api/v1/galleries/${galleryId}/items`, { data: { media_ids: mediaIds } }),
+    { removed_count: mediaIds.length }
+  ),
 
   // Video Processing (Updated to match backend)
   processVideo: (data: {
@@ -1998,6 +2444,67 @@ export const apiService = {
 
   // Bulk Job Status (Updated to match backend)
   getBulkJobStatus: (jobId: string) => api.get(`/api/v1/bulk/status/${jobId}`),
+  
+  // === DIAGNOSTIC UTILITIES ===
+  
+  // Run comprehensive system diagnostics
+  runDiagnostics: async () => {
+    console.log('🔍 Running system diagnostics...');
+    const results = {
+      apiBaseUrl: API_BASE_URL,
+      authToken: false,
+      backendHealth: false,
+      authentication: false,
+      mediaEndpoint: false,
+      errors: [] as string[]
+    };
+    
+    // Check auth token
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    results.authToken = !!token;
+    console.log('🔑 Auth token check:', results.authToken);
+    
+    if (!token) {
+      results.errors.push('No authentication token found in localStorage');
+    }
+    
+    // Check backend health
+    try {
+      const healthResponse = await api.get('/health');
+      results.backendHealth = healthResponse.status === 200;
+      console.log('🏥 Backend health check:', results.backendHealth);
+    } catch (error: any) {
+      results.errors.push(`Backend health check failed: ${error.response?.status || error.message}`);
+      console.log('❌ Backend health check failed');
+    }
+    
+    // Check authentication if token exists
+    if (token) {
+      try {
+        const authResponse = await api.get('/api/v1/auth/me');
+        results.authentication = authResponse.status === 200;
+        console.log('🔐 Authentication check:', results.authentication);
+      } catch (error: any) {
+        results.errors.push(`Authentication check failed: ${error.response?.status || error.message}`);
+        console.log('❌ Authentication check failed');
+      }
+    }
+    
+    // Check media endpoint accessibility
+    if (token) {
+      try {
+        const mediaResponse = await api.get('/api/v1/media/');
+        results.mediaEndpoint = mediaResponse.status === 200;
+        console.log('📚 Media endpoint check:', results.mediaEndpoint);
+      } catch (error: any) {
+        results.errors.push(`Media endpoint check failed: ${error.response?.status || error.message}`);
+        console.log('❌ Media endpoint check failed:', error.response?.status);
+      }
+    }
+    
+    console.log('📊 Diagnostics complete:', results);
+    return results;
+  },
 
   // === PLATFORM PREVIEWS (Updated to match backend) ===
   
@@ -2090,9 +2597,9 @@ export const apiService = {
   
   // Real-time features (WebSocket would be handled separately)
   subscribeToUpdates: (callback: (data: any) => void) => {
-    // WebSocket implementation would go here
-    console.log('WebSocket subscription not implemented yet');
-  }
+      // WebSocket implementation would go here
+      console.log('WebSocket subscription not implemented yet');
+    },
 };
 
-export default api; 
+export default apiService; 

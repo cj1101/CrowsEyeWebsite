@@ -17,10 +17,12 @@ import {
 } from '@heroicons/react/24/outline';
 import { useMediaStore } from '@/stores/mediaStore';
 import { usePostStore } from '@/stores/postStore';
-import { CrowsEyeAPI } from '@/services/api';
+import { AnalyticsService, MediaService, PostService } from '@/lib/firestore';
+import { auth } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useMediaLibrary } from '@/hooks/api/useMediaLibrary';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -59,6 +61,8 @@ interface DashboardStats {
   aiCreditsTotal: number;
   scheduledPosts: number;
   connectedPlatforms: number;
+  totalMedia: number;
+  publishedPosts: number;
 }
 
 interface RecentActivity {
@@ -80,10 +84,18 @@ interface QuickAction {
   badge?: string;
 }
 
+interface MonthlyChanges {
+  engagement: number;
+  reach: number;
+  followers: number;
+  posts: number;
+}
+
 export default function DashboardOverview() {
   const router = useRouter();
   const { files } = useMediaStore();
   const { posts } = usePostStore();
+  const { media } = useMediaLibrary();
   const [stats, setStats] = useState<DashboardStats>({
     totalPosts: 0,
     totalEngagement: 0,
@@ -92,10 +104,18 @@ export default function DashboardOverview() {
     aiCreditsUsed: 0,
     aiCreditsTotal: 150,
     scheduledPosts: 0,
-    connectedPlatforms: 0
+    connectedPlatforms: 0,
+    totalMedia: 0,
+    publishedPosts: 0,
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [monthlyChanges, setMonthlyChanges] = useState<MonthlyChanges>({
+    engagement: 0,
+    reach: 0,
+    followers: 0,
+    posts: 0
+  });
   const [connections, setConnections] = useState({
     tiktok: false,
     instagram: false
@@ -114,6 +134,17 @@ export default function DashboardOverview() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Update stats when media changes
+  useEffect(() => {
+    if (media.length > 0) {
+      setStats(prev => ({
+        ...prev,
+        totalMedia: media.length,
+        publishedPosts: media.filter(item => item.status === 'published').length,
+      }));
+    }
+  }, [media]);
+
   const checkConnectionStatus = () => {
     // Check if tokens exist in cookies
     const checkCookie = (name: string) => {
@@ -131,27 +162,44 @@ export default function DashboardOverview() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      // Use unified API client (handles auth & base URL)
-      const api = new CrowsEyeAPI();
+      
+      const user = auth.currentUser;
+      if (!user) {
+        console.log('⚠️ No authenticated user found');
+        setLoading(false);
+        return;
+      }
 
-      const { data: analytics } = await api.getAnalyticsOverview();
+      console.log('📊 Loading dashboard data for user:', user.uid);
+      
+      // Load analytics data from Firestore
+      try {
+        const analyticsSummary = await AnalyticsService.getUserAnalyticsSummary(user.uid);
+        
+        console.log('✅ Analytics data loaded:', analyticsSummary);
+        
+        setStats(prev => ({
+          ...prev,
+          totalEngagement: analyticsSummary.totalEngagement,
+          totalReach: analyticsSummary.totalViews, // Using views as reach proxy
+          totalPosts: Object.keys(analyticsSummary.byPlatform).length,
+        }));
 
-      if (analytics) {
-        // Update stats with real data
-        setStats({
-          totalPosts: analytics.total_posts || 0,
-          totalEngagement: analytics.total_engagement || 0,
-          totalReach: analytics.reach || 0,
-          totalFollowers: analytics.follower_growth || 0,
-          aiCreditsUsed: 0, // Placeholder – update when API provides this
-          aiCreditsTotal: 150,
-          scheduledPosts: 0,
-          connectedPlatforms: 0
-        });
+        // Generate recent activity based on platform stats
+        const platformEntries = Object.entries(analyticsSummary.byPlatform);
+        const recentAnalytics = platformEntries
+          .slice(0, 5)
+          .map(([platform, metrics], index) => ({
+            id: `activity-${index}`,
+            type: 'post' as const,
+            title: `Recent activity on ${platform}`,
+            description: `${metrics.engagement || 0} total engagement`,
+            timestamp: new Date().toISOString(),
+            status: 'success' as const,
+            platform: platform
+          }));
 
-        // Set recent activity from API or default
-        // TODO: backend to supply activity; fallback to welcome activity
-        setRecentActivity((analytics as any).recentActivity || [
+        setRecentActivity(recentAnalytics.length > 0 ? recentAnalytics : [
           {
             id: '1',
             type: 'post',
@@ -161,31 +209,34 @@ export default function DashboardOverview() {
             status: 'success' as const
           }
         ]);
-
-        // Set monthly changes from API or defaults
-        setMonthlyChanges((analytics as any).monthlyGrowth || {
-          engagement: 0,
-          reach: 0,
-          followers: 0,
-          posts: 0
-        });
         
-        console.log('✅ Analytics data loaded successfully');
+      } catch (analyticsError) {
+        console.warn('⚠️ Error loading analytics, using defaults:', analyticsError);
+        setRecentActivity([
+          {
+            id: '1',
+            type: 'post',
+            title: 'Welcome to Crow\'s Eye',
+            description: 'Get started by creating your first post',
+            timestamp: new Date().toISOString(),
+            status: 'success' as const
+          }
+        ]);
       }
-    } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+
+      console.log('✅ Dashboard data loaded successfully');
       
-      // Clear stats and activity on failure instead of injecting demo content
-      setStats({
+    } catch (error) {
+      console.error('❌ Failed to load dashboard data:', error);
+      
+      // Clear stats and activity on failure
+      setStats(prev => ({
+        ...prev,
         totalPosts: 0,
         totalEngagement: 0,
         totalReach: 0,
         totalFollowers: 0,
-        aiCreditsUsed: 0,
-        aiCreditsTotal: 150,
-        scheduledPosts: 0,
-        connectedPlatforms: 0
-      });
+      }));
       
       setRecentActivity([]);
     } finally {
@@ -255,14 +306,6 @@ export default function DashboardOverview() {
     if (diffInHours < 24) return `${diffInHours}h ago`;
     return `${Math.floor(diffInHours / 24)}d ago`;
   };
-
-  // Calculate percentage changes (will be updated to use real data from API)
-  const [monthlyChanges, setMonthlyChanges] = useState({
-    engagement: 0,
-    reach: 0,
-    followers: 0,
-    posts: 0
-  });
 
   if (loading) {
     return (

@@ -1,16 +1,18 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { CrowsEyeAPI, type User, type LoginCredentials, type RegisterData } from '@/services/api';
+import { UserService } from '@/lib/firestore';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import type { UserDocument } from '@/lib/firestore/types';
 
-// Enhanced user profile interface that matches our API
-interface UserProfile extends User {
+// Enhanced user profile interface that matches Firestore
+interface UserProfile extends UserDocument {
   plan: 'free' | 'creator' | 'pro' | 'growth' | 'payg';
   displayName: string;
   firstName: string;
   lastName: string;
   subscription_type?: 'monthly' | 'yearly' | 'lifetime';
-  stripe_customer_id?: string;
 }
 
 // Auth context interface
@@ -21,7 +23,7 @@ interface AuthContextType {
   isConfigured: boolean;
   refreshUserProfile: () => Promise<void>;
   error: string | null;
-  login: (email?: string, password?: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (email: string, password: string, firstName: string, lastName: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
@@ -65,542 +67,254 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [api] = useState(() => new CrowsEyeAPI());
   const [user, setUser] = useState<{ uid: string; email: string } | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Helper function to transform API user to UserProfile
-  const transformUserToProfile = (apiUser: User): UserProfile => {
-    const nameParts = apiUser.name.split(' ');
+  // Helper function to transform Firestore user to UserProfile
+  const transformUserToProfile = (firestoreUser: UserDocument): UserProfile => {
+    const nameParts = (firestoreUser.fullName || '').split(' ');
     
     // Check for lifetime access based on promotional code usage
     const promoTier = localStorage.getItem('crowsEyePromoTier');
     const subscriptionType = promoTier === 'lifetime_pro' ? 'lifetime' : 'monthly';
     
     // Start with the backend's subscription_tier as the source of truth
-    let actualPlan: 'free' | 'creator' | 'pro' | 'growth' | 'payg' = apiUser.subscription_tier || 'free';
+    let actualPlan: 'free' | 'creator' | 'pro' | 'growth' | 'payg' = 'free';
+    
+    // Handle subscription tier mapping
+    const tier = firestoreUser.subscriptionTier;
+    if (tier && ['free', 'creator', 'pro', 'growth', 'payg'].includes(tier)) {
+      actualPlan = tier as 'free' | 'creator' | 'pro' | 'growth' | 'payg';
+    } else if (tier === 'spark') {
+      actualPlan = 'creator'; // Map spark to creator tier
+    }
     
     console.log('🔍 Plan Detection Debug:', {
-      backendTier: apiUser.subscription_tier,
-      hasStripeCustomerId: !!apiUser.stripe_customer_id,
-      subscriptionStatus: apiUser.subscription_status,
+      firestoreTier: firestoreUser.subscriptionTier,
+      hasStripeCustomerId: !!firestoreUser.stripeCustomerId,
       promoTier,
       initialPlan: actualPlan,
-      fullUserData: apiUser
+      fullUserData: firestoreUser
     });
 
     // Enhanced plan detection logic
     if (promoTier === 'lifetime_pro') {
       console.log('🎁 Detected lifetime Pro user via promo code');
       actualPlan = 'pro';
-    } else if ((actualPlan === 'free' || !actualPlan) && apiUser.stripe_customer_id) {
+    } else if ((actualPlan === 'free' || !actualPlan) && firestoreUser.stripeCustomerId) {
       console.log('🎯 User has Stripe customer ID but marked as free - likely PAYG user');
       actualPlan = 'payg';
-    } else if (apiUser.subscription_status === 'active' && ['creator', 'growth', 'pro'].includes(actualPlan)) {
-      console.log('✅ User has active subscription:', actualPlan);
-    } else if (actualPlan === 'free' && apiUser.subscription_status === 'active') {
-      console.log('⚠️ User marked as free but has active subscription - data mismatch');
-      // This suggests the backend data is out of sync
+    } else if (['creator', 'growth', 'pro'].includes(actualPlan)) {
+      console.log('✅ User has subscription:', actualPlan);
     }
     
     console.log('✅ Final plan assigned:', actualPlan);
     
     return {
-      ...apiUser,
+      ...firestoreUser,
       plan: actualPlan,
-      subscription_tier: actualPlan as any,
-      displayName: apiUser.name,
+      displayName: firestoreUser.fullName || firestoreUser.username || '',
       firstName: nameParts[0] || '',
       lastName: nameParts.slice(1).join(' ') || '',
       subscription_type: subscriptionType,
     };
   };
 
-  // Initialize auth state from stored token with enhanced persistence
+  // Initialize auth state listener
   useEffect(() => {
-    const initializeAuth = async () => {
+    // If Firebase auth failed to initialize, avoid setting up a listener to prevent runtime errors
+    if (!auth) {
+      console.warn('⚠️ Firebase auth is not initialized. Skipping auth state listener.');
+      setLoading(false);
+      return;
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setLoading(true);
       
-      const token = localStorage.getItem('auth_token');
-      const lastLoginTime = localStorage.getItem('last_login_time');
-      const userEmail = localStorage.getItem('user_email');
-      
-      if (token) {
-        // Check if token is recent (within 7 days) for better UX
-        const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-        const isRecentLogin = lastLoginTime && parseInt(lastLoginTime) > sevenDaysAgo;
-        
+      if (firebaseUser) {
         try {
-          // Verify token is still valid by getting current user
-          const response = await api.getCurrentUser();
-          if (response.data) {
-            const userProfile = transformUserToProfile(response.data);
-            
-            setUser({ uid: userProfile.id, email: userProfile.email });
-            setUserProfile(userProfile);
+          // Get user profile from Firestore
+          const userProfile = await UserService.getUser(firebaseUser.uid);
+          
+          if (userProfile) {
+            const transformedProfile = transformUserToProfile(userProfile);
+            setUser({ uid: firebaseUser.uid, email: firebaseUser.email || '' });
+            setUserProfile(transformedProfile);
             setIsAuthenticated(true);
             setError(null);
-            
-            // Update last login time for persistence tracking
-            localStorage.setItem('last_login_time', Date.now().toString());
-            localStorage.setItem('user_email', userProfile.email);
-            
-            console.log('✅ Authentication restored from stored token');
-            
-            // Sync subscription status to ensure data is up to date
-            try {
-              await api.syncSubscriptionStatus();
-              console.log('🔄 Subscription sync completed');
-              // Refresh user profile after sync
-              const updatedResponse = await api.getCurrentUser();
-              if (updatedResponse.data) {
-                const updatedProfile = transformUserToProfile(updatedResponse.data);
-                setUserProfile(updatedProfile);
-                console.log('✅ User profile refreshed after sync');
-              }
-            } catch (syncError) {
-              console.warn('⚠️ Subscription sync failed (non-critical):', syncError);
-            }
+            console.log('✅ User authenticated via Firebase Auth');
           } else {
-            throw new Error('No user data in response');
+            console.warn('⚠️ Firebase user found but no Firestore profile');
+            setUser(null);
+            setUserProfile(null);
+            setIsAuthenticated(false);
           }
         } catch (error: any) {
-          console.warn('❌ Token validation failed:', error.message);
-          
-          // Only clear auth if it's actually an auth error, not a network error
-          if (error?.response?.status === 401 || error?.response?.status === 403) {
-            // Clear all auth-related storage
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('refresh_token');
-            localStorage.removeItem('last_login_time');
-            localStorage.removeItem('user_email');
-            setUser(null);
-            setUserProfile(null);
-            setIsAuthenticated(false);
-            setError(null);
-            console.log('🔐 Token expired, cleared authentication');
-          } else if (isRecentLogin && userEmail) {
-            // For network errors with recent login, keep user logged in but show offline state
-            console.log('🌐 Network error but keeping user authenticated (recent login)');
-            setUser({ uid: 'offline', email: userEmail });
-            setIsAuthenticated(true);
-            // Don't set error state to avoid confusing users
-          } else {
-            // Network error with old token - clear auth
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('refresh_token');
-            localStorage.removeItem('last_login_time');
-            localStorage.removeItem('user_email');
-            setUser(null);
-            setUserProfile(null);
-            setIsAuthenticated(false);
-            console.log('🌐 Network error with old token, cleared authentication');
-          }
+          console.error('❌ Error fetching user profile:', error);
+          setUser(null);
+          setUserProfile(null);
+          setIsAuthenticated(false);
+          setError(error.message || 'Failed to load user profile');
         }
+      } else {
+        setUser(null);
+        setUserProfile(null);
+        setIsAuthenticated(false);
+        setError(null);
       }
       
       setLoading(false);
-    };
+    });
 
-    initializeAuth();
-  }, [api]);
-
-  // Add periodic token validation
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const validateToken = async () => {
-      try {
-        await api.getCurrentUser();
-        console.log('🔄 Token validation successful');
-      } catch (error: any) {
-        if (error?.response?.status === 401 || error?.response?.status === 403) {
-          console.warn('❌ Token expired, logging out');
-          logout();
-        }
-      }
-    };
-
-    // Validate token every 15 minutes (reduced frequency for better UX)
-    const interval = setInterval(validateToken, 15 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated, api]);
+    return () => unsubscribe();
+  }, []);
 
   // Refresh user profile
   const refreshUserProfile = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!auth.currentUser) return;
     
     try {
-      const response = await api.getCurrentUser();
-      if (response.data) {
-        const userProfile = transformUserToProfile(response.data);
-        
-        setUser({ uid: userProfile.id, email: userProfile.email });
-        setUserProfile(userProfile);
+      const userProfile = await UserService.getUser(auth.currentUser.uid);
+      if (userProfile) {
+        const transformedProfile = transformUserToProfile(userProfile);
+        setUserProfile(transformedProfile);
       }
     } catch (error: any) {
-      console.error('Failed to refresh user profile:', error);
-      setError('Failed to refresh user profile');
+      console.error('❌ Error refreshing user profile:', error);
+      setError(error.message || 'Failed to refresh user profile');
     }
-  }, [api, isAuthenticated]);
+  }, []);
 
-  // Sync subscription status with backend when data seems incorrect
-  const syncSubscriptionStatus = useCallback(async () => {
-    if (!userProfile || !isAuthenticated) return;
-    
+  // Login function
+  const login = useCallback(async (email: string, password: string) => {
     try {
-      console.log('🔄 Syncing subscription status with backend...');
-      const response = await api.getSubscriptionStatus();
-      
-      if (response.data.success && response.data.data) {
-        const backendData = response.data.data;
-        
-        console.log('📊 Backend subscription data:', backendData);
-        
-        // If backend data shows different plan than what we have locally
-        if (backendData.plan !== userProfile.subscription_tier) {
-          console.log('🔄 Plan mismatch detected, refreshing user profile...');
-          await refreshUserProfile();
-        }
-      }
-    } catch (error) {
-      console.error('Failed to sync subscription status:', error);
-    }
-  }, [userProfile, isAuthenticated, api, refreshUserProfile]);
-
-  // Enhanced API login function
-  const login = useCallback(async (email?: string, password?: string) => {
-    if (!email || !password) {
-      const errorMsg = 'Email and password are required';
-      setError(errorMsg);
-      return { success: false, error: errorMsg };
-    }
-
-    try {
-      setError(null);
       setLoading(true);
-
-      console.log('🔐 Attempting login with API...');
+      setError(null);
       
-      const credentials: LoginCredentials = { email, password };
-      const response = await api.login(credentials);
+      const { user: firestoreUser, authUser } = await UserService.signIn(email, password);
+      const transformedProfile = transformUserToProfile(firestoreUser);
       
-      console.log('🔍 Login response:', response);
+      setUser({ uid: authUser.uid, email: authUser.email || '' });
+      setUserProfile(transformedProfile);
+      setIsAuthenticated(true);
       
-      // Check if response indicates success
-      if (response.success === false) {
-        throw new Error(response.error || 'Login failed');
-      }
-      
-      // Store tokens and set user state only if response.data exists
-      if (response.data?.access_token && response.data?.user) {
-        localStorage.setItem('auth_token', response.data.access_token);
-        if (response.data.refresh_token) {
-          localStorage.setItem('refresh_token', response.data.refresh_token);
-        }
-        
-        // Set user state and persistence data
-        const userProfile = transformUserToProfile(response.data.user);
-        setUser({ uid: userProfile.id, email: userProfile.email });
-        setUserProfile(userProfile);
-        setIsAuthenticated(true);
-        setError(null);
-        
-        // Store persistence data for better session management
-        localStorage.setItem('last_login_time', Date.now().toString());
-        localStorage.setItem('user_email', userProfile.email);
-        
-        console.log('✅ Login successful:', userProfile.email);
-        return { success: true };
-      } else {
-        console.error('❌ Invalid response structure:', response);
-        throw new Error('Invalid response from server');
-      }
-      
+      console.log('✅ Login successful');
+      return { success: true };
     } catch (error: any) {
-      let errorMessage = 'Login failed';
-      
-      // Handle API errors with better messages
-      const status = error?.response?.status;
-      const apiError = error?.response?.data?.error;
-      
-      if (status === 401) {
-        errorMessage = 'Invalid email or password';
-      } else if (status === 429) {
-        errorMessage = 'Too many login attempts. Please try again later';
-      } else if (status === 500) {
-        errorMessage = 'Server error. Please try again later';
-      } else if (status === 502) {
-        errorMessage = 'Service temporarily unavailable. Please try again later';
-      } else if (apiError) {
-        errorMessage = apiError;
-      } else if (error?.code === 'ECONNABORTED') {
-        errorMessage = 'Connection timeout. Please check your internet connection';
-      } else if (error?.message?.includes('Network Error')) {
-        errorMessage = 'Network error. Please check your internet connection';
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-
-      console.error('❌ Login failed:', errorMessage);
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
+      console.error('❌ Login failed:', error);
+      setError(error.message || 'Login failed');
+      return { success: false, error: error.message || 'Login failed' };
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, []);
 
-  // Enhanced API signup function
+  // Signup function
   const signup = useCallback(async (email: string, password: string, firstName: string, lastName: string) => {
-    if (!email || !password || !firstName) {
-      const errorMsg = 'Email, password, and first name are required';
-      setError(errorMsg);
-      return { success: false, error: errorMsg };
-    }
-
     try {
-      setError(null);
       setLoading(true);
-
-      console.log('📝 Attempting signup with API...');
+      setError(null);
       
-      // Check for promotional codes
-      const promoCode = localStorage.getItem('crowsEyePromoCode');
-      const promoTier = localStorage.getItem('crowsEyePromoTier');
+      const username = email.split('@')[0]; // Generate username from email
+      const fullName = `${firstName} ${lastName}`.trim();
       
-      let subscriptionTier: 'free' | 'creator' | 'growth' | 'pro' | 'payg' = 'free';
+      const { user: firestoreUser, authUser } = await UserService.register(email, password, username, fullName);
+      const transformedProfile = transformUserToProfile(firestoreUser);
       
-      // Check if user selected PAYG plan from URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const planParam = urlParams.get('plan');
+      setUser({ uid: authUser.uid, email: authUser.email || '' });
+      setUserProfile(transformedProfile);
+      setIsAuthenticated(true);
       
-      // Set subscription tier based on promo code or plan selection
-      if (promoTier === 'lifetime_pro') {
-        subscriptionTier = 'pro'; // Lifetime Pro access
-      } else if (promoCode) {
-        subscriptionTier = 'creator'; // Default promo code access
-      } else if (planParam === 'payg') {
-        subscriptionTier = 'payg'; // Pay-as-you-go plan
-      }
-      
-      const userData: RegisterData = {
-        email,
-        password,
-        name: `${firstName} ${lastName}`.trim(),
-        subscription_tier: subscriptionTier as any, // Allow PAYG to be set
-      };
-      
-      const response = await api.register(userData);
-      
-      console.log('🔍 Signup response:', response);
-      
-      // Check if response indicates success
-      if (response.success === false) {
-        throw new Error(response.error || 'Registration failed');
-      }
-      
-      // Store tokens and set user state only if response.data exists
-      if (response.data?.access_token && response.data?.user) {
-        localStorage.setItem('auth_token', response.data.access_token);
-        if (response.data.refresh_token) {
-          localStorage.setItem('refresh_token', response.data.refresh_token);
-        }
-        
-        // Set user state
-        const userProfile = transformUserToProfile(response.data.user);
-        setUser({ uid: userProfile.id, email: userProfile.email });
-        setUserProfile(userProfile);
-        setIsAuthenticated(true);
-        
-        // Clear promotional codes after successful signup
-        localStorage.removeItem('crowsEyePromoCode');
-        localStorage.removeItem('crowsEyePromoTier');
-        
-        console.log('✅ Signup successful:', userProfile.email);
-        console.log('📊 Subscription tier:', subscriptionTier);
-        return { success: true };
-      } else {
-        console.error('❌ Invalid signup response structure:', response);
-        throw new Error('Invalid response from server');
-      }
-      
+      console.log('✅ Signup successful');
+      return { success: true };
     } catch (error: any) {
-      let errorMessage = 'Registration failed';
-      
-      // Handle API errors with better messages
-      const status = error?.response?.status;
-      const apiError = error?.response?.data?.error;
-      
-      if (status === 409) {
-        errorMessage = 'An account with this email already exists';
-      } else if (status === 400) {
-        errorMessage = 'Invalid registration data. Please check your information';
-      } else if (status === 500) {
-        errorMessage = 'Server error. Please try again later';
-      } else if (status === 502) {
-        errorMessage = 'Service temporarily unavailable. Please try again later';
-      } else if (apiError) {
-        errorMessage = apiError;
-      } else if (error?.code === 'ECONNABORTED') {
-        errorMessage = 'Connection timeout. Please check your internet connection';
-      } else if (error?.message?.includes('Network Error')) {
-        errorMessage = 'Network error. Please check your internet connection';
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-
-      console.error('❌ Signup failed:', errorMessage);
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
+      console.error('❌ Signup failed:', error);
+      setError(error.message || 'Signup failed');
+      return { success: false, error: error.message || 'Signup failed' };
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, []);
 
-  // Check if user has valid subscription - sync version for backward compatibility
-  const hasValidSubscription = useCallback(() => {
-    if (!userProfile) return false;
-    
-    // Check if user has lifetime access
-    const isLifetimeUser = userProfile.subscription_tier === 'pro' && 
-                          userProfile.subscription_type === 'lifetime';
-    
-    // Check if user has any valid subscription (active monthly/yearly plans)
-    const hasActiveSubscription = userProfile.subscription_status === 'active' &&
-                                 ['creator', 'growth', 'pro'].includes(userProfile.subscription_tier);
-    
-    // For PAYG, check if they have completed payment setup (has stripe_customer_id)
-    const hasPAYGSetup = (userProfile.subscription_tier as string) === 'payg' && 
-                        !!userProfile.stripe_customer_id;
-    
-    return isLifetimeUser || hasActiveSubscription || hasPAYGSetup;
-  }, [userProfile]);
-
-  // Check if user has valid subscription - async version using API
-  const hasValidSubscriptionAsync = useCallback(async () => {
-    if (!userProfile || !isAuthenticated) return false;
-    
-    try {
-      // Use API to get real-time subscription status
-      const response = await api.getSubscriptionStatus();
-      
-      if (response.data.success && response.data.data) {
-        const subscriptionData = response.data.data;
-        
-        // Check various valid subscription states
-        const isLifetimeUser = subscriptionData.plan === 'pro' && 
-                              localStorage.getItem('crowsEyePromoTier') === 'lifetime_pro';
-        
-        const hasActiveSubscription = subscriptionData.subscriptionStatus === 'active' &&
-                                     ['creator', 'growth', 'pro'].includes(subscriptionData.plan);
-        
-        const hasPAYGSetup = subscriptionData.plan === 'payg' && 
-                            !!subscriptionData.stripeCustomerId;
-        
-        return isLifetimeUser || hasActiveSubscription || hasPAYGSetup;
-      }
-      
-      return false;
-    } catch (error) {
-      console.error('Failed to check subscription status:', error);
-      // Fallback to local check if API fails
-      return hasValidSubscription();
-    }
-  }, [userProfile, isAuthenticated, api, hasValidSubscription]);
-
-  // Check if user requires subscription setup - simplified
-  const requiresSubscription = useCallback(() => {
-    if (!userProfile) return true;
-    
-    // For PAYG users without stripe_customer_id, they need setup but not full subscription
-    if (userProfile.subscription_tier === 'payg' && !userProfile.stripe_customer_id) {
-      return false; // Allow access to setup PAYG
-    }
-    
-    // All other free tier users need subscription
-    return userProfile.subscription_tier === 'free';
-  }, [userProfile]);
-
-  // Check if user needs PAYG setup specifically - sync version
-  const needsPAYGSetup = useCallback(() => {
-    if (!userProfile) return false;
-    
-    return userProfile.subscription_tier === 'payg' && !userProfile.stripe_customer_id;
-  }, [userProfile]);
-
-  // Check if user needs PAYG setup specifically - async version using API
-  const needsPAYGSetupAsync = useCallback(async () => {
-    if (!userProfile || !isAuthenticated) return false;
-    
-    try {
-      const response = await api.getSubscriptionStatus();
-      
-      if (response.data.success && response.data.data) {
-        const subscriptionData = response.data.data;
-        return subscriptionData.plan === 'payg' && !subscriptionData.stripeCustomerId;
-      }
-      
-      return false;
-    } catch (error) {
-      console.error('Failed to check PAYG setup status:', error);
-      // Fallback to local check
-      return needsPAYGSetup();
-    }
-  }, [userProfile, isAuthenticated, api, needsPAYGSetup]);
-
-  // Update user subscription after PAYG setup
-  const updateUserSubscription = useCallback(async (stripeCustomerId: string, subscriptionId?: string) => {
-    try {
-      console.log('🔄 Updating user subscription with API...');
-      
-      const response = await api.updatePAYGCustomer(stripeCustomerId, subscriptionId);
-      
-      if (response.data.success) {
-        // Refresh user profile to get updated subscription data
-        await refreshUserProfile();
-        
-        console.log('✅ User subscription updated successfully');
-        return { success: true };
-      } else {
-        throw new Error(response.data.error || 'Failed to update subscription');
-      }
-    } catch (error: any) {
-      console.error('❌ Update user subscription failed:', error);
-      return { 
-        success: false, 
-        error: error?.response?.data?.error || error.message || 'Failed to update subscription'
-      };
-    }
-  }, [api, refreshUserProfile]);
-
-  // Enhanced logout function
+  // Logout function
   const logout = useCallback(async () => {
     try {
-      await api.logout();
-    } catch (error) {
-      console.error('Logout API call failed:', error);
-    } finally {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('last_login_time');
-      localStorage.removeItem('user_email');
-      localStorage.removeItem('crowsEyePromoCode');
+      await signOut(auth);
+      
+      // Clear local storage
       localStorage.removeItem('crowsEyePromoTier');
+      
       setUser(null);
       setUserProfile(null);
       setIsAuthenticated(false);
       setError(null);
+      
+      console.log('✅ Logout successful');
+    } catch (error: any) {
+      console.error('❌ Logout failed:', error);
+      setError(error.message || 'Logout failed');
     }
-  }, [api]);
+  }, []);
+
+  // Check if user has valid subscription
+  const hasValidSubscription = useCallback(() => {
+    if (!userProfile) return false;
+    
+    // Pro tier users with lifetime access via promo
+    const promoTier = localStorage.getItem('crowsEyePromoTier');
+    if (promoTier === 'lifetime_pro') return true;
+    
+    // Paid subscription tiers
+    return ['creator', 'pro', 'growth', 'payg'].includes(userProfile.plan);
+  }, [userProfile]);
+
+  // Async version for consistency
+  const hasValidSubscriptionAsync = useCallback(async () => {
+    return hasValidSubscription();
+  }, [hasValidSubscription]);
+
+  // Check if feature requires subscription
+  const requiresSubscription = useCallback(() => {
+    return !hasValidSubscription();
+  }, [hasValidSubscription]);
+
+  // Check if user needs PAYG setup
+  const needsPAYGSetup = useCallback(() => {
+    if (!userProfile) return false;
+    return userProfile.plan === 'payg' && !userProfile.stripeCustomerId;
+  }, [userProfile]);
+
+  // Async version for consistency
+  const needsPAYGSetupAsync = useCallback(async () => {
+    return needsPAYGSetup();
+  }, [needsPAYGSetup]);
+
+  // Update user subscription (for Stripe integration)
+  const updateUserSubscription = useCallback(async (stripeCustomerId: string, subscriptionId?: string) => {
+    try {
+      if (!auth.currentUser) throw new Error('User not authenticated');
+      
+      await UserService.updateStripeCustomerId(auth.currentUser.uid, stripeCustomerId);
+      
+      // Refresh user profile to get updated data
+      await refreshUserProfile();
+      
+      return { success: true };
+    } catch (error: any) {
+      console.error('❌ Failed to update subscription:', error);
+      return { success: false, error: error.message || 'Failed to update subscription' };
+    }
+  }, [refreshUserProfile]);
 
   const value: AuthContextType = {
     user,
     userProfile,
     loading,
-    isConfigured: true, // API is always considered configured
+    isConfigured: !!auth, // Firebase is configured if auth service is available
     refreshUserProfile,
     error,
     login,
@@ -608,10 +322,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     isAuthenticated,
     hasValidSubscription,
-    hasValidSubscriptionAsync: hasValidSubscriptionAsync,
+    hasValidSubscriptionAsync,
     requiresSubscription,
     needsPAYGSetup,
-    needsPAYGSetupAsync: needsPAYGSetupAsync,
+    needsPAYGSetupAsync,
     updateUserSubscription,
   };
 

@@ -1,6 +1,7 @@
 import { initializeApp, FirebaseApp, getApps } from 'firebase/app';
 import { getAuth, connectAuthEmulator } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getStorage, connectStorageEmulator } from 'firebase/storage';
 
 // Firebase configuration interface for type safety
 interface FirebaseConfig {
@@ -63,6 +64,7 @@ let firebaseInitialized = false;
 let firebaseApp: FirebaseApp | null = null;
 let auth: any = null;
 let db: any = null;
+let storage: any = null;
 
 // Initialize Firebase app (idempotent and cross-platform compatible)
 const initializeFirebaseApp = (): FirebaseApp | null => {
@@ -125,7 +127,8 @@ const initializeFirebaseServices = (app: FirebaseApp | null) => {
     console.log('🎭 Running in demo mode - Firebase services not available');
     return {
       auth: null,
-      db: null
+      db: null,
+      storage: null
     };
   }
 
@@ -142,6 +145,12 @@ const initializeFirebaseServices = (app: FirebaseApp | null) => {
       console.log('🗄️ Cloud Firestore initialized');
     }
 
+    // Initialize Cloud Storage
+    if (!storage) {
+      storage = getStorage(app);
+      console.log('📦 Cloud Storage initialized');
+    }
+
     // Connect to emulators in development if needed (only if explicitly enabled)
     const useEmulator = getEnvVar('NEXT_PUBLIC_USE_FIREBASE_EMULATOR') === 'true';
     const isDevelopment = getEnvVar('NODE_ENV') === 'development';
@@ -155,18 +164,22 @@ const initializeFirebaseServices = (app: FirebaseApp | null) => {
         if (!db._delegate._databaseId.database.includes('localhost')) {
           connectFirestoreEmulator(db, 'localhost', 8080);
         }
+        if (!storage._delegate._bucket.includes('localhost')) {
+          connectStorageEmulator(storage, 'localhost', 9199);
+        }
         console.log('🧪 Connected to Firebase emulators');
       } catch (emulatorError) {
         console.warn('⚠️ Could not connect to Firebase emulators (this is normal if not running)');
       }
     }
 
-    return { auth, db };
+    return { auth, db, storage };
   } catch (error) {
     console.error('❌ Firebase services initialization failed:', error);
     return {
       auth: null,
-      db: null
+      db: null,
+      storage: null
     };
   }
 };
@@ -177,19 +190,21 @@ try {
   const services = initializeFirebaseServices(firebaseApp);
   auth = services.auth;
   db = services.db;
+  storage = services.storage;
 } catch (error) {
   console.error('❌ Failed to initialize Firebase on import:', error);
   firebaseApp = null;
   auth = null;
   db = null;
+  storage = null;
 }
 
 // Export Firebase services
-export { auth, db };
+export { auth, db, storage };
 
 // Export configuration status for debugging
 export const isFirebaseConfigured = (): boolean => {
-  return firebaseApp !== null && auth !== null;
+  return firebaseApp !== null && auth !== null && db !== null;
 };
 
 // Export configuration details for debugging
@@ -199,6 +214,7 @@ export const getFirebaseDebugInfo = () => {
     hasApp: !!firebaseApp,
     hasAuth: !!auth,
     hasDb: !!db,
+    hasStorage: !!storage,
     isConfigured: isFirebaseConfigured(),
     projectId: config.projectId,
     environment: getEnvVar('NODE_ENV', 'production'),

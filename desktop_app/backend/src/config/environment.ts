@@ -30,7 +30,7 @@ const envSchema = z.object({
   
   // File Upload
   MAX_FILE_SIZE: z.string().default('10MB'),
-  ALLOWED_FILE_TYPES: z.string().default('image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mp3,audio/wav'),
+  ALLOWED_FILE_TYPES: z.string().default('image/jpeg,image/png,image/gif,image/webp,image/heic,image/heif,video/mp4,video/webm,audio/mp3,audio/wav'),
   
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: z.string().transform((val) => parseInt(val)).default('900000'),
