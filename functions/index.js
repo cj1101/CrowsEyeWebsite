@@ -1,5 +1,7 @@
 const { onRequest } = require('firebase-functions/v2/https');
 const { setGlobalOptions } = require('firebase-functions/v2');
+const path = require('path');
+const next = require('next');
 
 // Set global options for 2nd Gen functions
 setGlobalOptions({
@@ -7,27 +9,26 @@ setGlobalOptions({
   region: 'us-central1'
 });
 
-// Simple API handler for now - we'll expand this as needed
+// Location of the standalone build we copy in scripts/prepare-functions.js
+const NEXT_APP_DIR = path.join(__dirname, 'nextApp');
+
+// Initialise Next.js app
+const nextApp = next({
+  dev: false,
+  conf: {
+    // Tell Next where to find its build output
+    distDir: path.join(NEXT_APP_DIR, '.next')
+  }
+});
+
+const requestHandler = nextApp.getRequestHandler();
+
 exports.nextjsFunc2 = onRequest({
   memory: '1GiB',
   timeoutSeconds: 300,
-  concurrency: 80
+  concurrency: 80,
+  region: 'us-central1'
 }, async (req, res) => {
-  // Set CORS headers
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-  
-  // For now, return a simple response
-  // TODO: Implement actual API logic
-  res.status(200).json({ 
-    message: 'API endpoint working', 
-    path: req.path,
-    method: req.method 
-  });
+  await nextApp.prepare();
+  return requestHandler(req, res);
 }); 

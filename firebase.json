@@ -29,7 +29,7 @@
   "hosting": [
     {
       "site": "crows-eye",
-      "public": "out",
+      "public": "public",
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -39,7 +39,7 @@
       "trailingSlash": false,
       "rewrites": [
         {
-          "source": "/api/**",
+          "source": "**",
           "function": "nextjsFunc2"
         }
       ],
@@ -57,7 +57,7 @@
     },
     {
       "site": "crows-eye-website",
-      "public": "out",
+      "public": "public",
       "ignore": [
         "firebase.json",
         "**/.*",
@@ -67,7 +67,7 @@
       "trailingSlash": false,
       "rewrites": [
         {
-          "source": "/api/**",
+          "source": "**",
           "function": "nextjsFunc2"
         }
       ],

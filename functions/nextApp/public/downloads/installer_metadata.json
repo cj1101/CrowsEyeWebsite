@@ -1,0 +1,18 @@
+{
+  "name": "Crow's Eye Marketing Suite",
+  "version": "1.1.0",
+  "company": "Crow's Eye Technologies",
+  "website": "https://crows-eye-website.web.app",
+  "description": "AI-Powered Social Media Marketing Suite",
+  "platform": "Windows",
+  "architecture": "x64",
+  "file_size": 296002631,
+  "sha256": "55320b4229a2f1ca706bb656d80c431c6f49b1aaa70a9c58b9db2fb469a5c28f",
+  "build_date": "2025-05-28 13:50:55 UTC",
+  "minimum_os": "Windows 10",
+  "security": {
+    "signed": false,
+    "virus_total_scan": "pending",
+    "safe_browsing": "verified"
+  }
+}
