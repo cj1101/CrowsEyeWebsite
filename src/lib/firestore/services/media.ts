@@ -2,7 +2,7 @@ import { where, orderBy, QueryConstraint } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { FirestoreService } from '../base';
 import { MediaDocument, COLLECTIONS } from '../types';
-import { storage } from '../../firebase';
+import { storage, auth } from '../../firebase';
 
 export class MediaService {
   private static collection = COLLECTIONS.MEDIA;
@@ -17,15 +17,113 @@ export class MediaService {
       throw new Error('Cloud Storage is not initialized');
     }
 
+    // Validate file before upload
+    if (!file || file.size === 0) {
+      throw new Error('Invalid file: File is empty or corrupted');
+    }
+
+    if (file.size > 100 * 1024 * 1024) { // 100MB limit
+      throw new Error('File too large: Maximum file size is 100MB');
+    }
+
+    console.log('📤 Starting file upload:', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      userId,
+      lastModified: file.lastModified
+    });
+
+    // Check authentication status
+    const currentUser = auth?.currentUser;
+    if (!currentUser) {
+      console.error('❌ No authenticated user found');
+      throw new Error('Upload failed: You must be signed in to upload files');
+    }
+
+    // Log auth token status
+    const token = await currentUser.getIdToken(true).catch((e: any) => {
+      console.error('❌ Failed to get auth token:', e);
+      return null;
+    });
+    
+    console.log('🔐 Auth status:', {
+      uid: currentUser.uid,
+      email: currentUser.email,
+      hasToken: !!token,
+      tokenLength: token?.length || 0,
+      tokenExpiry: token ? 'valid' : 'invalid'
+    });
+
     const timestamp = Date.now();
     const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const path = `${folder}/${userId}/${timestamp}-${sanitizedFilename}`;
     
-    const storageRef = ref(storage, path);
-    const snapshot = await uploadBytes(storageRef, file);
-    const url = await getDownloadURL(snapshot.ref);
+    console.log('📂 Upload path:', path);
+    console.log('🔒 Storage bucket:', storage.app.options.storageBucket);
+    
+    try {
+      const storageRef = ref(storage, path);
+      console.log('🚀 Uploading to Firebase Storage...');
+      console.log('📦 Storage ref details:', {
+        bucket: storageRef.bucket,
+        fullPath: storageRef.fullPath,
+        name: storageRef.name,
+        root: storageRef.root.toString()
+      });
+      
+      // Add metadata for proper content type handling
+      const metadata = {
+        contentType: file.type || 'application/octet-stream',
+        cacheControl: 'public, max-age=31536000',
+        customMetadata: {
+          uploadedBy: userId,
+          originalName: file.name,
+          uploadTimestamp: timestamp.toString(),
+          fileSize: file.size.toString()
+        }
+      };
+      
+      console.log('📋 Upload metadata:', metadata);
+      
+      const snapshot = await uploadBytes(storageRef, file, metadata);
+      console.log('✅ Upload successful, getting download URL...');
+      console.log('📊 Upload snapshot:', {
+        bytesTransferred: snapshot.metadata.size,
+        contentType: snapshot.metadata.contentType,
+        fullPath: snapshot.metadata.fullPath
+      });
+      
+      const url = await getDownloadURL(snapshot.ref);
+      console.log('🔗 Download URL obtained:', url);
 
-    return { url, path };
+      return { url, path };
+    } catch (error: any) {
+      console.error('❌ Upload failed with error:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        customData: error.customData,
+        serverResponse: error.serverResponse,
+        name: error.name,
+        stack: error.stack?.split('\n').slice(0, 5).join('\n')
+      });
+      
+      // Provide more specific error messages
+      if (error.code === 'storage/unauthorized') {
+        throw new Error('Upload failed: You are not authorized to upload files. Please sign in again.');
+      } else if (error.code === 'storage/quota-exceeded') {
+        throw new Error('Upload failed: Storage quota exceeded. Please free up space or upgrade your plan.');
+      } else if (error.code === 'storage/unknown' && error.serverResponse === '') {
+        throw new Error('Upload failed: This is likely a CORS or authentication issue. Please make sure you are signed in and try again.');
+      } else if (error.message?.includes('CORS')) {
+        throw new Error('Upload failed: CORS configuration issue. Please try again in a few minutes.');
+      } else if (error.message?.includes('400')) {
+        throw new Error('Upload failed: Bad request. This might be a file format issue or temporary server problem.');
+      } else {
+        throw new Error(`Upload failed: ${error.message || 'Unknown error occurred'}`);
+      }
+    }
   }
 
   // Delete file from Cloud Storage

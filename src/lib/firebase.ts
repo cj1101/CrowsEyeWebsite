@@ -1,5 +1,5 @@
 import { initializeApp, FirebaseApp, getApps } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getAuth, connectAuthEmulator, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
 
@@ -25,13 +25,28 @@ const getEnvVar = (name: string, fallback: string = ''): string => {
 
 // Get Firebase configuration from environment variables with enhanced error handling
 const getFirebaseConfig = (): FirebaseConfig => {
-  const config = {
-    apiKey: getEnvVar('NEXT_PUBLIC_FIREBASE_API_KEY', 'demo-api-key'),
-    authDomain: getEnvVar('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 'demo-project.firebaseapp.com'),
-    projectId: getEnvVar('NEXT_PUBLIC_FIREBASE_PROJECT_ID', 'demo-project'),
-    storageBucket: getEnvVar('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET', 'demo-project.appspot.com'),
-    messagingSenderId: getEnvVar('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', '123456789'),
-    appId: getEnvVar('NEXT_PUBLIC_FIREBASE_APP_ID', 'demo-app-id'),
+  // Prefer compile-time injected env vars (
+  // process.env.NEXT_PUBLIC_*) when available (Next.js replaces these with
+  // literal strings). Fallback to the dynamic helper for non-Next runtimes.
+  const config: FirebaseConfig = {
+    apiKey:
+      (process.env.NEXT_PUBLIC_FIREBASE_API_KEY as string | undefined) ||
+      getEnvVar('NEXT_PUBLIC_FIREBASE_API_KEY', 'demo-api-key'),
+    authDomain:
+      (process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN as string | undefined) ||
+      getEnvVar('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 'demo-project.firebaseapp.com'),
+    projectId:
+      (process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID as string | undefined) ||
+      getEnvVar('NEXT_PUBLIC_FIREBASE_PROJECT_ID', 'demo-project'),
+    storageBucket:
+      (process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET as string | undefined) ||
+      getEnvVar('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET', 'demo-project.appspot.com'),
+    messagingSenderId:
+      (process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID as string | undefined) ||
+      getEnvVar('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', '123456789'),
+    appId:
+      (process.env.NEXT_PUBLIC_FIREBASE_APP_ID as string | undefined) ||
+      getEnvVar('NEXT_PUBLIC_FIREBASE_APP_ID', 'demo-app-id'),
   };
 
   // Log configuration status for debugging (without exposing sensitive data)
@@ -40,7 +55,7 @@ const getFirebaseConfig = (): FirebaseConfig => {
       hasApiKey: !!config.apiKey && config.apiKey !== 'demo-api-key',
       authDomain: config.authDomain,
       projectId: config.projectId,
-      environment: getEnvVar('NODE_ENV', 'production')
+      environment: getEnvVar('NODE_ENV', 'production'),
     });
   }
 
@@ -65,6 +80,7 @@ let firebaseApp: FirebaseApp | null = null;
 let auth: any = null;
 let db: any = null;
 let storage: any = null;
+let googleProvider: GoogleAuthProvider | null = null;
 
 // Initialize Firebase app (idempotent and cross-platform compatible)
 const initializeFirebaseApp = (): FirebaseApp | null => {
@@ -89,9 +105,12 @@ const initializeFirebaseApp = (): FirebaseApp | null => {
     if (!isValid) {
       console.warn('⚠️ Firebase configuration incomplete or using demo values');
       console.warn('📋 Please set up your Firebase environment variables');
-      console.warn('🔧 The app will work in demo mode with limited functionality');
+      console.warn('🔧 Initializing with demo config for development');
+      
+      // Initialize with demo config to prevent "no-app" errors
+      firebaseApp = initializeApp(config, 'demo-app');
       firebaseInitialized = true;
-      return null;
+      return firebaseApp;
     }
 
     // Initialize Firebase app
@@ -117,7 +136,24 @@ const initializeFirebaseApp = (): FirebaseApp | null => {
         stack: error.stack?.split('\n').slice(0, 3).join('\n')
       });
     }
-    return null;
+    
+    // Try to initialize with minimal config to prevent "no-app" errors
+    try {
+      const fallbackConfig = {
+        apiKey: 'demo-api-key',
+        authDomain: 'demo-project.firebaseapp.com',
+        projectId: 'demo-project',
+        storageBucket: 'demo-project.appspot.com',
+        messagingSenderId: '123456789',
+        appId: 'demo-app-id',
+      };
+      firebaseApp = initializeApp(fallbackConfig, 'fallback-app');
+      console.log('🎭 Initialized Firebase with fallback configuration');
+      return firebaseApp;
+    } catch (fallbackError) {
+      console.error('❌ Fallback Firebase initialization also failed:', fallbackError);
+      return null;
+    }
   }
 };
 
@@ -128,7 +164,8 @@ const initializeFirebaseServices = (app: FirebaseApp | null) => {
     return {
       auth: null,
       db: null,
-      storage: null
+      storage: null,
+      googleProvider: null
     };
   }
 
@@ -137,6 +174,15 @@ const initializeFirebaseServices = (app: FirebaseApp | null) => {
     if (!auth) {
       auth = getAuth(app);
       console.log('🔐 Firebase Authentication initialized');
+    }
+
+    // Initialize Google Auth Provider
+    if (!googleProvider) {
+      googleProvider = new GoogleAuthProvider();
+      // Add scopes if needed
+      googleProvider.addScope('email');
+      googleProvider.addScope('profile');
+      console.log('🔍 Google Auth Provider initialized');
     }
 
     // Initialize Cloud Firestore
@@ -173,13 +219,14 @@ const initializeFirebaseServices = (app: FirebaseApp | null) => {
       }
     }
 
-    return { auth, db, storage };
+    return { auth, db, storage, googleProvider };
   } catch (error) {
     console.error('❌ Firebase services initialization failed:', error);
     return {
       auth: null,
       db: null,
-      storage: null
+      storage: null,
+      googleProvider: null
     };
   }
 };
@@ -191,16 +238,18 @@ try {
   auth = services.auth;
   db = services.db;
   storage = services.storage;
+  googleProvider = services.googleProvider;
 } catch (error) {
   console.error('❌ Failed to initialize Firebase on import:', error);
   firebaseApp = null;
   auth = null;
   db = null;
   storage = null;
+  googleProvider = null;
 }
 
 // Export Firebase services
-export { auth, db, storage };
+export { auth, db, storage, googleProvider };
 
 // Export configuration status for debugging
 export const isFirebaseConfigured = (): boolean => {
@@ -215,6 +264,7 @@ export const getFirebaseDebugInfo = () => {
     hasAuth: !!auth,
     hasDb: !!db,
     hasStorage: !!storage,
+    hasGoogleProvider: !!googleProvider,
     isConfigured: isFirebaseConfigured(),
     projectId: config.projectId,
     environment: getEnvVar('NODE_ENV', 'production'),

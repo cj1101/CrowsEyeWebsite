@@ -137,14 +137,9 @@ function LibraryTabContent() {
     try {
       console.log('Starting upload of', files.length, 'files');
       
-      // Upload each file and wait for completion
-      const uploadPromises = files.map(async (file) => {
-        console.log('Uploading file:', file.name);
-        return await uploadMedia(file);
-      });
-      
-      // Wait for all uploads to complete
-      await Promise.all(uploadPromises);
+      // Upload all files at once
+      console.log('Uploading files:', files.map(f => f.name));
+      await uploadMedia(files);
       
       setShowUploadModal(false);
       console.log('All uploads completed, modal closed');

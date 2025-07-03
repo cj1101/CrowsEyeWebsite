@@ -9,10 +9,12 @@ import type { UserDocument } from '@/lib/firestore/types';
 // Enhanced user profile interface that matches Firestore
 interface UserProfile extends UserDocument {
   plan: 'free' | 'creator' | 'pro' | 'growth' | 'payg';
+  subscription_tier: 'free' | 'creator' | 'pro' | 'growth' | 'payg';
   displayName: string;
   firstName: string;
   lastName: string;
   subscription_type?: 'monthly' | 'yearly' | 'lifetime';
+  avatar_url?: string;
 }
 
 // Auth context interface
@@ -24,6 +26,7 @@ interface AuthContextType {
   refreshUserProfile: () => Promise<void>;
   error: string | null;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string; isNewUser?: boolean }>;
   signup: (email: string, password: string, firstName: string, lastName: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
@@ -47,6 +50,7 @@ const AuthContext = createContext<AuthContextType>({
   refreshUserProfile: async () => {},
   error: null,
   login: async () => ({ success: false }),
+  loginWithGoogle: async () => ({ success: false }),
   signup: async () => ({ success: false }),
   logout: async () => {},
   isAuthenticated: false,
@@ -116,6 +120,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return {
       ...firestoreUser,
       plan: actualPlan,
+      subscription_tier: actualPlan,
       displayName: firestoreUser.fullName || firestoreUser.username || '',
       firstName: nameParts[0] || '',
       lastName: nameParts.slice(1).join(' ') || '',
@@ -208,6 +213,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('❌ Login failed:', error);
       setError(error.message || 'Login failed');
       return { success: false, error: error.message || 'Login failed' };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Login with Google function
+  const loginWithGoogle = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { user: firestoreUser, authUser, isNewUser } = await UserService.signInWithGoogle();
+      const transformedProfile = transformUserToProfile(firestoreUser);
+      
+      setUser({ uid: authUser.uid, email: authUser.email || '' });
+      setUserProfile(transformedProfile);
+      setIsAuthenticated(true);
+      
+      console.log('✅ Login with Google successful', isNewUser ? '(New user)' : '(Existing user)');
+      return { success: true, isNewUser };
+    } catch (error: any) {
+      console.error('❌ Login with Google failed:', error);
+      setError(error.message || 'Login with Google failed');
+      return { success: false, error: error.message || 'Login with Google failed' };
     } finally {
       setLoading(false);
     }
@@ -318,6 +347,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     refreshUserProfile,
     error,
     login,
+    loginWithGoogle,
     signup,
     logout,
     isAuthenticated,

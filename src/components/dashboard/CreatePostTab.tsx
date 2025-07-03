@@ -69,6 +69,11 @@ interface PlatformOption {
     stories: boolean;
     multipleImages: boolean;
   };
+  acceptedMedia: ('image' | 'video' | 'audio')[];
+  aspectRatios: string[];
+  postTypes: string[];
+  selectedAspectRatio?: string;
+  selectedPostType?: string;
 }
 
 const platforms: PlatformOption[] = [
@@ -79,6 +84,9 @@ const platforms: PlatformOption[] = [
     enabled: false,
     connected: true,
     characterLimit: 2200,
+    acceptedMedia: ['image', 'video'],
+    aspectRatios: ['original', '1:1', '4:5', '16:9'],
+    postTypes: ['post', 'reel', 'story'],
     features: {
       hashtags: true,
       location: true,
@@ -95,6 +103,9 @@ const platforms: PlatformOption[] = [
     enabled: false,
     connected: true,
     characterLimit: 63206,
+    acceptedMedia: ['image', 'video'],
+    aspectRatios: ['original', '1.91:1', '4:5', '16:9'],
+    postTypes: ['post', 'reel', 'story'],
     features: {
       hashtags: false,
       location: true,
@@ -111,6 +122,9 @@ const platforms: PlatformOption[] = [
     enabled: false,
     connected: true,
     characterLimit: 500,
+    acceptedMedia: ['image', 'video'],
+    aspectRatios: ['original', '1:1', '4:5', '16:9'],
+    postTypes: ['post'],
     features: {
       hashtags: true,
       location: false,
@@ -127,6 +141,9 @@ const platforms: PlatformOption[] = [
     enabled: false,
     connected: true,
     characterLimit: 300,
+    acceptedMedia: ['image', 'video'],
+    aspectRatios: ['original', '1:1', '4:5', '16:9'],
+    postTypes: ['post'],
     features: {
       hashtags: true,
       location: false,
@@ -143,6 +160,9 @@ const platforms: PlatformOption[] = [
     enabled: false,
     connected: true,
     characterLimit: 1500,
+    acceptedMedia: ['image', 'video'],
+    aspectRatios: ['original', '4:3', '16:9'],
+    postTypes: ['post'],
     features: {
       hashtags: false,
       location: true,
@@ -159,6 +179,9 @@ const platforms: PlatformOption[] = [
     enabled: false,
     connected: true,
     characterLimit: 2200,
+    acceptedMedia: ['video'],
+    aspectRatios: ['original', '9:16', '1:1', '16:9'],
+    postTypes: ['post'],
     features: {
       hashtags: true,
       location: false,
@@ -175,6 +198,9 @@ const platforms: PlatformOption[] = [
     enabled: false,
     connected: true,
     characterLimit: 10000,
+    acceptedMedia: ['video'],
+    aspectRatios: ['original', '16:9', '9:16', '1:1'],
+    postTypes: ['video', 'shorts'],
     features: {
       hashtags: true,
       location: false,
@@ -191,6 +217,9 @@ const platforms: PlatformOption[] = [
     enabled: false,
     connected: true,
     characterLimit: 500,
+    acceptedMedia: ['image', 'video'],
+    aspectRatios: ['original', '2:3', '1000:1500', '9:16'],
+    postTypes: ['pin'],
     features: {
       hashtags: true,
       location: false,
@@ -266,7 +295,13 @@ export default function CreatePostTab() {
   const handlePlatformToggle = (platformId: string) => {
     setSelectedPlatforms(prev => prev.map(platform => {
       if (platform.id === platformId && platform.connected) {
-        return { ...platform, enabled: !platform.enabled };
+        const newEnabled = !platform.enabled;
+        return {
+          ...platform,
+          enabled: newEnabled,
+          selectedAspectRatio: newEnabled ? (platform.selectedAspectRatio || platform.aspectRatios[0]) : undefined,
+          selectedPostType: newEnabled ? (platform.selectedPostType || platform.postTypes[0]) : undefined,
+        };
       }
       return platform;
     }));
@@ -605,6 +640,14 @@ export default function CreatePostTab() {
     setCurrentIndex((prev) => (prev - 1 + mediaFiles.length) % mediaFiles.length);
   };
 
+  const handleAspectRatioChange = (platformId: string, ratio: string) => {
+    setSelectedPlatforms(prev => prev.map(p => p.id === platformId ? { ...p, selectedAspectRatio: ratio } : p));
+  };
+
+  const handlePostTypeChange = (platformId: string, postType: string) => {
+    setSelectedPlatforms(prev => prev.map(p => p.id === platformId ? { ...p, selectedPostType: postType } : p));
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -765,7 +808,7 @@ export default function CreatePostTab() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {selectedPlatforms.map((platform) => {
                   const uploadedTypes = new Set(mediaFiles.map(m => m.type));
-                  const supportsAll = Array.from(uploadedTypes).every(t => (platform as any).acceptedMedia?.includes(t));
+                  const supportsAll = Array.from(uploadedTypes).every(t => platform.acceptedMedia.includes(t));
                   const galleryIncompatible = contentType === 'gallery' && !platform.features.multipleImages;
                   const disabled = !platform.connected || !supportsAll || galleryIncompatible;
                   return (
@@ -796,6 +839,48 @@ export default function CreatePostTab() {
                   );
                 })}
               </div>
+
+              {/* NEW: Platform specific options (aspect ratio & post type) */}
+              {selectedPlatforms.filter(p => p.enabled).map((platform) => (
+                <div key={platform.id} className="bg-gray-700/40 p-3 rounded-lg mt-3">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <BrandIcon platform={platform.id} size={20} className="text-white" />
+                    <span className="text-sm font-medium text-white mr-4">{platform.name} Options</span>
+
+                    {/* Aspect Ratio Selector */}
+                    {platform.aspectRatios.length > 1 && (
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-gray-300">Aspect Ratio</label>
+                        <select
+                          value={platform.selectedAspectRatio || platform.aspectRatios[0]}
+                          onChange={(e) => handleAspectRatioChange(platform.id, e.target.value)}
+                          className="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-xs text-white focus:outline-none"
+                        >
+                          {platform.aspectRatios.map((ar) => (
+                            <option key={ar} value={ar}>{ar}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Post Type Selector */}
+                    {platform.postTypes.length > 1 && (
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-gray-300">Post Type</label>
+                        <select
+                          value={platform.selectedPostType || platform.postTypes[0]}
+                          onChange={(e) => handlePostTypeChange(platform.id, e.target.value)}
+                          className="bg-gray-800 border border-gray-600 rounded px-1 py-0.5 text-xs text-white focus:outline-none"
+                        >
+                          {platform.postTypes.map((pt) => (
+                            <option key={pt} value={pt}>{pt}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
 

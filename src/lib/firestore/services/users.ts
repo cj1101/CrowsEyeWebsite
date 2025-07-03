@@ -1,11 +1,33 @@
 import { where, QueryConstraint } from 'firebase/firestore';
 import { FirestoreService } from '../base';
 import { UserDocument, COLLECTIONS } from '../types';
-import { auth } from '../../firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth, googleProvider } from '../../firebase';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signInWithPopup,
+  updateProfile, 
+  getAuth,
+  UserCredential
+} from 'firebase/auth';
 
 export class UserService {
   private static collection = COLLECTIONS.USERS;
+
+  private static getAuthInstance() {
+    // Fallback to firebase/auth getAuth() if imported auth is null
+    if (!auth) {
+      throw new Error('Firebase is not properly initialized. Please check your Firebase configuration.');
+    }
+    return auth;
+  }
+
+  private static getGoogleProvider() {
+    if (!googleProvider) {
+      throw new Error('Google Auth provider is not initialized. Please check your Firebase configuration.');
+    }
+    return googleProvider;
+  }
 
   // Create a new user (called after Firebase Auth registration)
   static async createUser(
@@ -60,7 +82,8 @@ export class UserService {
     }
 
     // Create Firebase Auth user
-    const authResult = await createUserWithEmailAndPassword(auth, email, password);
+    const firebaseAuth = this.getAuthInstance();
+    const authResult = await createUserWithEmailAndPassword(firebaseAuth, email, password);
     const authUser = authResult.user;
 
     // Update display name
@@ -84,7 +107,8 @@ export class UserService {
 
   // Sign in with email and password
   static async signIn(email: string, password: string): Promise<{ user: UserDocument; authUser: any }> {
-    const authResult = await signInWithEmailAndPassword(auth, email, password);
+    const firebaseAuth = this.getAuthInstance();
+    const authResult = await signInWithEmailAndPassword(firebaseAuth, email, password);
     const authUser = authResult.user;
 
     const user = await this.getUser(authUser.uid);
@@ -95,9 +119,80 @@ export class UserService {
     return { user, authUser };
   }
 
+  // Sign in with Google OAuth
+  static async signInWithGoogle(): Promise<{ user: UserDocument; authUser: any; isNewUser: boolean }> {
+    const firebaseAuth = this.getAuthInstance();
+    const provider = this.getGoogleProvider();
+    
+    try {
+      const authResult: UserCredential = await signInWithPopup(firebaseAuth, provider);
+      const authUser = authResult.user;
+      
+      if (!authUser.email) {
+        throw new Error('Google sign-in did not provide an email address');
+      }
+
+      // Check if user already exists in Firestore
+      let user = await this.getUser(authUser.uid);
+      let isNewUser = false;
+
+      if (!user) {
+        // Create new user profile
+        isNewUser = true;
+        const username = this.generateUsernameFromEmail(authUser.email);
+        const availableUsername = await this.ensureUniqueUsername(username);
+        
+        const userData: Omit<UserDocument, 'id' | 'createdAt' | 'updatedAt'> = {
+          email: authUser.email,
+          username: availableUsername,
+          fullName: authUser.displayName || '',
+          isActive: true,
+          subscriptionTier: 'free',
+        };
+
+        user = await this.createUser(authUser.uid, userData);
+      }
+
+      return { user, authUser, isNewUser };
+    } catch (error: any) {
+      // Handle specific Firebase Auth errors
+      if (error.code === 'auth/popup-closed-by-user') {
+        throw new Error('Sign-in was cancelled. Please try again.');
+      } else if (error.code === 'auth/popup-blocked') {
+        throw new Error('Pop-up was blocked by your browser. Please allow pop-ups and try again.');
+      } else if (error.code === 'auth/network-request-failed') {
+        throw new Error('Network error. Please check your internet connection and try again.');
+      }
+      
+      // Re-throw the error with a more user-friendly message
+      throw new Error(`Google sign-in failed: ${error.message}`);
+    }
+  }
+
+  // Helper method to generate username from email
+  private static generateUsernameFromEmail(email: string): string {
+    const localPart = email.split('@')[0];
+    // Remove any special characters and convert to lowercase
+    return localPart.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  }
+
+  // Helper method to ensure username is unique
+  private static async ensureUniqueUsername(baseUsername: string): Promise<string> {
+    let username = baseUsername;
+    let counter = 1;
+    
+    while (!(await this.isUsernameAvailable(username))) {
+      username = `${baseUsername}${counter}`;
+      counter++;
+    }
+    
+    return username;
+  }
+
   // Get current user
   static async getCurrentUser(): Promise<UserDocument | null> {
-    const currentAuthUser = auth.currentUser;
+    const firebaseAuth = this.getAuthInstance();
+    const currentAuthUser = firebaseAuth.currentUser;
     if (!currentAuthUser) return null;
 
     return this.getUser(currentAuthUser.uid);

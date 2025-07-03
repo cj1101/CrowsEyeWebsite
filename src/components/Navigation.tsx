@@ -91,6 +91,7 @@ const Navigation = () => {
                     alt="Crow's Eye Logo"
                     width={40}
                     height={40}
+                    priority={true}
                     className="relative z-10 group-hover:scale-110 transition-transform duration-300 filter drop-shadow-lg"
                   />
                 </div>

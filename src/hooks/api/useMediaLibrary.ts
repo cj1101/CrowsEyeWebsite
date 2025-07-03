@@ -61,7 +61,8 @@ export const useMediaLibrary = () => {
     }
   }, []);
 
-  const fetchGalleries = async () => {
+  // Memoize to prevent identity change on each render which caused repeated useEffect executions
+  const fetchGalleries = useCallback(async () => {
     try {
       console.log('🔍 Fetching galleries from Firestore...');
       
@@ -129,21 +130,47 @@ export const useMediaLibrary = () => {
       console.error('❌ Error in fetchGalleries:', err);
       setGalleries([]);
     }
-  };
+  }, []);
 
-  const uploadMedia = async (file: File, metadata?: Partial<MediaDocument>): Promise<MediaItem> => {
+  const uploadMedia = async (
+    files: FileList | File[],
+    metadata?: Partial<MediaDocument>
+  ): Promise<MediaItem[]> => {
     const user = auth.currentUser;
-    if (!user) throw new Error('Not authenticated');
-    
-    const mediaDoc = await MediaService.uploadMedia(user.uid, file, {
-      caption: '',
-      platforms: [],
-      ...metadata,
+    if (!user) {
+      throw new Error('User must be authenticated to upload media');
+    }
+
+    // Force refresh the authentication token before upload
+    try {
+      console.log('🔄 Refreshing authentication token before upload...');
+      const token = await user.getIdToken(true);
+      console.log('✅ Authentication token refreshed successfully');
+    } catch (error) {
+      console.error('❌ Failed to refresh authentication token:', error);
+      throw new Error('Failed to authenticate. Please sign in again.');
+    }
+
+    const fileArray = Array.from(files);
+    const uploadPromises = fileArray.map(async (file) => {
+      try {
+        console.log(`📤 Uploading file: ${file.name}`);
+        const result = await MediaService.uploadMedia(user.uid, file, metadata || {});
+        console.log(`✅ Successfully uploaded: ${file.name}`);
+        return result;
+      } catch (error) {
+        console.error(`❌ Failed to upload ${file.name}:`, error);
+        throw error;
+      }
     });
+
+    const uploadedDocs = await Promise.all(uploadPromises);
+    const newItems = uploadedDocs.map(doc => transformMediaItem(doc));
     
-    const newItem = transformMediaItem(mediaDoc);
-    setMedia(prev => [newItem, ...prev]);
-    return newItem;
+    // Add new items to the media list
+    setMedia(prev => [...newItems, ...prev]);
+    
+    return newItems;
   };
 
   const updateMedia = async (id: string, updates: Partial<MediaItem>): Promise<void> => {

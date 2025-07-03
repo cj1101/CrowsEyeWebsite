@@ -1,11 +1,32 @@
 'use client';
 
-import React, { useState } from 'react';
-import { UserCircleIcon, CogIcon, CreditCardIcon, ArrowRightOnRectangleIcon, ChartBarIcon, CloudArrowUpIcon, ShieldCheckIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import React, { useState, useEffect } from 'react';
+import { UserCircleIcon, CogIcon, CreditCardIcon, ArrowRightOnRectangleIcon, ChartBarIcon, CloudArrowUpIcon, ShieldCheckIcon, SparklesIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
+import { updateEmail, updatePassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { UserService } from '@/lib/firestore';
 
 export default function AccountPage() {
-  const { userProfile, logout, loading, isAuthenticated } = useAuth();
+  const { userProfile, logout, loading, isAuthenticated, refreshUserProfile } = useAuth();
+
+  // --- Component state hooks (must be declared before any early returns) ---
+  const [firstName, setFirstName] = useState((userProfile as any)?.firstName || '');
+  const [lastName, setLastName] = useState((userProfile as any)?.lastName || '');
+  const [email, setEmail] = useState(userProfile?.email || '');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Keep editable fields in sync when the user profile loads or changes
+  useEffect(() => {
+    if (userProfile) {
+      setFirstName((userProfile as any)?.firstName || '');
+      setLastName((userProfile as any)?.lastName || '');
+      setEmail(userProfile.email || '');
+    }
+  }, [userProfile]);
 
   // Show loading state if user profile is not loaded yet
   if (loading || !isAuthenticated) {
@@ -19,26 +40,44 @@ export default function AccountPage() {
     );
   }
   
-  const user = {
-    name: userProfile?.displayName || userProfile?.firstName || 'Loading...',
-    email: userProfile?.email || 'Loading...',
-    plan: userProfile?.subscription_tier || userProfile?.plan || 'Free',
-    joinDate: userProfile?.created_at || new Date().toISOString()
-  };
+  const limits: any = (userProfile as any)?.usage_limits || {};
+
+  const aiCreditsUsed = limits.ai_credits || 0;
+  const aiCreditsLimit = limits.max_ai_credits ?? 0; // -1 or 0 ⇒ unlimited
+  const aiCreditsRemaining = aiCreditsLimit > 0 ? Math.max(0, aiCreditsLimit - aiCreditsUsed) : '∞';
+
+  const storageUsedGB = Math.round(((limits.media_storage_mb || 0) / 1024) * 100) / 100;
+  const storageLimitGB = limits.max_media_storage_mb ? Math.round((limits.max_media_storage_mb / 1024) * 100) / 100 : 0;
 
   const usage = {
-    postsCreated: userProfile?.usage_limits?.scheduled_posts || 0,
-    mediaUploaded: 0, // Could be calculated from actual data
-    aiCreditsUsed: userProfile?.usage_limits?.ai_credits || 0,
-    storageUsed: Math.round((userProfile?.usage_limits?.media_storage_mb || 0) / 1024 * 100) / 100, // Convert MB to GB
-    aiCreditsRemaining: Math.max(0, (userProfile?.usage_limits?.max_ai_credits || 0) - (userProfile?.usage_limits?.ai_credits || 0)),
-    socialAccountsConnected: userProfile?.usage_limits?.linked_accounts || 0,
-    totalScheduledPosts: userProfile?.usage_limits?.scheduled_posts || 0
+    postsCreated: limits.scheduled_posts || 0,
+    maxPosts: limits.max_scheduled_posts || 0,
+    aiCreditsUsed,
+    aiCreditsLimit,
+    aiCreditsRemaining,
+    socialAccountsConnected: limits.linked_accounts || 0,
+    maxSocialAccounts: limits.max_linked_accounts || 0,
+    storageUsedGB,
+    storageLimitGB,
+  };
+
+  const calcPercent = (used: number, limit: number): number => {
+    if (!limit || limit <= 0) return 100;
+    return Math.min(100, (used / limit) * 100);
   };
 
   const handleManageSubscription = () => {
     // Redirect to subscription management page
     window.location.href = '/account/subscription';
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshUserProfile();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -63,7 +102,7 @@ export default function AccountPage() {
     return plan.charAt(0).toUpperCase() + plan.slice(1);
   };
 
-  const displayPlan = formatPlanName(user.plan);
+  const displayPlan = formatPlanName(userProfile?.plan || 'Free');
 
   const planColors = {
     'Pay-as-you-Go': 'from-emerald-500 to-teal-500',
@@ -75,6 +114,53 @@ export default function AccountPage() {
 
   const currentPlanColor = planColors[displayPlan as keyof typeof planColors] || planColors['Free'];
 
+  const user = {
+    name: userProfile?.displayName || (userProfile as any)?.firstName || 'Loading...',
+    email: userProfile?.email || 'Loading...',
+    plan: (userProfile as any)?.subscription_tier || (userProfile as any)?.plan || 'Free',
+    joinDate: (userProfile as any)?.created_at || (userProfile as any)?.createdAt || new Date().toISOString(),
+  };
+
+  const handleSaveProfile = async () => {
+    if (password && password !== confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const authUser = auth.currentUser;
+      if (!authUser) throw new Error('Not authenticated');
+
+      // Update email in Firebase Auth if changed
+      if (email && email !== authUser.email) {
+        await updateEmail(authUser, email);
+      }
+
+      // Update password if provided
+      if (password) {
+        await updatePassword(authUser, password);
+      }
+
+      // Update Firestore user document
+      const fullName = `${firstName} ${lastName}`.trim();
+      await UserService.updateUser(authUser.uid, {
+        fullName,
+        email,
+      });
+
+      await refreshUserProfile();
+      alert('Profile updated successfully');
+    } catch (err: any) {
+      console.error('Failed to update profile:', err);
+      alert(err.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+      setPassword('');
+      setConfirmPassword('');
+    }
+  };
+
   return (
     <div className="min-h-screen darker-gradient-bg logo-bg-overlay">
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -84,13 +170,23 @@ export default function AccountPage() {
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 tech-heading">Account Settings</h1>
             <p className="text-gray-300 tech-body">Manage your profile, subscription, and usage</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center space-x-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-red-200 px-6 py-3 rounded-xl transition-all duration-300 vision-card mt-4 md:mt-0 tech-subheading"
-          >
-            <ArrowRightOnRectangleIcon className="h-5 w-5" />
-            <span>Logout</span>
-          </button>
+          <div className="flex space-x-4 mt-4 md:mt-0">
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center space-x-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 hover:text-blue-200 px-6 py-3 rounded-xl transition-all duration-300 vision-card tech-subheading disabled:opacity-50"
+            >
+              <ArrowPathIcon className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center space-x-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-red-200 px-6 py-3 rounded-xl transition-all duration-300 vision-card tech-subheading"
+            >
+              <ArrowRightOnRectangleIcon className="h-5 w-5" />
+              <span>Logout</span>
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -118,23 +214,69 @@ export default function AccountPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-purple-300 mb-3 tech-subheading">Full Name</label>
+                  <label className="block text-sm font-medium text-purple-300 mb-3 tech-subheading">First Name</label>
                   <input
                     type="text"
-                    value={user.name}
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
                     className="w-full px-4 py-3 bg-black/30 border border-gray-600/50 rounded-xl text-white vision-card focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all tech-body"
-                    readOnly
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-purple-300 mb-3 tech-subheading">Last Name</label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full px-4 py-3 bg-black/30 border border-gray-600/50 rounded-xl text-white vision-card focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all tech-body"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <div>
                   <label className="block text-sm font-medium text-purple-300 mb-3 tech-subheading">Email Address</label>
                   <input
                     type="email"
-                    value={user.email}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-4 py-3 bg-black/30 border border-gray-600/50 rounded-xl text-white vision-card focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all tech-body"
-                    readOnly
                   />
                 </div>
+              </div>
+
+              {/* Password fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div>
+                  <label className="block text-sm font-medium text-purple-300 mb-3 tech-subheading">New Password</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Leave blank to keep current password"
+                    className="w-full px-4 py-3 bg-black/30 border border-gray-600/50 rounded-xl text-white vision-card focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all tech-body"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-purple-300 mb-3 tech-subheading">Confirm Password</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    className="w-full px-4 py-3 bg-black/30 border border-gray-600/50 rounded-xl text-white vision-card focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all tech-body"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end mt-8">
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={saving}
+                  className="vision-button px-6 py-3 rounded-xl text-white font-semibold tech-subheading disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </button>
               </div>
             </div>
 
@@ -189,7 +331,7 @@ export default function AccountPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-white font-bold tech-subheading">{usage.aiCreditsRemaining}</div>
-                    <div className="text-xs text-gray-400">remaining</div>
+                    <div className="text-xs text-gray-400">{aiCreditsLimit > 0 ? `of ${aiCreditsLimit}` : 'unlimited'}</div>
                   </div>
                 </div>
 
@@ -200,7 +342,7 @@ export default function AccountPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-white font-bold tech-subheading">{usage.socialAccountsConnected}</div>
-                    <div className="text-xs text-gray-400">connected</div>
+                    <div className="text-xs text-gray-400">of {usage.maxSocialAccounts || '∞'}</div>
                   </div>
                 </div>
 
@@ -210,8 +352,8 @@ export default function AccountPage() {
                     <span className="text-gray-300 tech-body">Storage Used</span>
                   </div>
                   <div className="text-right">
-                    <div className="text-white font-bold tech-subheading">{usage.storageUsed} GB</div>
-                    <div className="text-xs text-gray-400">of 10 GB</div>
+                    <div className="text-white font-bold tech-subheading">{usage.storageUsedGB} GB</div>
+                    <div className="text-xs text-gray-400">{usage.storageLimitGB ? `of ${usage.storageLimitGB} GB` : 'unlimited'}</div>
                   </div>
                 </div>
 
@@ -222,7 +364,7 @@ export default function AccountPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-white font-bold tech-subheading">{usage.postsCreated}</div>
-                    <div className="text-xs text-gray-400">this month</div>
+                    <div className="text-xs text-gray-400">of {usage.maxPosts || '∞'}</div>
                   </div>
                 </div>
               </div>
@@ -270,12 +412,12 @@ export default function AccountPage() {
                 <div>
                   <div className="flex justify-between mb-2">
                     <span className="text-gray-300 text-sm tech-body">AI Credits</span>
-                    <span className="text-gray-300 text-sm tech-body">{usage.aiCreditsUsed}/300</span>
+                    <span className="text-gray-300 text-sm tech-body">{usage.aiCreditsUsed}/{aiCreditsLimit > 0 ? aiCreditsLimit : '∞'}</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2">
                     <div 
                       className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500" 
-                      style={{ width: `${(usage.aiCreditsUsed / 300) * 100}%` }}
+                      style={{ width: `${calcPercent(usage.aiCreditsUsed, aiCreditsLimit)}%` }}
                     ></div>
                   </div>
                 </div>
@@ -283,12 +425,12 @@ export default function AccountPage() {
                 <div>
                   <div className="flex justify-between mb-2">
                     <span className="text-gray-300 text-sm tech-body">Storage</span>
-                    <span className="text-gray-300 text-sm tech-body">{usage.storageUsed}/10 GB</span>
+                    <span className="text-gray-300 text-sm tech-body">{usage.storageUsedGB}/{usage.storageLimitGB || '∞'} GB</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2">
                     <div 
                       className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-500" 
-                      style={{ width: `${(usage.storageUsed / 10) * 100}%` }}
+                      style={{ width: `${calcPercent(usage.storageUsedGB, usage.storageLimitGB)}%` }}
                     ></div>
                   </div>
                 </div>

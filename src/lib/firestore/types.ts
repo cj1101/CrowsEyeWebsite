@@ -18,6 +18,19 @@ export interface UserDocument extends FirestoreDocument {
   stripeCustomerId?: string;
   profileImage?: string;
   bio?: string;
+  /**
+   * Usage and quota tracking for the user (optional – may not be present on all legacy accounts)
+   */
+  usage_limits?: {
+    linked_accounts: number;
+    max_linked_accounts: number;
+    ai_credits: number;
+    max_ai_credits: number; // -1 denotes unlimited (PAYG)
+    scheduled_posts: number;
+    max_scheduled_posts: number;
+    media_storage_mb: number;
+    max_media_storage_mb: number;
+  };
 }
 
 // Media item document

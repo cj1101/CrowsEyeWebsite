@@ -1,0 +1,34 @@
+[
+  {
+    "origin": [
+      "http://localhost:3000",
+      "http://localhost:3001", 
+      "https://crows-eye-website.web.app",
+      "https://crows-eye-website.firebaseapp.com"
+    ],
+    "method": ["GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"],
+    "responseHeader": [
+      "Authorization",
+      "authorization",
+      "Content-Type",
+      "content-type",
+      "X-Firebase-Storage-Version",
+      "x-firebase-storage-version",
+      "X-Goog-Upload-Protocol", 
+      "x-goog-upload-protocol",
+      "X-Goog-Upload-Command",
+      "x-goog-upload-command",
+      "X-Goog-Upload-Header-Content-Type",
+      "x-goog-upload-header-content-type",
+      "X-Goog-Upload-Header-Content-Length",
+      "x-goog-upload-header-content-length",
+      "X-Goog-Upload-URL",
+      "x-goog-upload-url",
+      "X-Goog-Upload-Raw-Size",
+      "x-goog-upload-raw-size",
+      "X-Goog-Upload-Offset",
+      "x-goog-upload-offset"
+    ],
+    "maxAgeSeconds": 3600
+  }
+] 

@@ -3,59 +3,24 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  BarChart3, 
-  Calendar, 
-  Camera, 
-  Settings, 
-  Users, 
-  Zap, 
-  Shield, 
   Upload,
-  Play,
-  Eye,
-  Heart,
-  TrendingUp,
-  Sparkles,
-  Rocket,
-  Crown,
   FolderOpen,
-  Image,
-  Video,
-  Music,
-  Clock,
-  Share2,
   Palette,
-  Wand2,
-  Link,
-  Target,
-  CheckCircle,
-  AlertCircle,
   Plus,
   Grid3X3,
-  List,
-  Search,
-  Filter,
-  Download,
-  Trash2,
-  Edit3,
-  MessageSquare,
-  Hash,
-  MapPin,
-  Send
+  Users,
+  BarChart3
 } from 'lucide-react';
 
 // Import dashboard components
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import LibraryTab from '@/components/dashboard/LibraryTab';
 import CreatePostTab from '@/components/dashboard/CreatePostTab';
-import ScheduleTab from '@/components/dashboard/ScheduleTab';
-import AnalyticsTab from '@/components/dashboard/AnalyticsTab';
-import ConnectionsTab from '@/components/dashboard/ConnectionsTab';
 import BrandingTab from '@/components/dashboard/BrandingTab';
 
 function DashboardContent() {
@@ -141,44 +106,35 @@ function DashboardContent() {
     router.push(`/dashboard?tab=${tabId}`);
   };
 
+  // Navigation items with beta tagging
   const navigationItems = [
-    { id: 'overview', label: 'Dashboard', icon: BarChart3, description: 'Overview & Analytics' },
-    { id: 'library', label: 'Media Library', icon: FolderOpen, description: 'Manage your content' },
-    { id: 'create', label: 'Create Post', icon: Plus, description: 'Create new content' },
-    { id: 'schedule', label: 'Scheduler', icon: Calendar, description: 'Manage scheduled posts' },
-    { id: 'analytics', label: 'Analytics', icon: TrendingUp, description: 'Performance insights' },
-    { id: 'connections', label: 'Platforms', icon: Link, description: 'Social media accounts' },
-    { id: 'branding', label: 'Branding', icon: Palette, description: 'Brand guidelines' },
+    { id: 'overview', label: 'Dashboard', icon: BarChart3, description: 'Overview & insights', beta: false },
+    { id: 'library', label: 'Media Library', icon: FolderOpen, description: 'Manage your content', beta: false },
+    { id: 'create', label: 'Create Post', icon: Plus, description: 'Create new content', beta: false },
+    { id: 'branding', label: 'Branding', icon: Palette, description: 'Brand guidelines', beta: false }
   ];
 
   const quickActions = [
-    { 
-      label: 'Upload Media', 
-      icon: Upload, 
+    {
+      label: 'Upload Media',
+      icon: Upload,
       action: () => handleTabSelect('library'),
       color: 'blue',
       description: 'Add new photos and videos'
     },
-    { 
-      label: 'Create Post', 
-      icon: Plus, 
+    {
+      label: 'Create Post',
+      icon: Plus,
       action: () => handleTabSelect('create'),
       color: 'green',
       description: 'Start creating content'
     },
-    { 
-      label: 'AI Tools', 
-      icon: Wand2, 
-      action: () => handleTabSelect('create'),
+    {
+      label: 'Brand Kit',
+      icon: Palette,
+      action: () => handleTabSelect('branding'),
       color: 'purple',
-      description: 'Use AI to enhance content'
-    },
-    { 
-      label: 'Connect Platform', 
-      icon: Link, 
-      action: () => handleTabSelect('connections'),
-      color: 'orange',
-      description: 'Link social accounts'
+      description: 'Manage brand assets'
     }
   ];
 
@@ -269,7 +225,14 @@ function DashboardContent() {
                 <item.icon className={`h-5 w-5 ${sidebarOpen ? '' : 'mx-auto'}`} />
                 {sidebarOpen && (
                   <div className="flex-1 text-left">
-                    <div className="font-medium">{item.label}</div>
+                    <div className="font-medium flex items-center">
+                      {item.label}
+                      {item.beta && (
+                        <Badge className="ml-2 bg-yellow-500/20 text-yellow-300 border-yellow-500/30 text-[10px] py-0 px-1">
+                          Beta
+                        </Badge>
+                      )}
+                    </div>
                     <div className="text-xs text-gray-400">{item.description}</div>
                   </div>
                 )}
@@ -309,9 +272,6 @@ function DashboardContent() {
             {activeTab === 'overview' && <DashboardOverview />}
             {activeTab === 'library' && <LibraryTab />}
             {activeTab === 'create' && <CreatePostTab />}
-            {activeTab === 'schedule' && <ScheduleTab />}
-            {activeTab === 'analytics' && <AnalyticsTab />}
-            {activeTab === 'connections' && <ConnectionsTab />}
             {activeTab === 'branding' && <BrandingTab />}
           </div>
         </main>
