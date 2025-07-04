@@ -1,25 +1,3 @@
-/* CSS Reset and Debug */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-/* Debug: Add a visible border to ensure CSS is loading */
-html {
-  border: 2px solid red;
-}
-
-body {
-  border: 2px solid blue;
-}
-
-/* Debug: Add a background color to ensure CSS is loading */
-#__next {
-  background: linear-gradient(45deg, #ff0000, #00ff00, #0000ff);
-  min-height: 100vh;
-}
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@100;200;300;400;500;600;700;800;900&display=swap');
