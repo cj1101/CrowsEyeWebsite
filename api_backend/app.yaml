@@ -42,7 +42,7 @@ env_variables:
   # Google Photos OAuth2 Configuration
   GOOGLE_PHOTOS_CLIENT_ID: "your-google-photos-client-id"
   GOOGLE_PHOTOS_CLIENT_SECRET: "your-google-photos-client-secret"
-  GOOGLE_PHOTOS_REDIRECT_URI: "https://crows-eye-website.uc.r.appspot.com/auth/google-photos/callback"
+  GOOGLE_PHOTOS_REDIRECT_URI: "https://firebasestorage.googleapis.com/auth/google-photos/callback"
   
   # Database initialization flag
   INITIALIZE_DB: "false"
@@ -50,7 +50,7 @@ env_variables:
   # Security settings
   RATE_LIMIT_ENABLED: "true"
   SECURITY_HEADERS_ENABLED: "true"
-  CORS_ORIGINS: "https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com,https://crows-eye-website.uc.r.appspot.com"
+  CORS_ORIGINS: "https://firebasestorage.googleapis.com,https://crows-eye-website.uc.r.appspot.com"
   
   # Logging configuration
   LOG_LEVEL: "INFO"

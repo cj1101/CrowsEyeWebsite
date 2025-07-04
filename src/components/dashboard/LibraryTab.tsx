@@ -27,6 +27,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { auth } from '@/lib/firebase';
 
 type DashboardMode = 'completed' | 'unedited';
 
@@ -135,6 +136,23 @@ function LibraryTabContent() {
 
   const handleUpload = async (files: File[]) => {
     try {
+      console.log('👀 Auth UID at upload call →', auth.currentUser?.uid);
+
+      // Diagnostic: verify single Firebase app instance
+      try {
+        const { getApps } = await import('firebase/app');
+        const apps = getApps();
+        console.log(`🔍 Firebase apps count = ${apps.length} (should be 1)`, apps.map(a => a.name));
+      } catch (err) {
+        console.warn('⚠️ Could not get Firebase apps list:', err);
+      }
+
+      if (!auth.currentUser) {
+        console.error('🚫 Upload attempted without authenticated user');
+        alert('Please sign in before uploading files.');
+        return;
+      }
+
       console.log('Starting upload of', files.length, 'files');
       
       // Upload all files at once
@@ -919,6 +937,7 @@ function LibraryTabContent() {
             </div>
             
             <MediaUpload 
+              key={dashboardMode}
               onUpload={handleUpload}
               multiple={true}
               className="text-white"

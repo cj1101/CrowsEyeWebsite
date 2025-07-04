@@ -55,7 +55,8 @@
     "emulator:dev": "npm run emulator:setup && npm run emulator:start",
     "test:create-user": "node scripts/create-test-user.js",
     "test:offline": "node scripts/test-offline-flow.js",
-    "build:ssr": "next build && node scripts/prepare-functions.js"
+    "build:ssr": "next build && node scripts/prepare-functions.js",
+    "test:env": "node scripts/test-env.js"
   },
   "dependencies": {
     "@ffmpeg/core": "^0.12.10",
@@ -79,7 +80,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "dotenv": "^17.0.1",
-    "firebase": "^11.8.1",
+    "firebase": "^10.12.2",
     "firebase-admin": "^13.4.0",
     "firebase-functions": "^6.3.2",
     "framer-motion": "^12.12.2",
@@ -114,10 +115,10 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.1.8",
+    "fs-extra": "^11.2.0",
     "postcss": "^8",
     "rimraf": "^6.0.1",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5",
-    "fs-extra": "^11.2.0"
+    "typescript": "^5"
   }
 }

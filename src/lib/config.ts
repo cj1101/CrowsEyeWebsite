@@ -29,7 +29,7 @@ export const firebaseConfig = {
 
 // API Configuration
 export const apiConfig = {
-  baseUrl: getEnvVar('NEXT_PUBLIC_API_URL') || 'https://crows-eye-website.uc.r.appspot.com',
+  baseUrl: getEnvVar('NEXT_PUBLIC_API_URL') || 'https://firebasestorage.googleapis.com',
   timeout: 10000,
   retries: 3,
 };
@@ -106,7 +106,7 @@ export const getApiConfig = () => {
   
   // For production, use Google Cloud API
   return {
-    baseURL: 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com',
+    baseURL: 'https://firebasestorage.googleapis.com',
     environment: 'production',
     timeout: 60000, // 60 seconds for production
   };

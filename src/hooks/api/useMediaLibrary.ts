@@ -4,6 +4,7 @@ import { auth } from '@/lib/firebase';
 import type { MediaDocument } from '@/lib/firestore/types';
 import type { MediaItem } from '@/types/api';
 import { MediaConversions } from '@/types/api';
+import { waitForAuth } from '@/utils/waitForAuth';
 
 // Gallery interface for frontend use
 export interface Gallery {
@@ -34,6 +35,11 @@ const transformMediaItem = (mediaDoc: MediaDocument): MediaItem => {
   return MediaConversions.documentToItem(mediaDoc);
 };
 
+// Transform Firestore document to MediaItem with authenticated URLs
+const transformMediaItemAsync = async (mediaDoc: MediaDocument): Promise<MediaItem> => {
+  return MediaConversions.documentToItemAsync(mediaDoc);
+};
+
 export const useMediaLibrary = () => {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [galleries, setGalleries] = useState<Gallery[]>([]);
@@ -45,13 +51,19 @@ export const useMediaLibrary = () => {
       setLoading(true);
       setError(null);
       
-      const user = auth.currentUser;
+      const user = await waitForAuth();
       if (!user) {
         throw new Error('Not authenticated');
       }
       
       const { data } = await MediaService.listUserMedia(user.uid);
-      setMedia(data.map(transformMediaItem));
+      
+      // Use async conversion to get authenticated URLs
+      const mediaItems = await Promise.all(
+        data.map(transformMediaItemAsync)
+      );
+      
+      setMedia(mediaItems);
     } catch (error: any) {
       console.error('Failed to fetch media:', error);
       setError(error.message || 'Failed to fetch media');
@@ -88,7 +100,7 @@ export const useMediaLibrary = () => {
                 const mediaPromises = galleryDoc.mediaIds.map(async (mediaId) => {
                   try {
                     const mediaDoc = await MediaService.getMedia(mediaId);
-                    return mediaDoc ? transformMediaItem(mediaDoc) : null;
+                    return mediaDoc ? await transformMediaItemAsync(mediaDoc) : null;
                   } catch (error) {
                     console.warn(`Failed to fetch media ${mediaId}:`, error);
                     return null;
@@ -136,15 +148,15 @@ export const useMediaLibrary = () => {
     files: FileList | File[],
     metadata?: Partial<MediaDocument>
   ): Promise<MediaItem[]> => {
-    const user = auth.currentUser;
+    const user = await waitForAuth();
     if (!user) {
       throw new Error('User must be authenticated to upload media');
     }
 
-    // Force refresh the authentication token before upload
+    // Force refresh the authentication token once before the batch upload
     try {
       console.log('🔄 Refreshing authentication token before upload...');
-      const token = await user.getIdToken(true);
+      await user.getIdToken(true);
       console.log('✅ Authentication token refreshed successfully');
     } catch (error) {
       console.error('❌ Failed to refresh authentication token:', error);
@@ -165,7 +177,9 @@ export const useMediaLibrary = () => {
     });
 
     const uploadedDocs = await Promise.all(uploadPromises);
-    const newItems = uploadedDocs.map(doc => transformMediaItem(doc));
+    const newItems = await Promise.all(
+      uploadedDocs.map(doc => transformMediaItemAsync(doc))
+    );
     
     // Add new items to the media list
     setMedia(prev => [...newItems, ...prev]);
@@ -201,8 +215,17 @@ export const useMediaLibrary = () => {
 
   // Load media on mount and when auth state changes
   useEffect(() => {
-    fetchMedia();
-    fetchGalleries();
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user) {
+        fetchMedia();
+        fetchGalleries();
+      } else {
+        setMedia([]);
+        setGalleries([]);
+      }
+    });
+
+    return () => unsubscribe();
   }, [fetchMedia, fetchGalleries]);
 
   return {

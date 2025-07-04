@@ -84,14 +84,6 @@ const nextConfig = {
   // Enable static file serving for large files
   staticPageGenerationTimeout: 300,
   
-  // Environment variables - consolidated configuration
-  env: {
-    ENABLE_WEBASSEMBLY_FFMPEG: 'true',
-    VIDEO_PROCESSING_TIMEOUT: '300000', // 5 minutes
-    MAX_VIDEO_SIZE: '100000000', // 100MB
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com'
-  },
-  
   // Optimized settings
   generateEtags: false,
   poweredByHeader: false,

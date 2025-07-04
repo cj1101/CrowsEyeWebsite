@@ -33,7 +33,7 @@ python run_local_with_cloud_db.py
 ### Step 3: Access Your App
 - **Localhost**: http://localhost:8001
 - **API Docs**: http://localhost:8001/docs
-- **Production**: https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com
+- **Production**: https://firebasestorage.googleapis.com
 
 ## ✅ Benefits
 

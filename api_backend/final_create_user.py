@@ -42,7 +42,7 @@ if result:
     print("  4. Enjoy Pro features!")
     print("")
     print("For Production:")
-    print("  1. Go to: https://crows-eye-website.uc.r.appspot.com/pricing")
+    print("  1. Go to: https://firebasestorage.googleapis.com/pricing")
     print("  2. Use code: TESTER_CROW_2024_LIFETIME_$7d91f3a8")
     print("  3. Sign up with charlie@suarezhouse.net")
 else:

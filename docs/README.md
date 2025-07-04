@@ -56,8 +56,8 @@ The Crow's Eye platform supports integration with:
 - **[Copyright Information](../COPYRIGHT.md)** - Licensing and usage rights
 
 ### API Documentation
-- **Live API Docs**: https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com/docs
-- **OpenAPI Spec**: https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com/api/v1/openapi.json
+- **Live API Docs**: https://firebasestorage.googleapis.com/docs
+- **OpenAPI Spec**: https://firebasestorage.googleapis.com/api/v1/openapi.json
 
 ## 🆘 Support & Issues
 

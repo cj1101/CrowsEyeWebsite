@@ -47,7 +47,7 @@ python run_local.py
 - **Features**: Full Pro access on localhost
 
 ### **On Production (Use Promotional Code)**
-1. 🔗 Go to: https://crows-eye-website.uc.r.appspot.com/pricing
+1. 🔗 Go to: https://firebasestorage.googleapis.com/pricing
 2. 🎯 Click "Start 7-Day Free Trial" on Pro plan  
 3. 🎫 Enter code: **TESTER_CROW_2024_LIFETIME_$7d91f3a8**
 4. ✅ Sign up with: **charlie@suarezhouse.net**

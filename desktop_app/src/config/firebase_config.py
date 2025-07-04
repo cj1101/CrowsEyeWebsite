@@ -13,7 +13,7 @@ FIREBASE_CONFIG = {
     "apiKey": os.getenv("FIREBASE_API_KEY", "your-api-key-here"),
     "authDomain": "crows-eye-website.firebaseapp.com",
     "projectId": "crows-eye-website", 
-    "storageBucket": "crows-eye-website.appspot.com",
+    "storageBucket": "crows-eye-website.firebasestorage.app",
     "messagingSenderId": os.getenv("FIREBASE_MESSAGING_SENDER_ID", "your-sender-id"),
     "appId": os.getenv("FIREBASE_APP_ID", "your-app-id")
 }

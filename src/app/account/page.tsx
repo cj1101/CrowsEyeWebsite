@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { UserCircleIcon, CogIcon, CreditCardIcon, ArrowRightOnRectangleIcon, ChartBarIcon, CloudArrowUpIcon, ShieldCheckIcon, SparklesIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { UserCircleIcon, CogIcon, CreditCardIcon, ArrowRightOnRectangleIcon, ChartBarIcon, CloudArrowUpIcon, ShieldCheckIcon, SparklesIcon, ArrowPathIcon, ExclamationTriangleIcon, CheckCircleIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
-import { updateEmail, updatePassword } from 'firebase/auth';
+import { updateEmail, updatePassword, sendEmailVerification } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { UserService } from '@/lib/firestore';
 
@@ -18,6 +18,7 @@ export default function AccountPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [sendingVerification, setSendingVerification] = useState(false);
 
   // Keep editable fields in sync when the user profile loads or changes
   useEffect(() => {
@@ -88,6 +89,79 @@ export default function AccountPage() {
       } catch (error) {
         console.error('Logout failed:', error);
         alert('Logout failed. Please try again.');
+      }
+    }
+  };
+
+  const handleSendVerification = async () => {
+    if (!auth.currentUser) {
+      alert('No authenticated user found');
+      return;
+    }
+
+    setSendingVerification(true);
+    try {
+      await sendEmailVerification(auth.currentUser);
+      alert('Verification email sent! Please check your inbox and spam folder. Click "Refresh" to update your verification status after verifying.');
+    } catch (error: any) {
+      console.error('Failed to send verification email:', error);
+      alert(error.message || 'Failed to send verification email. Please try again.');
+    } finally {
+      setSendingVerification(false);
+    }
+  };
+
+  const handleReloadUser = async () => {
+    if (!auth.currentUser) return;
+    
+    try {
+      // Reload user and force token refresh
+      await auth.currentUser.reload();
+      await auth.currentUser.getIdToken(true); // Force token refresh
+      
+      // Get fresh token and show its contents
+      const token = await auth.currentUser.getIdToken(true);
+      const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+      
+      console.log('🔍 Full token payload:', tokenPayload);
+      console.log('🔍 Email verified in token:', tokenPayload.email_verified);
+      console.log('🔍 User object emailVerified:', auth.currentUser.emailVerified);
+      
+      // Force a re-render by updating state
+      setRefreshing(true);
+      setTimeout(() => setRefreshing(false), 100);
+      
+      // Show debug info
+      const debugInfo = {
+        uid: auth.currentUser.uid,
+        email: auth.currentUser.email,
+        emailVerified: auth.currentUser.emailVerified,
+        tokenEmailVerified: tokenPayload.email_verified
+      };
+      
+      console.log('🔍 Token debug after reload:', debugInfo);
+      
+      if (auth.currentUser.emailVerified && tokenPayload.email_verified) {
+        alert('✅ Email verification confirmed in both user object and token! You can now upload files.');
+      } else if (auth.currentUser.emailVerified && !tokenPayload.email_verified) {
+        alert('⚠️ Email verified in user object but not in token. Please sign out and sign back in to get a fresh token.');
+      } else {
+        alert('⚠️ Email still showing as unverified. Please check if you clicked the verification link in your email.');
+      }
+    } catch (error) {
+      console.error('Failed to reload user:', error);
+      alert('Failed to refresh user status. You may need to sign out and sign back in.');
+    }
+  };
+
+  const handleForceSignOut = async () => {
+    if (confirm('This will sign you out to force a fresh token. Continue?')) {
+      try {
+        await logout();
+        alert('Signed out. Please sign back in to get a fresh token with email verification.');
+        window.location.href = '/auth/signin';
+      } catch (error) {
+        console.error('Sign out failed:', error);
       }
     }
   };
@@ -242,6 +316,60 @@ export default function AccountPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-4 py-3 bg-black/30 border border-gray-600/50 rounded-xl text-white vision-card focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all tech-body"
                   />
+                </div>
+              </div>
+
+              {/* Email Verification Status */}
+              <div className="mt-6 p-4 rounded-xl bg-black/20 border border-gray-600/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    {auth.currentUser?.emailVerified ? (
+                      <>
+                        <CheckCircleIcon className="h-5 w-5 text-green-400" />
+                        <div>
+                          <p className="text-green-400 font-medium tech-subheading">Email Verified</p>
+                          <p className="text-gray-400 text-sm tech-body">Your email address has been verified</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400" />
+                        <div>
+                          <p className="text-yellow-400 font-medium tech-subheading">Email Not Verified</p>
+                          <p className="text-gray-400 text-sm tech-body">Please verify your email address to secure your account</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                                     <div className="flex items-center space-x-2">
+                     {auth.currentUser?.emailVerified ? (
+                       <button
+                         onClick={handleReloadUser}
+                         className="flex items-center space-x-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 hover:text-green-200 px-4 py-2 rounded-lg transition-all duration-300 tech-subheading"
+                       >
+                         <ArrowPathIcon className="h-4 w-4" />
+                         <span>Refresh Status</span>
+                       </button>
+                     ) : (
+                       <>
+                         <button
+                           onClick={handleSendVerification}
+                           disabled={sendingVerification}
+                           className="flex items-center space-x-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 hover:text-yellow-200 px-4 py-2 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed tech-subheading"
+                         >
+                           <EnvelopeIcon className="h-4 w-4" />
+                           <span>{sendingVerification ? 'Sending...' : 'Send Verification'}</span>
+                         </button>
+                         <button
+                           onClick={handleReloadUser}
+                           className="flex items-center space-x-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 hover:text-blue-200 px-4 py-2 rounded-lg transition-all duration-300 tech-subheading"
+                         >
+                           <ArrowPathIcon className="h-4 w-4" />
+                           <span>Check Status</span>
+                         </button>
+                       </>
+                     )}
+                   </div>
                 </div>
               </div>
 

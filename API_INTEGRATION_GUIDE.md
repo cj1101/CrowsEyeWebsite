@@ -6,7 +6,7 @@ This document outlines the API integration between the frontend web application 
 
 ### Backend URLs
 - **Development**: `http://localhost:8000`
-- **Production**: `https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com`
+- **Production**: `https://firebasestorage.googleapis.com`
 
 ### Authentication
 - Bearer token authentication via `Authorization: Bearer <token>` header

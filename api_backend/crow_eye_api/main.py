@@ -182,7 +182,7 @@ app.add_middleware(
         "http://localhost:3001", 
         "https://localhost:3000",
         "https://localhost:3001",
-        "https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com",
+        "https://firebasestorage.googleapis.com",
         "https://crows-eye-website.uc.r.appspot.com"
     ] if settings.PROJECT_NAME == "Crow's Eye API - Production" else ["*"],
     allow_credentials=True,

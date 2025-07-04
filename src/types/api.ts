@@ -476,12 +476,45 @@ export interface MediaItem {
   isProcessed?: boolean; // Computed from isPostReady
 }
 
+// Helper to construct full Firebase Storage URL with authentication
+const getStorageUrl = async (gcsPath: string): Promise<string> => {
+  if (!gcsPath) return '';
+  
+  try {
+    // Import Firebase storage dynamically to avoid circular dependencies
+    const { ref, getDownloadURL } = await import('firebase/storage');
+    const { storage } = await import('@/lib/firebase');
+    
+    if (!storage) {
+      console.error('🔥 Firebase storage is not initialized');
+      return '';
+    }
+    
+    const storageRef = ref(storage, gcsPath);
+    const url = await getDownloadURL(storageRef);
+    
+    console.log(`🔗 Retrieved authenticated storage URL:`, {
+      gcsPath,
+      url
+    });
+    
+    return url;
+  } catch (error) {
+    console.error(`🔥 Error getting authenticated URL for ${gcsPath}:`, error);
+    // Fallback to public URL (may not work without proper permissions)
+    const bucket = 'crows-eye-website.firebasestorage.app';
+    const encodedPath = encodeURIComponent(gcsPath);
+    return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodedPath}?alt=media`;
+  }
+};
+
 /**
  * Conversion utilities for MediaDocument <-> MediaItem transformations
  */
 export const MediaConversions = {
   /**
-   * Convert Firestore MediaDocument to frontend MediaItem
+   * Convert Firestore MediaDocument to frontend MediaItem (synchronous version)
+   * Note: This version uses a fallback URL construction without authentication
    */
   documentToItem(mediaDoc: MediaDocument): MediaItem {
     // Helper to convert Firestore timestamp to Date
@@ -492,7 +525,7 @@ export const MediaConversions = {
     };
 
     // Helper to normalize AI tags
-    const normalizeAiTags = (aiTags?: Array<{ tag: string; confidence: number }>): { aiTags: Array<{ tag: string; confidence: number }>; tags: string[] } => {
+    const normalizeAiTags = (aiTags?: Array<{ tag: string; confidence: number }>): { aiTags: Array<{ tag:string; confidence: number }>; tags: string[] } => {
       if (!Array.isArray(aiTags)) {
         return { aiTags: [], tags: [] };
       }
@@ -506,6 +539,18 @@ export const MediaConversions = {
 
     const { aiTags, tags } = normalizeAiTags(mediaDoc.aiTags);
 
+    // Use fallback URL construction for synchronous conversion
+    const bucket = 'crows-eye-website.firebasestorage.app';
+    const encodedPath = encodeURIComponent(mediaDoc.gcsPath);
+    const fallbackUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodedPath}?alt=media`;
+    
+    console.log(`🔄 Converting MediaDocument to MediaItem (sync):`, {
+      id: mediaDoc.id,
+      gcsPath: mediaDoc.gcsPath,
+      fallbackUrl,
+      filename: mediaDoc.filename
+    });
+
     return {
       // Core identifiers
       id: mediaDoc.id || '',
@@ -516,8 +561,96 @@ export const MediaConversions = {
       mediaType: mediaDoc.mediaType,
       fileSize: mediaDoc.fileSize,
       
-      // URLs and paths - URL would be computed by the service
-      url: mediaDoc.gcsPath, // This should be converted to a public URL by the service
+      // URLs and paths - Using fallback URL for now
+      url: fallbackUrl,
+      gcsPath: mediaDoc.gcsPath,
+      thumbnailPath: mediaDoc.thumbnailPath,
+      thumbnail: mediaDoc.thumbnailPath, // Legacy compatibility
+      
+      // Metadata
+      width: mediaDoc.width,
+      height: mediaDoc.height,
+      duration: mediaDoc.duration,
+      caption: mediaDoc.caption || '',
+      description: mediaDoc.description || '',
+      
+      // AI and tags
+      aiTags,
+      tags,
+      
+      // Status and workflow
+      isPostReady: mediaDoc.isPostReady,
+      status: mediaDoc.status,
+      postMetadata: mediaDoc.postMetadata || {},
+      platforms: mediaDoc.platforms || [],
+      
+      // Import information
+      googlePhotosId: mediaDoc.googlePhotosId,
+      googlePhotosMetadata: mediaDoc.googlePhotosMetadata,
+      importSource: mediaDoc.importSource,
+      importDate: mediaDoc.importDate ? toDate(mediaDoc.importDate) : undefined,
+      
+      // Timestamps
+      uploadDate: toDate(mediaDoc.uploadDate),
+      createdAt: toDate(mediaDoc.createdAt),
+      updatedAt: toDate(mediaDoc.updatedAt),
+      
+      // Legacy compatibility fields
+      name: mediaDoc.filename,
+      type: mediaDoc.mediaType,
+      size: mediaDoc.fileSize,
+      isProcessed: mediaDoc.isPostReady,
+    };
+  },
+
+  /**
+   * Convert Firestore MediaDocument to frontend MediaItem (async version with authenticated URLs)
+   */
+  async documentToItemAsync(mediaDoc: MediaDocument): Promise<MediaItem> {
+    // Helper to convert Firestore timestamp to Date
+    const toDate = (timestamp: Timestamp | Date | undefined): Date => {
+      if (!timestamp) return new Date();
+      if (timestamp instanceof Date) return timestamp;
+      return timestamp.toDate?.() || new Date();
+    };
+
+    // Helper to normalize AI tags
+    const normalizeAiTags = (aiTags?: Array<{ tag: string; confidence: number }>): { aiTags: Array<{ tag:string; confidence: number }>; tags: string[] } => {
+      if (!Array.isArray(aiTags)) {
+        return { aiTags: [], tags: [] };
+      }
+      
+      const tags = aiTags.map(tag => 
+        typeof tag === 'string' ? tag : tag.tag || ''
+      ).filter(Boolean);
+      
+      return { aiTags, tags };
+    };
+
+    const { aiTags, tags } = normalizeAiTags(mediaDoc.aiTags);
+
+    // Get authenticated URL
+    const authenticatedUrl = await getStorageUrl(mediaDoc.gcsPath);
+    
+    console.log(`🔄 Converting MediaDocument to MediaItem (async):`, {
+      id: mediaDoc.id,
+      gcsPath: mediaDoc.gcsPath,
+      authenticatedUrl,
+      filename: mediaDoc.filename
+    });
+
+    return {
+      // Core identifiers
+      id: mediaDoc.id || '',
+      
+      // File information
+      filename: mediaDoc.filename,
+      originalFilename: mediaDoc.originalFilename,
+      mediaType: mediaDoc.mediaType,
+      fileSize: mediaDoc.fileSize,
+      
+      // URLs and paths - Using authenticated URL
+      url: authenticatedUrl,
       gcsPath: mediaDoc.gcsPath,
       thumbnailPath: mediaDoc.thumbnailPath,
       thumbnail: mediaDoc.thumbnailPath, // Legacy compatibility

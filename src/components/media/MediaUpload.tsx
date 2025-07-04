@@ -14,6 +14,8 @@ import {
 import { useMediaStore } from '@/stores/mediaStore';
 import { MediaService } from '@/lib/firestore';
 import { auth } from '@/lib/firebase';
+import { getFirebaseDebugInfo, testUploadPermissions } from '@/utils/firebaseDebug';
+import { logDetailedFirebaseInfo } from '@/utils/firebaseTest';
 
 interface MediaUploadProps {
   onUpload?: (files: File[]) => void;
@@ -88,11 +90,9 @@ export default function MediaUpload({
     if (onUpload && filesWithPreview.length > 0) {
       // Convert FileWithPreview back to File instances (they already are)
       const processedFiles = filesWithPreview as File[];
-      setTimeout(() => {
-        onUpload(processedFiles);
-        // Clear the files from our local state since parent is handling the upload
-        setFiles([]);
-      }, 100);
+      onUpload(processedFiles);
+      // Clear the files from our local state since parent is handling the upload
+      setFiles([]);
     }
   }, [maxSize, onUpload]);
 
@@ -110,6 +110,24 @@ export default function MediaUpload({
     setFiles(prev => prev.filter(file => file.id !== fileId));
   };
 
+  const runDebugTest = async () => {
+    console.log('🔍 Running Firebase debug test...');
+    
+    // First, log the basic config info
+    logDetailedFirebaseInfo();
+    
+    try {
+      const debugInfo = await getFirebaseDebugInfo();
+      const bucketFromEnv = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+      const expectedBucket = 'crows-eye-website.firebasestorage.app';
+      
+      alert(`Debug Test Results:\n\nSetup Success: ${debugInfo.setup.success}\nAuth: ${debugInfo.setup.info.auth.isAuthenticated ? 'Authenticated' : 'Not authenticated'}\nStorage: ${debugInfo.setup.info.storage.isInitialized ? 'Initialized' : 'Not initialized'}\n\nBucket Configuration:\n  Environment: ${bucketFromEnv}\n  Expected: ${expectedBucket}\n  Match: ${bucketFromEnv === expectedBucket}\n\n${debugInfo.upload ? `Upload Test: ${debugInfo.upload.success ? 'SUCCESS' : 'FAILED'}\nMessage: ${debugInfo.upload.message}` : 'Upload test skipped (authentication required)'}\n\nCheck browser console for detailed logs.`);
+    } catch (error) {
+      console.error('Debug test failed:', error);
+      alert(`Debug test failed: ${error}`);
+    }
+  };
+
   const uploadFiles = async () => {
     if (files.length === 0) return;
 
@@ -117,12 +135,24 @@ export default function MediaUpload({
     setIsUploading(true);
     
     try {
+      // Extra diagnostic: how many Firebase apps are initialized?
+      try {
+        const { getApps } = await import('firebase/app');
+        const apps = getApps();
+        console.log(`🔍 Firebase apps count = ${apps.length} (should be 1)`, apps.map(a => a.name));
+      } catch (diagErr) {
+        console.warn('⚠️ Could not inspect Firebase apps:', diagErr);
+      }
+
       // Check authentication before attempting upload
       const user = auth.currentUser;
       if (!user) {
-        throw new Error('Authentication required. Please sign in to upload media.');
+        console.warn('🚫 No authenticated user found at upload time – aborting');
+        setErrors(prev => [...prev, 'Please sign in before uploading files.']);
+        setIsUploading(false);
+        return;
       }
-      console.log('🔑 User authenticated, proceeding with upload');
+      console.log('🔑 User authenticated – UID:', user.uid, 'Proceeding with upload');
       
       for (const file of files) {
         console.log('📤 Uploading file:', file.name, 'Size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
@@ -251,6 +281,17 @@ export default function MediaUpload({
         </motion.div>
       </div>
 
+      {/* Always Visible Debug Button */}
+      <div className="flex justify-center">
+        <button
+          onClick={runDebugTest}
+          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+          title="Test Firebase configuration and permissions"
+        >
+          🔍 Test Firebase Setup
+        </button>
+      </div>
+
       {/* Errors */}
       <AnimatePresence>
         {errors.length > 0 && (
@@ -282,15 +323,24 @@ export default function MediaUpload({
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
                 Files to Upload ({files.length})
               </h3>
-              {multiple && (
+              <div className="flex gap-2">
                 <button
-                  onClick={uploadFiles}
-                  disabled={files.length === 0}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  onClick={runDebugTest}
+                  className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                  title="Test Firebase configuration and permissions"
                 >
-                  Upload All
+                  🔍 Debug
                 </button>
-              )}
+                {multiple && (
+                  <button
+                    onClick={uploadFiles}
+                    disabled={files.length === 0}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Upload All
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

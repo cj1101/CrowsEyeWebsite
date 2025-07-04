@@ -88,6 +88,22 @@ export class FirestoreService {
     }
   }
 
+  private static getStorage() {
+    const storage = getStorage();
+    if (!storage) {
+      throw new Error('Storage is not initialized. Please check your Firebase configuration.');
+    }
+    return storage;
+  }
+
+  private static getAuth() {
+    const auth = getAuth();
+    if (!auth) {
+      throw new Error('Auth is not initialized. Please check your Firebase configuration.');
+    }
+    return auth;
+  }
+
   // Create a document
   static async create<T extends FirestoreDocument>(
     collectionName: string,
@@ -264,14 +280,5 @@ export class FirestoreService {
     });
     
     await batch.commit();
-  }
-
-  // Count documents
-  static async count(
-    collectionName: string,
-    constraints: QueryConstraint[] = []
-  ): Promise<number> {
-    const results = await this.query(collectionName, constraints);
-    return results.length;
   }
 } 

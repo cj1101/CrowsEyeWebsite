@@ -63,7 +63,7 @@ RATE_LIMIT_ENABLED=true
 SECURITY_HEADERS_ENABLED=true
 
 # CORS Configuration
-CORS_ORIGINS=https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com,https://crows-eye-website.uc.r.appspot.com
+CORS_ORIGINS=https://firebasestorage.googleapis.com,https://crows-eye-website.uc.r.appspot.com
 
 # Logging
 LOG_LEVEL=INFO

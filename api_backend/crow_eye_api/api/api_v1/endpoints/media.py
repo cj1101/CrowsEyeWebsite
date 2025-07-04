@@ -1,5 +1,5 @@
 from typing import List, Optional, Union
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Query, status
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Query, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from crow_eye_api.crud import crud_media
@@ -13,6 +13,7 @@ router = APIRouter()
 
 @router.get("/", response_model=List[schemas.MediaItemResponse])
 async def get_media_items(
+    request: Request,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, le=100),
     current_user: models.User = Depends(get_current_active_user),
@@ -25,11 +26,13 @@ async def get_media_items(
         db=db, user_id=current_user.id, skip=skip, limit=limit
     )
     
-    return [_build_media_response(item) for item in media_items]
+    import asyncio
+    return await asyncio.gather(*[_build_media_response(item, request) for item in media_items])
 
 
 @router.post("/search", response_model=schemas.MediaSearchResponse)
 async def search_media(
+    request: Request,
     search_params: schemas.MediaSearch,
     current_user: models.User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
@@ -41,7 +44,8 @@ async def search_media(
         db=db, user_id=current_user.id, search_params=search_params
     )
     
-    items_response = [_build_media_response(item) for item in media_items]
+    import asyncio
+    items_response = await asyncio.gather(*[_build_media_response(item, request) for item in media_items])
     
     return schemas.MediaSearchResponse(
         items=items_response,
@@ -54,6 +58,7 @@ async def search_media(
 
 @router.get("/{media_id}", response_model=schemas.MediaItemResponse)
 async def get_media_item(
+    request: Request,
     media_id: Union[int, str],
     current_user: models.User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db)
@@ -81,11 +86,12 @@ async def get_media_item(
             detail="Media item not found"
         )
     
-    return _build_media_response(media_item)
+    return await _build_media_response(media_item, request)
 
 
 @router.put("/{media_id}", response_model=schemas.MediaItemResponse)
 async def update_media_item(
+    request: Request,
     media_id: Union[int, str],
     media_update: schemas.MediaItemUpdate,
     current_user: models.User = Depends(get_current_active_user),
@@ -114,7 +120,7 @@ async def update_media_item(
             detail="Media item not found"
         )
     
-    return _build_media_response(updated_media)
+    return await _build_media_response(updated_media, request)
 
 
 @router.delete("/{media_id}")
@@ -172,6 +178,7 @@ async def delete_media_item(
 
 @router.post("/upload")
 async def upload_media(
+    request: Request,
     file: UploadFile = File(...),
     caption: Optional[str] = None,
     current_user: models.User = Depends(get_current_active_user),
@@ -289,7 +296,7 @@ async def upload_media(
             media_item.gcs_path = download_url
         
         # Use the helper function to build the response
-        media_response = _build_media_response(media_item)
+        media_response = await _build_media_response(media_item)
         
         # Return response in the format expected by frontend
         return {
@@ -825,24 +832,41 @@ async def generate_thumbnails(
         )
 
 # Helper function to convert ORM object to response schema
-def _build_media_response(item: models.MediaItem) -> schemas.MediaItemResponse:
+async def _build_media_response(item: models.MediaItem, request: Request) -> schemas.MediaItemResponse:
     """Builds a MediaItemResponse ensuring `url` and `thumbnail_url` are always populated."""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    from crow_eye_api.services.storage import storage_service
     # Determine base URL for original media
-    download_url = f"/api/v1/media/{item.id}/download"
-    # If gcs_path is already a public HTTPS URL use it, otherwise fall back to protected download endpoint
-    if item.gcs_path and str(item.gcs_path).startswith("http"):
-        url = item.gcs_path
-    else:
+    base_url = str(request.base_url)
+    download_url = f"{base_url}api/v1/media/{item.id}/download"
+    
+    logger.info(f"[_build_media_response] Generating URL for media item {item.id} with filename: {item.filename}")
+    
+    try:
+        url = await storage_service.get_signed_url(item.filename)
+        logger.info(f"[_build_media_response] Successfully generated signed URL for media item {item.id}: {url}")
+    except Exception as e:
+        logger.error(f"[_build_media_response] Failed to generate signed URL for media item {item.id}. Falling back to download URL. Error: {e}")
         url = download_url
 
     # Determine thumbnail URL
     if item.thumbnail_path:
-        thumbnail_url = f"/api/v1/media/{item.id}/thumbnail"
+        logger.info(f"[_build_media_response] Generating thumbnail URL for media item {item.id} with path: {item.thumbnail_path}")
+        try:
+            thumbnail_url = await storage_service.get_signed_url(item.thumbnail_path)
+            logger.info(f"[_build_media_response] Successfully generated signed URL for thumbnail of media item {item.id}: {thumbnail_url}")
+        except Exception as e:
+            logger.error(f"[_build_media_response] Failed to generate signed URL for thumbnail of media item {item.id}. Falling back to download URL. Error: {e}")
+            thumbnail_url = f"{base_url}api/v1/media/{item.id}/thumbnail"
     else:
         # Provide placeholder for images & videos so FE never receives null
         if item.media_type in {"image", "video"}:
+            logger.info(f"[_build_media_response] No thumbnail path for media item {item.id}. Using placeholder.")
             thumbnail_url = settings.PLACEHOLDER_THUMBNAIL_URL
         else:
+            logger.info(f"[_build_media_response] No thumbnail path for media item {item.id}. Setting thumbnail URL to None.")
             thumbnail_url = None
 
     # Enhanced response with additional frontend-expected fields

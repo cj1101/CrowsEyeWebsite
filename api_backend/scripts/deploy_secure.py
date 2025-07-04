@@ -379,7 +379,7 @@ class SecureDeployment:
             # Wait for deployment to be ready
             time.sleep(30)
             
-            api_url = f"https://{self.service_name}-dot-{self.project_id}.uc.r.appspot.com"
+            api_url = f"https://firebasestorage.googleapis.com"
             
             # Test health endpoint
             response = requests.get(f"{api_url}/health", timeout=30)

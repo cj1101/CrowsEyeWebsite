@@ -1,17 +1,10 @@
 rules_version = '2';
-
-// Firebase Storage Security Rules
-// Allow authenticated users to upload media to their own folders
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow authenticated users to read and write files in media folder
-    match /media/{allPaths=**} {
-      allow read, write: if request.auth != null;
-    }
-    
-    // Fallback rule for all other paths - authenticated users only
-    match /{allPaths=**} {
-      allow read, write: if request.auth != null;
+    // Users can only read and write to their own folder.
+    // The path segment {userId} must match the UID of the authenticated user.
+    match /media/{userId}/{fileName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
-} 
+}

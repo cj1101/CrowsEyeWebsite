@@ -143,17 +143,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (firebaseUser) {
         try {
           // Get user profile from Firestore
-          const userProfile = await UserService.getUser(firebaseUser.uid);
+          const userProfileData = await UserService.getUser(firebaseUser.uid);
           
-          if (userProfile) {
-            const transformedProfile = transformUserToProfile(userProfile);
+          if (userProfileData) {
+            const transformedProfile = transformUserToProfile(userProfileData);
             setUser({ uid: firebaseUser.uid, email: firebaseUser.email || '' });
             setUserProfile(transformedProfile);
             setIsAuthenticated(true);
             setError(null);
             console.log('✅ User authenticated via Firebase Auth');
           } else {
-            console.warn('⚠️ Firebase user found but no Firestore profile');
+            // This case can happen if a user is created in Auth but not in Firestore
+            // For now, we'll treat it as a logged-out state
+            console.warn('⚠️ Firebase user found but no Firestore profile. Logging out.');
+            await signOut(auth);
             setUser(null);
             setUserProfile(null);
             setIsAuthenticated(false);
@@ -183,9 +186,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!auth.currentUser) return;
     
     try {
-      const userProfile = await UserService.getUser(auth.currentUser.uid);
-      if (userProfile) {
-        const transformedProfile = transformUserToProfile(userProfile);
+      const userProfileData = await UserService.getUser(auth.currentUser.uid);
+      if (userProfileData) {
+        const transformedProfile = transformUserToProfile(userProfileData);
         setUserProfile(transformedProfile);
       }
     } catch (error: any) {
@@ -200,15 +203,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const { user: firestoreUser, authUser } = await UserService.signIn(email, password);
-      const transformedProfile = transformUserToProfile(firestoreUser);
+      // Use the UserService to sign in directly with Firebase
+      await UserService.signIn(email, password);
       
-      setUser({ uid: authUser.uid, email: authUser.email || '' });
-      setUserProfile(transformedProfile);
-      setIsAuthenticated(true);
-      
-      console.log('✅ Login successful');
+      // onAuthStateChanged will handle setting the user state
+      console.log('✅ Login successful (Firebase direct)');
       return { success: true };
+      
     } catch (error: any) {
       console.error('❌ Login failed:', error);
       setError(error.message || 'Login failed');
@@ -272,6 +273,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Logout function
   const logout = useCallback(async () => {
     try {
+      setLoading(true);
+      
+      // Sign out from Firebase
       await signOut(auth);
       
       // Clear local storage
@@ -286,6 +290,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error: any) {
       console.error('❌ Logout failed:', error);
       setError(error.message || 'Logout failed');
+    } finally {
+      setLoading(false);
     }
   }, []);
 

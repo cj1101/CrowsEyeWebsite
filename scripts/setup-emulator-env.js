@@ -14,7 +14,7 @@ const EMULATOR_ENV_CONTENT = `# Firebase Emulator Configuration (Offline Develop
 NEXT_PUBLIC_FIREBASE_API_KEY=demo-api-key
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=demo-project.firebaseapp.com
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-project
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=demo-project.appspot.com
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=b/crows-eye-website.firebasestorage.app
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
 NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:demo-app-id
 

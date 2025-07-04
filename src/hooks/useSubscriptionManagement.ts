@@ -56,7 +56,7 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
       }
 
       // Use the correct API base URL and endpoint
-      const apiBase = 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com';
+      const apiBase = 'https://firebasestorage.googleapis.com';
       const response = await fetch(`${apiBase}/billing/subscription-status`, {
         method: 'GET',
         headers: {
@@ -114,7 +114,7 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
         throw new Error('No authentication token found')
       }
 
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://firebasestorage.googleapis.com';
       const response = await fetch(`${apiBase}/billing/create-portal-session`, {
         method: 'POST',
         headers: {

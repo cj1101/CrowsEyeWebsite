@@ -27,11 +27,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 def main():
     """Run the API locally for testing."""
     try:
-        print("🚀 Starting Crow's Eye API locally...")
-        print("📍 Local URL: http://localhost:8001")
-        print("📖 API Docs: http://localhost:8001/docs")
-        print("🔧 Environment: Local Development")
-        print("💾 Database: SQLite (crow_eye_local.db)")
+        print("Starting Crow's Eye API locally...")
+        print("Local URL: http://localhost:8001")
+        print("API Docs: http://localhost:8001/docs")
+        print("Environment: Local Development")
+        print("Database: SQLite (crow_eye_local.db)")
         print("-" * 50)
         
         # Import and run the FastAPI app
@@ -47,11 +47,11 @@ def main():
         )
         
     except ImportError as e:
-        print(f"❌ Import error: {e}")
-        print("💡 Try installing missing dependencies or check your Python environment")
+        print(f"Import error: {e}")
+        print("Try installing missing dependencies or check your Python environment")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ Error starting server: {e}")
+        print(f"Error starting server: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

@@ -1,8 +1,11 @@
 import { where, orderBy, QueryConstraint } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, deleteObject, getDownloadURL } from 'firebase/storage';
 import { FirestoreService } from '../base';
 import { MediaDocument, COLLECTIONS } from '../types';
-import { storage, auth } from '../../firebase';
+import { storage } from '../../firebase';
+import { uploadFileToStorage } from '../../../utils/storageUpload';
+import { uploadFileWithFallback } from '../../../utils/serverUpload';
+import { waitForAuth } from '@/utils/waitForAuth';
 
 export class MediaService {
   private static collection = COLLECTIONS.MEDIA;
@@ -13,116 +16,30 @@ export class MediaService {
     file: File,
     folder: string = 'media'
   ): Promise<{ url: string; path: string }> {
-    if (!storage) {
-      throw new Error('Cloud Storage is not initialized');
-    }
-
-    // Validate file before upload
-    if (!file || file.size === 0) {
-      throw new Error('Invalid file: File is empty or corrupted');
-    }
-
-    if (file.size > 100 * 1024 * 1024) { // 100MB limit
-      throw new Error('File too large: Maximum file size is 100MB');
-    }
-
-    console.log('📤 Starting file upload:', {
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
-      userId,
-      lastModified: file.lastModified
-    });
-
-    // Check authentication status
-    const currentUser = auth?.currentUser;
-    if (!currentUser) {
-      console.error('❌ No authenticated user found');
-      throw new Error('Upload failed: You must be signed in to upload files');
-    }
-
-    // Log auth token status
-    const token = await currentUser.getIdToken(true).catch((e: any) => {
-      console.error('❌ Failed to get auth token:', e);
-      return null;
-    });
-    
-    console.log('🔐 Auth status:', {
-      uid: currentUser.uid,
-      email: currentUser.email,
-      hasToken: !!token,
-      tokenLength: token?.length || 0,
-      tokenExpiry: token ? 'valid' : 'invalid'
-    });
-
-    const timestamp = Date.now();
-    const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    const path = `${folder}/${userId}/${timestamp}-${sanitizedFilename}`;
-    
-    console.log('📂 Upload path:', path);
-    console.log('🔒 Storage bucket:', storage.app.options.storageBucket);
-    
+    console.log(
+      `📤 Initiating upload for file: ${file.name} to folder: ${folder} for user: ${userId}`
+    );
     try {
-      const storageRef = ref(storage, path);
-      console.log('🚀 Uploading to Firebase Storage...');
-      console.log('📦 Storage ref details:', {
-        bucket: storageRef.bucket,
-        fullPath: storageRef.fullPath,
-        name: storageRef.name,
-        root: storageRef.root.toString()
+      // Upload directly to Firebase Storage
+      console.log('📤 Initiating direct upload to Firebase Storage');
+      const result = await uploadFileToStorage({
+        file,
+        userId,
+        folder,
+        onProgress: (pct: number) => console.log(`📈 Upload progress: ${pct.toFixed(1)}%`),
       });
-      
-      // Add metadata for proper content type handling
-      const metadata = {
-        contentType: file.type || 'application/octet-stream',
-        cacheControl: 'public, max-age=31536000',
-        customMetadata: {
-          uploadedBy: userId,
-          originalName: file.name,
-          uploadTimestamp: timestamp.toString(),
-          fileSize: file.size.toString()
-        }
-      };
-      
-      console.log('📋 Upload metadata:', metadata);
-      
-      const snapshot = await uploadBytes(storageRef, file, metadata);
-      console.log('✅ Upload successful, getting download URL...');
-      console.log('📊 Upload snapshot:', {
-        bytesTransferred: snapshot.metadata.size,
-        contentType: snapshot.metadata.contentType,
-        fullPath: snapshot.metadata.fullPath
-      });
-      
-      const url = await getDownloadURL(snapshot.ref);
-      console.log('🔗 Download URL obtained:', url);
 
-      return { url, path };
-    } catch (error: any) {
-      console.error('❌ Upload failed with error:', error);
-      console.error('Error details:', {
-        code: error.code,
-        message: error.message,
-        customData: error.customData,
-        serverResponse: error.serverResponse,
-        name: error.name,
-        stack: error.stack?.split('\n').slice(0, 5).join('\n')
-      });
+      console.log('✅ Upload successful.');
+      console.log('📄 Result URL:', result.url);
+      console.log('📄 Result Path:', result.path);
       
-      // Provide more specific error messages
-      if (error.code === 'storage/unauthorized') {
-        throw new Error('Upload failed: You are not authorized to upload files. Please sign in again.');
-      } else if (error.code === 'storage/quota-exceeded') {
-        throw new Error('Upload failed: Storage quota exceeded. Please free up space or upgrade your plan.');
-      } else if (error.code === 'storage/unknown' && error.serverResponse === '') {
-        throw new Error('Upload failed: This is likely a CORS or authentication issue. Please make sure you are signed in and try again.');
-      } else if (error.message?.includes('CORS')) {
-        throw new Error('Upload failed: CORS configuration issue. Please try again in a few minutes.');
-      } else if (error.message?.includes('400')) {
-        throw new Error('Upload failed: Bad request. This might be a file format issue or temporary server problem.');
-      } else {
-        throw new Error(`Upload failed: ${error.message || 'Unknown error occurred'}`);
-      }
+      return {
+        url: result.url,
+        path: result.path,
+      };
+    } catch (error) {
+      console.error('🔥 Error during file upload:', error);
+      throw error; // Re-throw the error after logging
     }
   }
 
@@ -210,6 +127,11 @@ export class MediaService {
     file: File,
     metadata: Partial<MediaDocument>
   ): Promise<MediaDocument> {
+    const authUser = await waitForAuth();
+    if (!authUser) {
+      throw new Error('User is not authenticated');
+    }
+
     // Upload file to storage
     const { url, path } = await this.uploadFile(userId, file);
 
@@ -292,6 +214,44 @@ export class MediaService {
   // Update media platforms
   static async updatePlatforms(mediaId: string, platforms: string[]): Promise<void> {
     return this.updateMedia(mediaId, { platforms });
+  }
+
+  // Get download URL
+  static async getDownloadURL(path: string): Promise<string> {
+    console.log(`🔗 Attempting to get download URL for path: ${path}`);
+    if (!storage) {
+      throw new Error('Cloud Storage is not initialized');
+    }
+    try {
+      const storageRef = ref(storage, path);
+      const url = await getDownloadURL(storageRef);
+      console.log(`✅ Successfully retrieved download URL: ${url}`);
+      return url;
+    } catch (error) {
+      console.error(`🔥 Error getting download URL for path ${path}:`, error);
+      throw error;
+    }
+  }
+
+  // Get signed URL
+  static async getSignedUrl(path: string): Promise<string> {
+    console.log(`✍️ Attempting to get signed URL for path: ${path}`);
+    if (!storage) {
+      throw new Error('Cloud Storage is not initialized');
+    }
+    // Note: This requires the gcs-signer role on the service account
+    // or a custom implementation with a backend endpoint.
+    // For simplicity, we'll use getDownloadURL here, but in a production
+    // environment, you would want to use a more secure method.
+    try {
+        const storageRef = ref(storage, path);
+        const url = await getDownloadURL(storageRef);
+        console.log(`✅ Successfully retrieved signed URL (via getDownloadURL): ${url}`);
+        return url;
+    } catch (error) {
+        console.error(`🔥 Error getting signed URL for path ${path}:`, error);
+        throw error;
+    }
   }
 
   // Search media by tags

@@ -68,7 +68,7 @@ export default function MarketingToolDashboard() {
     const checkApiHealth = async () => {
       try {
         // Use the correct health endpoint that we know works
-        const response = await fetch('https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com/api/v1/health');
+        const response = await fetch('https://firebasestorage.googleapis.com/api/v1/health');
         if (response.ok) {
           const data = await response.json();
           if (data.status === 'ok') {
@@ -406,7 +406,7 @@ export default function MarketingToolDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <MediaUpload />
+                    <MediaUpload key={activeTab} />
                     <HighlightGenerator />
                   </div>
                 </CardContent>

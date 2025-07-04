@@ -10,6 +10,7 @@ import {
   getAuth,
   UserCredential
 } from 'firebase/auth';
+import { waitForAuth } from '@/utils/waitForAuth';
 
 export class UserService {
   private static collection = COLLECTIONS.USERS;
@@ -106,17 +107,11 @@ export class UserService {
   }
 
   // Sign in with email and password
-  static async signIn(email: string, password: string): Promise<{ user: UserDocument; authUser: any }> {
+  static async signIn(email: string, password: string): Promise<{ authUser: any }> {
     const firebaseAuth = this.getAuthInstance();
     const authResult = await signInWithEmailAndPassword(firebaseAuth, email, password);
     const authUser = authResult.user;
-
-    const user = await this.getUser(authUser.uid);
-    if (!user) {
-      throw new Error('User profile not found');
-    }
-
-    return { user, authUser };
+    return { authUser };
   }
 
   // Sign in with Google OAuth
@@ -191,11 +186,10 @@ export class UserService {
 
   // Get current user
   static async getCurrentUser(): Promise<UserDocument | null> {
-    const firebaseAuth = this.getAuthInstance();
-    const currentAuthUser = firebaseAuth.currentUser;
-    if (!currentAuthUser) return null;
+    const authUser = await waitForAuth();
+    if (!authUser) return null;
 
-    return this.getUser(currentAuthUser.uid);
+    return this.getUser(authUser.uid);
   }
 
   // Update subscription tier

@@ -13,7 +13,7 @@ export async function GET(
 ) {
   // In certain build modes (e.g. static export) `params` is a Promise and must be awaited.
   const { id } = await (params as any);
-  const backendBase = 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com';
+  const backendBase = process.env.NEXT_PUBLIC_API_URL || 'https://crow-eye-api-dot-crows-eye-website.uc.r.appspot.com';
 
   console.log(`[media-proxy] Request for media ID: ${id}`);
 

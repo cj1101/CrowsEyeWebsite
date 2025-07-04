@@ -198,7 +198,7 @@ def print_production_instructions():
     print("="*70)
     print("For the production environment, use the promotional code system:")
     print()
-    print("1. 🔗 Go to: https://crows-eye-website.uc.r.appspot.com/pricing")
+    print("1. 🔗 Go to: https://firebasestorage.googleapis.com/pricing")
     print("2. 🎯 Click 'Start 7-Day Free Trial' on Pro plan")
     print("3. 🎫 Enter code: TESTER_CROW_2024_LIFETIME_$7d91f3a8")
     print("4. ✅ Complete signup with charlie@suarezhouse.net")
