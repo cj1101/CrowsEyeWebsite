@@ -1,0 +1,112 @@
+runtime: python39
+
+# Deploy to the specific service that the subdomain points to
+service: crow-eye-api
+
+# Minimal resource allocation to cut costs (idle cost $0)
+instance_class: F1
+automatic_scaling:
+  min_instances: 0  # Set to 0 to ensure no billing when idle
+  max_instances: 10
+  min_idle_instances: 0
+  max_idle_instances: 1
+  min_pending_latency: 30ms
+  max_pending_latency: 3s
+  target_cpu_utilization: 0.6
+  target_throughput_utilization: 0.6
+
+# Environment variables with security considerations
+# CRITICAL: Set JWT_SECRET_KEY via gcloud secrets manager in production
+env_variables:
+  # API Configuration
+  API_V1_STR: "/api/v1"
+  PROJECT_NAME: "Crow's Eye API - PostgreSQL"
+  
+  # PostgreSQL Database Configuration (Cloud SQL)
+  DATABASE_URL: "postgresql+asyncpg://postgres:crowseye2024@/crowseye_db?host=/cloudsql/crows-eye-website:us-central1:crowseye-postgres"
+  
+  # JWT Configuration
+  JWT_SECRET_KEY: "pfxyGkNmRtHqLvWdZbJcEuPnSgKjDhGfTrYwMxBvNmQpLkJhGfDsEtRyUiOpAsWxCvBnMjKhGfDsEr"
+  ALGORITHM: "HS256"
+  ACCESS_TOKEN_EXPIRE_MINUTES: "10080"  # 7 days
+  
+  # Google Cloud Configuration
+  GOOGLE_CLOUD_PROJECT: "crows-eye-website"
+  GOOGLE_CLOUD_STORAGE_BUCKET: "crows-eye-storage"
+  
+  # API Keys (set these in Google Cloud Console)
+  GOOGLE_API_KEY: "your-google-api-key"
+  GEMINI_API_KEY: "your-gemini-api-key"
+  OPENAI_API_KEY: "your-openai-api-key"
+  
+  # Google Photos OAuth2 Configuration
+  GOOGLE_PHOTOS_CLIENT_ID: "your-google-photos-client-id"
+  GOOGLE_PHOTOS_CLIENT_SECRET: "your-google-photos-client-secret"
+  GOOGLE_PHOTOS_REDIRECT_URI: "https://firebasestorage.googleapis.com/auth/google-photos/callback"
+  
+  # Database initialization flag
+  INITIALIZE_DB: "false"
+  
+  # Security settings
+  RATE_LIMIT_ENABLED: "true"
+  SECURITY_HEADERS_ENABLED: "true"
+  CORS_ORIGINS: "https://firebasestorage.googleapis.com,https://crows-eye-website.uc.r.appspot.com"
+  
+  # Logging configuration
+  LOG_LEVEL: "INFO"
+  STRUCTURED_LOGGING: "true"
+
+# Health check configuration
+readiness_check:
+  path: "/health"
+  check_interval_sec: 5
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+  app_start_timeout_sec: 300
+
+liveness_check:
+  path: "/health"
+  check_interval_sec: 30
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+  initial_delay_sec: 300
+
+# Network configuration
+network:
+  forwarded_ports:
+    - 8080
+
+# Use the correct FastAPI main application explicitly
+entrypoint: gunicorn -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:$PORT --workers 1 --timeout 0
+
+# Error handling
+error_handlers:
+  - file: error_pages/default_error.html
+  - error_code: over_quota
+    file: error_pages/over_quota.html
+
+# Files are excluded via .gcloudignore for Python 3.9 runtime
+
+# Resource allocation
+resources:
+  cpu: 1
+  memory_gb: 1
+  disk_size_gb: 10
+
+# Cloud SQL instance connection
+beta_settings:
+  cloud_sql_instances: crows-eye-website:us-central1:crowseye-postgres
+
+handlers:
+- url: /.*
+  script: auto
+  secure: always 
+
+# To apply these changes run:
+#   gcloud app deploy api_backend/app.yaml --project=crows-eye-website
+# Then stop existing running versions to avoid lingering instances:
+#   gcloud app versions list --service=crow-eye-api
+#   gcloud app versions stop <VERSION_ID> --service=crow-eye-api
+# These commands guarantee $0 idle cost on App Engine. 

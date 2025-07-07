@@ -1,0 +1,22 @@
+[
+  {
+    "origin": [
+      "http://localhost:3000",
+      "https://crows-eye-website.web.app",
+      "https://crows-eye-website.firebaseapp.com"
+    ],
+    "method": [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE",
+      "OPTIONS"
+    ],
+    "responseHeader": [
+      "Content-Type",
+      "Authorization",
+      "X-Goog-Resumable"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

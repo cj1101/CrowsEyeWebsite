@@ -1,0 +1,93 @@
+# Node.js
+node_modules/
+npm-debug.log
+.next/
+out/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Development files
+.env
+.env.local
+.env.*.local
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Firebase
+.firebase/
+.firebaserc
+firebase.json
+
+# Git
+.git/
+.gitignore
+README.md
+
+# Deployment files not needed in container
+deploy.py
+deploy-web.sh
+cloudbuild.yaml
+
+# Test files
+test_*.py
+*_test.py
+tests/
+
+# Documentation
+*.md
+docs/
+DEPLOYMENT_GUIDE.md
+TROUBLESHOOTING_GUIDE.md
+
+# Large folders we don't need
+assets/
+public/
+src/
+temp_*/
+simple_deploy/
+deploy_api/
+minimal_working/
+website_matching_api/
+desktop_app/
+scripts/
+functions/
+
+# Additional API directories we don't need
+crow_eye_api/
+# crow_eye_api_fresh/ - KEEP THIS, it's needed for the API 
