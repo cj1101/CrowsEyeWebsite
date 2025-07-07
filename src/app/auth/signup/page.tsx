@@ -158,18 +158,27 @@ function SignUpForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[TEMP LOG] SignUpForm.handleSubmit: Form submitted.');
     
     if (!validateForm()) {
+      console.log('[TEMP LOG] SignUpForm.handleSubmit: Form validation failed.', errors);
       return;
     }
+    console.log('[TEMP LOG] SignUpForm.handleSubmit: Form validation successful.');
 
     setIsLoading(true);
     setErrors({});
     
     try {
+      console.log('[TEMP LOG] SignUpForm.handleSubmit: Calling signup with formData:', {
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+      });
       const result = await signup(formData.email, formData.password, formData.firstName, formData.lastName);
       
       if (result.success) {
+        console.log('[TEMP LOG] SignUpForm.handleSubmit: Signup returned success.');
         // Check if lifetime promo was applied
         const promoTier = localStorage.getItem('crowsEyePromoTier');
         
@@ -193,6 +202,7 @@ function SignUpForm() {
           }
         }, 3000);
       } else {
+        console.error('[TEMP LOG] SignUpForm.handleSubmit: Signup returned error:', result.error);
         // Handle specific error cases
         const errorMessage = result.error || 'Failed to create account. Please try again.';
         
@@ -209,10 +219,11 @@ function SignUpForm() {
         }
       }
     } catch (error) {
-      console.error('Error creating account:', error);
+      console.error('[TEMP LOG] SignUpForm.handleSubmit: An unexpected error occurred during signup.', error);
       setErrors({ general: 'An unexpected error occurred. Please try again or contact support if the problem persists.' });
     } finally {
       setIsLoading(false);
+      console.log('[TEMP LOG] SignUpForm.handleSubmit: Finished.');
     }
   };
 

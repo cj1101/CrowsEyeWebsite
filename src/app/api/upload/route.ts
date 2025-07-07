@@ -5,13 +5,13 @@ import { getAuth } from 'firebase-admin/auth';
 
 // Initialize Firebase Admin SDK
 if (!getApps().length) {
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  if (!serviceAccount) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY environment variable is required');
+  const serviceAccountJson = process.env.FIREBASE_PRIVATE_KEY;
+  if (!serviceAccountJson) {
+    throw new Error('The FIREBASE_PRIVATE_KEY environment variable is not set. It should contain the full JSON of your service account key.');
   }
 
   initializeApp({
-    credential: cert(JSON.parse(serviceAccount)),
+    credential: cert(JSON.parse(serviceAccountJson)),
     storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   });
 }

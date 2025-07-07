@@ -12,10 +12,12 @@ import {
   ExclamationTriangleIcon,
   GiftIcon,
   StarIcon,
-  PlusIcon
+  PlusIcon,
+  RocketLaunchIcon
 } from '@heroicons/react/24/outline';
 import { useSubscriptionManagement } from '@/hooks/useSubscriptionManagement';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function SubscriptionPage() {
   const {
@@ -28,6 +30,7 @@ export default function SubscriptionPage() {
   } = useSubscriptionManagement();
 
   const { userProfile, refreshUserProfile } = useAuth();
+  const router = useRouter();
   
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [promoCode, setPromoCode] = useState('');
@@ -45,6 +48,7 @@ export default function SubscriptionPage() {
   };
 
   const formatDate = (timestamp: number) => {
+    if (timestamp === 0) return 'N/A';
     return new Date(timestamp * 1000).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -62,6 +66,8 @@ export default function SubscriptionPage() {
         return 'text-yellow-600 bg-yellow-100';
       case 'canceled':
         return 'text-red-600 bg-red-100';
+      case 'free':
+        return 'text-indigo-600 bg-indigo-100';
       default:
         return 'text-gray-600 bg-gray-100';
     }
@@ -189,7 +195,12 @@ export default function SubscriptionPage() {
     }
   };
 
-  const handlePlanUpgrade = (planType: 'creator' | 'growth' | 'pro') => {
+  const handlePlanUpgrade = (planType: 'creator' | 'growth' | 'pro' | 'payg') => {
+    if (planType === 'payg') {
+      router.push('/payg-setup');
+      return;
+    }
+
     // Store the plan type for post-purchase handling
     localStorage.setItem('pendingUpgrade', planType);
     localStorage.setItem('upgradeTimestamp', Date.now().toString());
@@ -395,8 +406,32 @@ export default function SubscriptionPage() {
           </div>
         )}
 
-        {!subscription ? (
+        {(!subscription || subscription.status === 'free') ? (
           <div className="space-y-6">
+            {/* PAYG Enrollment for Free Users */}
+            {subscription?.status === 'free' && (
+              <div className="bg-white shadow rounded-lg p-6 border-l-4 border-indigo-500">
+                <div className="flex items-center">
+                  <RocketLaunchIcon className="h-10 w-10 text-indigo-500 mr-4" />
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">Ready to Launch?</h3>
+                    <p className="mt-1 text-gray-600">
+                      Enroll in our Pay-as-you-Go plan to unlock more features. Pay only for what you use!
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 text-right">
+                  <button
+                    onClick={() => handlePlanUpgrade('payg')}
+                    className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
+                  >
+                    Enroll in Pay-as-you-Go
+                    <ArrowTopRightOnSquareIcon className="h-4 w-4 ml-2" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* No subscription - Show upgrade options */}
             <div className="bg-white shadow rounded-lg p-6">
               <div className="text-center mb-6">

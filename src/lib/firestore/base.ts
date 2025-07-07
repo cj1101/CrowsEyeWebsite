@@ -111,12 +111,21 @@ export class FirestoreService {
     customId?: string
   ): Promise<T> {
     this.checkDb();
+    console.log(`[TEMP LOG] FirestoreService.create: Attempting to create document in collection '${collectionName}' with customId '${customId}'.`);
     
     const collectionRef = collection(db, collectionName);
     const docRef = customId ? doc(collectionRef, customId) : doc(collectionRef);
     const prepared = prepareDocument(data, true);
     
-    await setDoc(docRef, prepared);
+    console.log(`[TEMP LOG] FirestoreService.create: Prepared data for Firestore:`, prepared);
+
+    try {
+      await setDoc(docRef, prepared);
+      console.log(`[TEMP LOG] FirestoreService.create: Successfully created document with ID: ${docRef.id}`);
+    } catch (error) {
+      console.error(`[TEMP LOG] FirestoreService.create: FAILED to create document in '${collectionName}'. Error:`, error);
+      throw error; // Re-throw the error after logging
+    }
     
     return { ...data, id: docRef.id };
   }

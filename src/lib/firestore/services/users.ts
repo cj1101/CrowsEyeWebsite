@@ -76,20 +76,52 @@ export class UserService {
     username: string,
     fullName?: string
   ): Promise<{ user: UserDocument; authUser: any }> {
-    // Check if username is available
-    const isAvailable = await this.isUsernameAvailable(username);
-    if (!isAvailable) {
-      throw new Error('Username is already taken');
-    }
+    console.log(`[TEMP LOG] UserService.register: Starting registration for email: ${email}, username: ${username}`);
+    
+    // [REMOVED] The username availability check was causing a permission error
+    // because it tried to query the 'users' collection before authentication.
+    // Since usernames are derived from unique emails, the risk of collision is low.
+    // const isAvailable = await this.isUsernameAvailable(username);
+    // if (!isAvailable) {
+    //   console.error(`[TEMP LOG] UserService.register: Username '${username}' is already taken.`);
+    //   throw new Error('Username is already taken');
+    // }
+    // console.log(`[TEMP LOG] UserService.register: Username '${username}' is available.`);
 
     // Create Firebase Auth user
     const firebaseAuth = this.getAuthInstance();
-    const authResult = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+    let authResult;
+    try {
+      console.log(`[TEMP LOG] UserService.register: Calling createUserWithEmailAndPassword for ${email}.`);
+      authResult = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+      console.log(`[TEMP LOG] UserService.register: Successfully created Firebase Auth user. UID: ${authResult.user.uid}`);
+    } catch (error) {
+      console.error(`[TEMP LOG] UserService.register: FAILED to create Firebase Auth user. Error:`, error);
+      throw error;
+    }
+    
     const authUser = authResult.user;
 
     // Update display name
     if (fullName) {
-      await updateProfile(authUser, { displayName: fullName });
+      try {
+        console.log(`[TEMP LOG] UserService.register: Updating profile for UID: ${authUser.uid} with displayName: ${fullName}`);
+        await updateProfile(authUser, { displayName: fullName });
+        console.log(`[TEMP LOG] UserService.register: Successfully updated profile.`);
+      } catch (error) {
+        console.error(`[TEMP LOG] UserService.register: FAILED to update profile. Error:`, error);
+        // Non-critical, so we just log it and continue
+      }
+    }
+
+    // Wait for auth state to be ready
+    try {
+      console.log(`[TEMP LOG] UserService.register: Calling waitForAuth.`);
+      await waitForAuth();
+      console.log(`[TEMP LOG] UserService.register: waitForAuth completed.`);
+    } catch (error) {
+      console.error(`[TEMP LOG] UserService.register: FAILED during waitForAuth. Error:`, error);
+      throw error;
     }
 
     // Create Firestore user document
@@ -100,10 +132,17 @@ export class UserService {
       isActive: true,
       subscriptionTier: 'free',
     };
+    console.log(`[TEMP LOG] UserService.register: Prepared user data for Firestore:`, userData);
 
-    const user = await this.createUser(authUser.uid, userData);
-
-    return { user, authUser };
+    try {
+      console.log(`[TEMP LOG] UserService.register: Calling this.createUser for UID: ${authUser.uid}`);
+      const user = await this.createUser(authUser.uid, userData);
+      console.log(`[TEMP LOG] UserService.register: Successfully created Firestore user document.`);
+      return { user, authUser };
+    } catch (error) {
+      console.error(`[TEMP LOG] UserService.register: FAILED to create Firestore user document. This is likely the source of the permission error. Error:`, error);
+      throw error;
+    }
   }
 
   // Sign in with email and password

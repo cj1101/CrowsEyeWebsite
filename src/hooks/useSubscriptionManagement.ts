@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { auth } from '@/lib/firebase'
 
 export interface SubscriptionData {
   id: string
-  status: 'active' | 'canceled' | 'past_due' | 'unpaid' | 'incomplete' | 'trialing'
+  status: 'active' | 'canceled' | 'past_due' | 'unpaid' | 'incomplete' | 'trialing' | 'free'
   current_period_end: number
   cancel_at_period_end: boolean
   plan: {
@@ -34,7 +35,7 @@ export interface UseSubscriptionManagementReturn {
 }
 
 export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => {
-  const { user } = useAuth()
+  const { user, userProfile } = useAuth()
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -47,17 +48,42 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
       return
     }
 
+    // Handle free user case locally
+    if (userProfile && (userProfile.plan === 'free' || userProfile.subscription_tier === 'free')) {
+      const freeSubscription: SubscriptionData = {
+        id: 'free-plan',
+        status: 'free',
+        current_period_end: 0,
+        cancel_at_period_end: false,
+        plan: {
+          id: 'free',
+          nickname: 'Free',
+          amount: 0,
+          currency: 'usd',
+          interval: 'month',
+        },
+        customer: {
+          id: user.uid,
+          email: user.email || '',
+        },
+      }
+      setSubscription(freeSubscription)
+      setIsLoading(false)
+      return
+    }
+
     try {
       setIsLoading(true)
-      const token = localStorage.getItem('auth_token')
+      if (!auth.currentUser) {
+        throw new Error('User not authenticated')
+      }
+      const token = await auth.currentUser.getIdToken()
       
       if (!token) {
         throw new Error('No authentication token found')
       }
 
-      // Use the correct API base URL and endpoint
-      const apiBase = 'https://firebasestorage.googleapis.com';
-      const response = await fetch(`${apiBase}/billing/subscription-status`, {
+      const response = await fetch('/api/billing/subscription-status', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -72,26 +98,8 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
 
       const data = await response.json()
       
-      // Transform the backend response to match frontend expectations
       if (data.success && data.data) {
-        const subscriptionData: SubscriptionData = {
-          id: data.data.stripeCustomerId || 'local',
-          status: data.data.subscriptionStatus === 'active' ? 'active' : 'canceled',
-          current_period_end: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60), // Default 30 days
-          cancel_at_period_end: false,
-          plan: {
-            id: data.data.plan,
-            nickname: data.data.plan.charAt(0).toUpperCase() + data.data.plan.slice(1),
-            amount: data.data.plan === 'payg' ? 0 : 1500, // $15 default
-            currency: 'usd',
-            interval: 'month'
-          },
-          customer: {
-            id: data.data.stripeCustomerId || 'local',
-            email: data.data.email
-          }
-        }
-        setSubscription(subscriptionData)
+        setSubscription(data.data)
       } else {
         setSubscription(null)
       }
@@ -103,24 +111,27 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
     } finally {
       setIsLoading(false)
     }
-  }, [user])
+  }, [user, userProfile])
 
   // Open Stripe Customer Portal
   const openCustomerPortal = async () => {
     try {
-      const token = localStorage.getItem('auth_token')
+      if (!auth.currentUser) {
+        throw new Error('User not authenticated')
+      }
+      const token = await auth.currentUser.getIdToken()
       
       if (!token) {
         throw new Error('No authentication token found')
       }
 
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://firebasestorage.googleapis.com';
-      const response = await fetch(`${apiBase}/billing/create-portal-session`, {
+      const response = await fetch('/api/billing/create-portal-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
+        body: JSON.stringify({ return_url: window.location.href })
       })
 
       if (!response.ok) {
@@ -131,8 +142,6 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
       window.open(url, '_blank')
     } catch (err) {
       console.error('Error opening customer portal:', err)
-      // Fallback to a generic Stripe billing portal URL for demo
-      // Billing portal disabled - contact support
       alert('Billing portal is currently disabled. Please contact support for assistance.')
     }
   }
@@ -142,7 +151,10 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
     if (!subscription) return
 
     try {
-      const token = localStorage.getItem('auth_token')
+      if (!auth.currentUser) {
+        throw new Error('User not authenticated')
+      }
+      const token = await auth.currentUser.getIdToken()
       
       if (!token) {
         throw new Error('No authentication token found')
@@ -173,7 +185,10 @@ export const useSubscriptionManagement = (): UseSubscriptionManagementReturn => 
     if (!subscription) return
 
     try {
-      const token = localStorage.getItem('auth_token')
+      if (!auth.currentUser) {
+        throw new Error('User not authenticated')
+      }
+      const token = await auth.currentUser.getIdToken()
       
       if (!token) {
         throw new Error('No authentication token found')

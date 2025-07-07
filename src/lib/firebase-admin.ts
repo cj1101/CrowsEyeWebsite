@@ -17,22 +17,18 @@ function getFirebaseAdmin(): App {
       return adminApp;
     }
 
-    // Initialize with service account credentials from environment
-    const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    
-    if (serviceAccount) {
-      console.log('🔑 Initializing Firebase Admin with service account');
-      const credentials = JSON.parse(serviceAccount);
-      
-      adminApp = initializeApp({
-        credential: cert(credentials),
-        projectId: credentials.project_id
-      });
-    } else {
-      // Use default credentials (for Google Cloud environments)
-      console.log('🔑 Initializing Firebase Admin with default credentials');
-      adminApp = initializeApp();
+    const serviceAccountJson = process.env.FIREBASE_PRIVATE_KEY;
+    if (!serviceAccountJson) {
+      throw new Error('The FIREBASE_PRIVATE_KEY environment variable is not set. It should contain the full JSON of your service account key.');
     }
+
+    const serviceAccount = JSON.parse(serviceAccountJson);
+
+    console.log('🔑 Initializing Firebase Admin with service account from FIREBASE_PRIVATE_KEY (firebase-admin.ts)');
+    adminApp = initializeApp({
+      credential: cert(serviceAccount),
+      projectId: serviceAccount.project_id,
+    });
 
     console.log('✅ Firebase Admin SDK initialized successfully');
     return adminApp;

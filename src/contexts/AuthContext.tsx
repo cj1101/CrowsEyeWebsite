@@ -245,6 +245,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Signup function
   const signup = useCallback(async (email: string, password: string, firstName: string, lastName: string) => {
+    console.log(`[TEMP LOG] AuthContext.signup: Called with email: ${email}, firstName: ${firstName}, lastName: ${lastName}`);
     try {
       setLoading(true);
       setError(null);
@@ -252,6 +253,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const username = email.split('@')[0]; // Generate username from email
       const fullName = `${firstName} ${lastName}`.trim();
       
+      console.log(`[TEMP LOG] AuthContext.signup: Calling UserService.register with username: ${username}, fullName: ${fullName}`);
       const { user: firestoreUser, authUser } = await UserService.register(email, password, username, fullName);
       const transformedProfile = transformUserToProfile(firestoreUser);
       
@@ -259,14 +261,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUserProfile(transformedProfile);
       setIsAuthenticated(true);
       
-      console.log('✅ Signup successful');
+      console.log('✅ [TEMP LOG] AuthContext.signup: Signup successful');
       return { success: true };
     } catch (error: any) {
-      console.error('❌ Signup failed:', error);
+      console.error('❌ [TEMP LOG] AuthContext.signup: Signup failed. Error:', error);
       setError(error.message || 'Signup failed');
       return { success: false, error: error.message || 'Signup failed' };
     } finally {
       setLoading(false);
+      console.log(`[TEMP LOG] AuthContext.signup: Finished for email: ${email}`);
     }
   }, []);
 

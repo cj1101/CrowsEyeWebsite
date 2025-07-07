@@ -1,572 +1,196 @@
-# Crow's Eye Web Application - API Requirements
+# Crow's Eye Web Application - Direct API Integration
 
 ## Overview
-This document outlines the API endpoints required to support the full functionality of the Crow's Eye Web Application, including post management, scheduling, and all features currently available in the desktop application.
-
-## Base Configuration
-- **Base URL**: `https://crow-eye-api-605899951231.us-central1.run.app`
-- **Authentication**: JWT tokens or API keys
-- **Content-Type**: `application/json`
-- **Supported Platforms**: Instagram, Facebook, BlueSky, Snapchat, Pinterest, TikTok, YouTube
-
-## 1. Post Management Endpoints
-
-### 1.1 Create Post
-```
-POST /api/posts
-```
-
-**Request Body:**
-```json
-{
-  "mediaId": "string",
-  "caption": "string",
-  "platforms": ["instagram", "facebook", "bluesky"],
-  "customInstructions": "string (optional)",
-  "formatting": {
-    "verticalOptimization": "boolean",
-    "captionOverlay": "boolean",
-    "overlayPosition": "top|center|bottom",
-    "overlayFontSize": "small|medium|large",
-    "aspectRatio": "original|1:1|4:5|16:9|9:16"
-  },
-  "contextFiles": ["string array of file IDs"],
-  "scheduledTime": "ISO 8601 datetime (optional)",
-  "isRecurring": "boolean",
-  "recurringPattern": "daily|weekly|monthly",
-  "recurringEndDate": "ISO 8601 datetime (optional)"
-}
-```
-
-**Response:**
-```json
-{
-  "id": "string",
-  "status": "draft|scheduled|published|failed",
-  "createdAt": "ISO 8601 datetime",
-  "updatedAt": "ISO 8601 datetime",
-  "scheduledTime": "ISO 8601 datetime (if scheduled)",
-  "mediaUrl": "string",
-  "mediaType": "image|video|audio"
-}
-```
-
-### 1.2 Get Posts
-```
-GET /api/posts?status=draft&platform=instagram&limit=20&offset=0
-```
-
-**Response:**
-```json
-{
-  "posts": [
-    {
-      "id": "string",
-      "mediaId": "string",
-      "caption": "string",
-      "platforms": ["string array"],
-      "status": "draft|scheduled|published|failed",
-      "createdAt": "ISO 8601 datetime",
-      "updatedAt": "ISO 8601 datetime",
-      "scheduledTime": "ISO 8601 datetime (optional)",
-      "publishedTime": "ISO 8601 datetime (optional)",
-      "mediaType": "image|video|audio",
-      "mediaUrl": "string",
-      "isRecurring": "boolean",
-      "recurringPattern": "daily|weekly|monthly (optional)",
-      "customInstructions": "string (optional)",
-      "formatting": "object (optional)",
-      "contextFiles": ["string array"],
-      "analytics": {
-        "views": "number",
-        "likes": "number",
-        "comments": "number",
-        "shares": "number",
-        "engagementRate": "number"
-      }
-    }
-  ],
-  "total": "number",
-  "hasMore": "boolean"
-}
-```
-
-### 1.3 Update Post
-```
-PUT /api/posts/{postId}
-```
-
-**Request Body:** Same as Create Post
-
-### 1.4 Delete Post
-```
-DELETE /api/posts/{postId}
-```
-
-### 1.5 Duplicate Post
-```
-POST /api/posts/{postId}/duplicate
-```
-
-### 1.6 Publish Post Now
-```
-POST /api/posts/{postId}/publish
-```
-
-## 2. Scheduling Endpoints
-
-### 2.1 Create Schedule
-```
-POST /api/schedules
-```
-
-**Request Body:**
-```json
-{
-  "name": "string",
-  "description": "string",
-  "startDate": "ISO 8601 date",
-  "endDate": "ISO 8601 date",
-  "postsPerDay": "number",
-  "platforms": ["string array"],
-  "postingTimes": ["HH:MM array"],
-  "isActive": "boolean",
-  "contentSources": {
-    "mediaLibrary": "boolean",
-    "aiGenerated": "boolean",
-    "templates": ["string array of template IDs"]
-  },
-  "rules": {
-    "skipWeekends": "boolean",
-    "skipHolidays": "boolean",
-    "minimumInterval": "number (minutes)"
-  }
-}
-```
-
-### 2.2 Get Schedules
-```
-GET /api/schedules?active=true
-```
-
-### 2.3 Update Schedule
-```
-PUT /api/schedules/{scheduleId}
-```
-
-### 2.4 Delete Schedule
-```
-DELETE /api/schedules/{scheduleId}
-```
-
-### 2.5 Toggle Schedule Status
-```
-POST /api/schedules/{scheduleId}/toggle
-```
-
-### 2.6 Get Scheduled Posts Calendar
-```
-GET /api/schedules/calendar?start=2024-01-01&end=2024-01-31
-```
-
-**Response:**
-```json
-{
-  "events": [
-    {
-      "date": "ISO 8601 date",
-      "posts": [
-        {
-          "id": "string",
-          "time": "HH:MM",
-          "caption": "string",
-          "platforms": ["string array"],
-          "status": "scheduled|published|failed"
-        }
-      ]
-    }
-  ]
-}
-```
-
-## 3. Media Processing Endpoints
-
-### 3.1 Process Media with Instructions
-```
-POST /api/media/{mediaId}/process
-```
-
-**Request Body:**
-```json
-{
-  "instructions": "string (natural language)",
-  "outputFormat": "image|video",
-  "platforms": ["string array"],
-  "formatting": {
-    "verticalOptimization": "boolean",
-    "captionOverlay": "boolean",
-    "overlayText": "string",
-    "overlayPosition": "top|center|bottom",
-    "overlayFontSize": "small|medium|large",
-    "aspectRatio": "original|1:1|4:5|16:9|9:16"
-  }
-}
-```
-
-### 3.2 Generate Platform-Optimized Versions
-```
-POST /api/media/{mediaId}/optimize
-```
-
-**Request Body:**
-```json
-{
-  "platforms": ["string array"],
-  "variations": {
-    "aspectRatios": ["1:1", "4:5", "16:9"],
-    "sizes": ["thumbnail", "standard", "high-res"]
-  }
-}
-```
-
-## 4. AI Content Generation Endpoints
-
-### 4.1 Generate Caption
-```
-POST /api/ai/caption
-```
-
-**Request Body:**
-```json
-{
-  "mediaId": "string (optional)",
-  "platforms": ["string array"],
-  "tone": "professional|casual|friendly|formal|humorous|inspiring",
-  "customInstructions": "string",
-  "contextFiles": ["string array"],
-  "includeHashtags": "boolean",
-  "maxLength": "number (platform-specific)"
-}
-```
-
-### 4.2 Generate Hashtags
-```
-POST /api/ai/hashtags
-```
-
-**Request Body:**
-```json
-{
-  "content": "string",
-  "platforms": ["string array"],
-  "niche": "string",
-  "count": "number"
-}
-```
-
-### 4.3 Content Suggestions
-```
-POST /api/ai/suggestions
-```
-
-**Request Body:**
-```json
-{
-  "mediaId": "string",
-  "platforms": ["string array"],
-  "contentType": "caption|story|description",
-  "variations": "number"
-}
-```
-
-## 5. Analytics Endpoints
-
-### 5.1 Get Post Analytics
-```
-GET /api/analytics/posts/{postId}
-```
-
-### 5.2 Get Platform Analytics
-```
-GET /api/analytics/platforms?start=2024-01-01&end=2024-01-31
-```
-
-**Response:**
-```json
-{
-  "platforms": [
-    {
-      "platform": "instagram",
-      "posts": "number",
-      "totalViews": "number",
-      "totalLikes": "number",
-      "totalComments": "number",
-      "totalShares": "number",
-      "engagementRate": "number",
-      "topPerformingPost": {
-        "id": "string",
-        "caption": "string",
-        "metrics": "object"
-      }
-    }
-  ],
-  "summary": {
-    "totalPosts": "number",
-    "totalEngagement": "number",
-    "averageEngagementRate": "number",
-    "bestPerformingPlatform": "string"
-  }
-}
-```
-
-### 5.3 Get Engagement Trends
-```
-GET /api/analytics/trends?period=7d&platform=instagram
-```
-
-## 6. Context Files Management
-
-### 6.1 Upload Context File
-```
-POST /api/context-files
-```
-
-**Request Body:** Multipart form data with file
-
-### 6.2 Get Context Files
-```
-GET /api/context-files
-```
-
-### 6.3 Delete Context File
-```
-DELETE /api/context-files/{fileId}
-```
-
-## 7. Platform Integration Endpoints
-
-### 7.1 Connect Platform Account
-```
-POST /api/platforms/{platform}/connect
-```
-
-**Request Body:**
-```json
-{
-  "accessToken": "string",
-  "refreshToken": "string (optional)",
-  "accountId": "string",
-  "accountName": "string"
-}
-```
-
-### 7.2 Get Connected Platforms
-```
-GET /api/platforms/connected
-```
-
-### 7.3 Disconnect Platform
-```
-DELETE /api/platforms/{platform}/disconnect
-```
-
-### 7.4 Validate Platform Connection
-```
-GET /api/platforms/{platform}/validate
-```
-
-## 8. Template Management
-
-### 8.1 Create Template
-```
-POST /api/templates
-```
-
-**Request Body:**
-```json
-{
-  "name": "string",
-  "description": "string",
-  "category": "string",
-  "platforms": ["string array"],
-  "template": {
-    "captionTemplate": "string with variables",
-    "hashtagTemplate": "string",
-    "formatting": "object"
-  },
-  "variables": [
-    {
-      "name": "string",
-      "type": "text|number|date|select",
-      "required": "boolean",
-      "options": ["array for select type"]
-    }
-  ]
-}
-```
-
-### 8.2 Get Templates
-```
-GET /api/templates?category=social&platform=instagram
-```
-
-### 8.3 Apply Template
-```
-POST /api/templates/{templateId}/apply
-```
-
-**Request Body:**
-```json
-{
-  "variables": {
-    "variableName": "value"
-  },
-  "mediaId": "string"
-}
-```
-
-## 9. Bulk Operations
-
-### 9.1 Bulk Schedule Posts
-```
-POST /api/posts/bulk-schedule
-```
-
-**Request Body:**
-```json
-{
-  "posts": [
-    {
-      "mediaId": "string",
-      "caption": "string",
-      "platforms": ["string array"],
-      "scheduledTime": "ISO 8601 datetime"
-    }
-  ],
-  "scheduleSettings": {
-    "distributeEvenly": "boolean",
-    "timeRange": {
-      "start": "HH:MM",
-      "end": "HH:MM"
-    },
-    "skipWeekends": "boolean"
-  }
-}
-```
-
-### 9.2 Bulk Update Posts
-```
-PUT /api/posts/bulk-update
-```
-
-### 9.3 Bulk Delete Posts
-```
-DELETE /api/posts/bulk-delete
-```
-
-**Request Body:**
-```json
-{
-  "postIds": ["string array"]
-}
-```
-
-## 10. Webhook Endpoints (for real-time updates)
-
-### 10.1 Post Status Updates
-```
-POST /api/webhooks/post-status
-```
-
-### 10.2 Platform Notifications
-```
-POST /api/webhooks/platform-notifications
-```
-
-## Error Handling
-
-All endpoints should return appropriate HTTP status codes and error messages:
-
-```json
-{
-  "error": {
-    "code": "string",
-    "message": "string",
-    "details": "object (optional)"
-  }
-}
-```
-
-## Rate Limiting
-
-- Implement rate limiting per user/API key
-- Return rate limit headers:
-  - `X-RateLimit-Limit`
-  - `X-RateLimit-Remaining`
-  - `X-RateLimit-Reset`
-
-## Authentication
-
-Support both JWT tokens and API keys:
-
-```
-Authorization: Bearer <jwt_token>
-```
-or
-```
-X-API-Key: <api_key>
-```
-
-## Demo Mode
-
-When no valid authentication is provided, return mock data for demonstration purposes. Include a header to indicate demo mode:
-
-```
-X-Demo-Mode: true
-```
-
-## Platform-Specific Considerations
-
-### Instagram
-- Support for Posts, Stories, Reels
-- Image and video optimization
-- Hashtag recommendations
-- Story templates
-
-### Facebook
-- Page posting
-- Event creation
-- Group posting (if permissions allow)
-- Link previews
-
-### BlueSky
-- AT Protocol integration
-- Custom feeds
-- Thread creation
-- Decentralized identity
-
-### Snapchat
-- Snap creation
-- Story posting
-- Spotlight content
-- AR lens integration
-
-### Pinterest
-- Pin creation
-- Board management
-- Story Pins
-- Shopping integration
-
-### TikTok
-- Video posting
-- Trend analysis
-- Hashtag challenges
-- Music integration
-
-### YouTube
-- Video uploads
-- Shorts creation
-- Community posts
-- Premiere scheduling
-
-This API specification provides the foundation for implementing all desktop application features in the web platform, ensuring feature parity and seamless user experience across both platforms. 
+The Crow's Eye Web Application has been refactored to eliminate the need for a custom backend API. Instead, it now uses direct integrations with third-party services, providing better performance, reliability, and reduced technical debt.
+
+## Architecture Change
+**Previous Architecture:**
+- Frontend → Crow's Eye API Backend → Third-Party APIs
+
+**New Architecture:**
+- Frontend → Direct Third-Party APIs
+
+## Direct API Integrations
+
+### 1. Authentication & User Management
+- **Service**: Firebase Authentication
+- **Features**: User registration, login, password reset, profile management
+- **Configuration**: Uses Firebase Auth SDK
+
+### 2. Media Storage & Management
+- **Service**: Firebase Storage + Firestore
+- **Features**: File upload, storage, metadata management, galleries
+- **Configuration**: Direct Firebase SDK integration
+
+### 3. AI Content Generation
+- **Service**: Google Gemini AI
+- **Features**: Caption generation, hashtag suggestions, content optimization, compliance checking
+- **Configuration**: Direct Gemini API calls with `GEMINI_API_KEY`
+
+### 4. Social Platform Integrations
+- **Instagram/Facebook**: Facebook Graph API
+- **TikTok**: TikTok Business API
+- **LinkedIn, Twitter, Pinterest**: Direct platform APIs
+- **Configuration**: Platform-specific OAuth flows
+
+### 5. Google Services
+- **Google Photos**: Google Photos Library API
+- **Google My Business**: Google My Business API
+- **Configuration**: Google API credentials
+
+## Environment Variables Required
+
+```bash
+# Firebase Configuration
+NEXT_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
+NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcd1234
+
+# AI Content Generation
+GEMINI_API_KEY=your-gemini-api-key
+# OR
+NEXT_PUBLIC_GEMINI_API_KEY=your-gemini-api-key
+
+# Social Platform APIs
+FACEBOOK_APP_ID=your-facebook-app-id
+FACEBOOK_APP_SECRET=your-facebook-app-secret
+TIKTOK_CLIENT_KEY=your-tiktok-client-key
+TIKTOK_CLIENT_SECRET=your-tiktok-client-secret
+
+# Google APIs
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# OAuth Configuration
+NEXT_PUBLIC_OAUTH_REDIRECT_BASE_URL=https://your-domain.com
+```
+
+## Key Benefits of Direct Integration
+
+### 1. **Reduced Technical Debt**
+- Eliminates custom backend maintenance
+- Reduces infrastructure complexity
+- No API versioning issues
+
+### 2. **Better Performance**
+- Direct API calls reduce latency
+- No intermediate API layer
+- Optimized for each platform
+
+### 3. **Improved Reliability**
+- Leverages platform SLAs
+- Reduces single points of failure
+- Better error handling
+
+### 4. **Cost Optimization**
+- No backend hosting costs
+- Pay-per-use model for AI services
+- Reduced operational overhead
+
+### 5. **Enhanced Security**
+- Direct OAuth flows
+- Platform-native security
+- Reduced attack surface
+
+## Service Implementations
+
+### Firebase Auth Service (`src/services/firebase-auth.ts`)
+- User registration and login
+- Profile management
+- Subscription tier handling
+- Promo code application
+
+### Firebase Storage Service (`src/services/firebase-storage.ts`)
+- Media upload with progress tracking
+- Media library management
+- Gallery creation and management
+- File search and organization
+
+### Gemini AI Service (`src/services/gemini-ai.ts`)
+- Caption generation
+- Hashtag suggestions
+- Content optimization
+- Compliance checking
+- Platform-specific content adaptation
+
+### Social Platforms Service (`src/services/social-platforms.ts`)
+- OAuth connection flows
+- Post publishing to multiple platforms
+- Scheduling management
+- Platform status tracking
+
+### Google Services API (`src/services/google-services.ts`)
+- Google Photos integration
+- Album and media browsing
+- Media import functionality
+- Google My Business integration
+
+### Unified API Service (`src/services/unified-api.ts`)
+- Centralized interface for all services
+- Backward compatibility with existing frontend code
+- Consistent error handling
+- Type-safe API calls
+
+## Migration Notes
+
+### Removed Dependencies
+- Custom crow's eye API backend
+- Backend-specific authentication
+- API proxy endpoints
+- Database migrations
+
+### Maintained Compatibility
+- All existing frontend components work unchanged
+- Same interface patterns
+- Consistent data structures
+- Preserved user experience
+
+### New Capabilities
+- Real-time AI content generation
+- Direct platform integrations
+- Enhanced media management
+- Improved error handling
+
+## Development Setup
+
+1. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+2. **Configure Environment Variables**
+   ```bash
+   cp env.template .env.local
+   # Fill in your API keys and configuration
+   ```
+
+3. **Initialize Firebase**
+   ```bash
+   firebase init
+   ```
+
+4. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
+
+## Deployment
+
+The application is now purely frontend-focused and can be deployed to:
+- Firebase Hosting
+- Vercel
+- Netlify
+- Any static hosting service
+
+No backend deployment required!
+
+## Support
+
+For questions about the new architecture:
+- Check service-specific documentation in `src/services/`
+- Review Firebase documentation for authentication and storage
+- Consult Google AI documentation for Gemini integration
+- Reference platform-specific API documentation for social integrations 

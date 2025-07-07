@@ -23,8 +23,7 @@ const storage = getStorage(app);
 const originalGetStorage = getStorage;
 
 const getStorageWithLogs = (app, bucketUrl) => {
-  //const finalBucketUrl = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || bucketUrl ;
-  const finalBucketUrl = 'crows-eye-website.firebasestorage.app';
+  const finalBucketUrl = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || bucketUrl;
   console.log(`[Firebase Storage] Initializing with bucket URL: ${finalBucketUrl}`);
   
   try {

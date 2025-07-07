@@ -1,12 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Use standalone output (suitable for Firebase Cloud Functions SSR) by default.
-  // If we explicitly set STATIC_EXPORT=true, fall back to static export.
-  output: process.env.STATIC_EXPORT === 'true' ? 'export' : 'standalone',
   trailingSlash: true,
   images: {
     unoptimized: true,
-    disableStaticImages: true,
+    disableStaticImages: false,
     domains: [],
     remotePatterns: [],
   },

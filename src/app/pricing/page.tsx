@@ -50,6 +50,44 @@ import { useAuth } from '@/contexts/AuthContext'
 
 const pricingPlans = [
   {
+    id: "free",
+    name: "Free Plan",
+    monthlyPrice: 0,
+    yearlyPrice: 0,
+    description: "For users who are just getting started",
+    targetUser: "New Users",
+    badge: "Current Plan",
+    isPayAsYouGo: false,
+    limits: {
+      linkedAccounts: "1 social account",
+      users: "1 user",
+      aiCredits: "10 AI credits/month",
+      scheduledPosts: "10 scheduled posts/month",
+      mediaStorage: "1GB storage"
+    },
+    features: {
+      basicContentTools: true,
+      mediaLibrary: true,
+      smartGallery: false,
+      postFormatting: true,
+      basicVideoTools: false,
+      advancedContent: false,
+      analytics: "Basic Analytics",
+      teamCollaboration: false,
+      support: "Community Support",
+      customBranding: false,
+      apiAccess: false,
+      prioritySupport: false
+    },
+    buttonText: "Enroll in Pay-as-you-Go",
+    buttonVariant: "outline" as const,
+    paymentType: "free",
+    monthlyUrl: "",
+    popular: false,
+    trial: false,
+    benefits: []
+  },
+  {
     id: "payg",
     name: "Pay-as-you-Go",
     monthlyPrice: 0,
@@ -355,12 +393,14 @@ function PricingContent() {
   };
 
   const getDisplayPrice = (plan: typeof pricingPlans[0]) => {
-    if (plan.paymentType === 'payg') return 'Pay-as-you-Go';
+    if (plan.paymentType === 'payg' || plan.paymentType === 'free') {
+      return 'Pay-as-you-Go';
+    }
     
     if (billingPeriod === 'monthly') {
-      return `$${plan.monthlyPrice}`;
+      return `${plan.monthlyPrice}`;
     } else {
-      return `$${Math.round(plan.yearlyPrice / 12)}`;
+      return `${Math.round(plan.yearlyPrice / 12)}`;
     }
   };
 
@@ -369,11 +409,11 @@ function PricingContent() {
   }
 
   const getSavings = (plan: typeof pricingPlans[0]) => {
-    if (plan.paymentType === 'payg') return null;
+    if (plan.paymentType === 'payg' || plan.paymentType === 'free') return null;
     if (billingPeriod === 'monthly') return null;
     
     const savings = plan.monthlyPrice * 12 - plan.yearlyPrice;
-    return savings > 0 ? `Save $${savings}` : null;
+    return savings > 0 ? `Save ${savings}` : null;
   };
 
   const handlePlanSelect = async (plan: typeof pricingPlans[0]) => {
@@ -389,7 +429,7 @@ function PricingContent() {
     if (promoApplied) {
       // If promo code is applied, redirect to signup with free access
       router.push(`/auth/signup?plan=${plan.paymentType}&promo=true`);
-    } else if (plan.paymentType === 'payg') {
+    } else if (plan.paymentType === 'payg' || plan.paymentType === 'free') {
       // For PAYG, wait for auth state to be ready, then check if user is logged in
       if (loading) {
         console.log('⏳ Auth state loading, waiting...')
@@ -584,7 +624,7 @@ function PricingContent() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-          {pricingPlans.filter(plan => plan.id !== 'payg').map((plan) => (
+          {pricingPlans.filter(plan => plan.id !== 'payg' && plan.id !== 'free').map((plan) => (
             <Card 
               key={plan.id}
               className={`relative vision-card text-white transition-all duration-300 ${

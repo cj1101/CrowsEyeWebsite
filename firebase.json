@@ -26,47 +26,19 @@
     },
     "singleProjectMode": true
   },
-  "hosting": [
-    {
-      "site": "crows-eye",
-      "public": "public",
-      "ignore": [
-        "firebase.json",
-        "**/.*",
-        "**/node_modules/**"
-      ],
-      "rewrites": [
-        {
-          "source": "/_next/**",
-          "function": "nextjsFunc2"
-        },
-        {
-          "source": "**",
-          "function": "nextjsFunc2"
-        }
-      ]
-    },
-    {
-      "site": "crows-eye-website",
-      "public": "public",
-      "ignore": [
-        "firebase.json",
-        "**/.*",
-        "**/node_modules/**"
-      ],
-      "rewrites": [
-        {
-          "source": "/_next/**",
-          "function": "nextjsFunc2"
-        },
-        {
-          "source": "**",
-          "function": "nextjsFunc2"
-        }
-      ]
-    }
-  ],
+  "hosting": {
+    "site": "crows-eye-website",
+    "public": "out",
+    "cleanUrls": true,
+    "rewrites": [
+      {
+        "source": "**",
+        "function": "nextServer"
+      }
+    ]
+  },
   "database": {
     "rules": "database.rules.json"
   }
 }
+
