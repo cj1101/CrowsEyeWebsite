@@ -11,7 +11,7 @@ const Footer = () => {
       <div className="absolute inset-0 bg-eye-glow opacity-10"></div>
       <div className="absolute top-0 left-0 w-full h-px bg-vision-gradient opacity-50"></div>
       
-      <div className="relative max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Enhanced Logo and Company Info */}
           <div className="col-span-1 md:col-span-2">

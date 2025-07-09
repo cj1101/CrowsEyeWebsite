@@ -1,181 +1,111 @@
-'use client'
+import React from 'react';
+import { Metadata } from 'next';
 
-import React from 'react'
-import Link from 'next/link'
-import { 
-  ShieldCheckIcon, 
-  DocumentTextIcon, 
-  TrashIcon, 
-  ArrowDownTrayIcon,
-  LockClosedIcon
-} from '@heroicons/react/24/outline'
+export const metadata: Metadata = {
+  title: 'Privacy Policy - Crow\'s Eye',
+  description: 'Privacy Policy for Crow\'s Eye. Understand how we collect, use, and protect your data.',
+};
 
-export default function Privacy() {
-  const complianceFeatures = [
-    {
-      icon: TrashIcon,
-      title: "Data Deletion Requests",
-      description: "We provide robust mechanisms for users to request the deletion of their data. Our application includes a Data Deletion Request Callback to process requests initiated by Meta when users remove the app or request data deletion. Users can also perform a complete Factory Reset of all their data from within the application&apos;s compliance settings."
-    },
-    {
-      icon: ArrowDownTrayIcon,
-      title: "User Data Export",
-      description: "You have the right to export your data. Crow&apos;s Eye provides a GDPR/CCPA compliant data export feature, allowing you to download your information in a comprehensive JSON format. This includes media metadata, file information, presets, settings, and knowledge base content."
-    },
-    {
-      icon: LockClosedIcon,
-      title: "Data Security",
-      description: "We implement industry-standard security measures to protect data accessed via Meta APIs and all user-generated content within Crow&apos;s Eye. This includes secure storage of access tokens and encrypted data transmission."
-    },
-    {
-      icon: DocumentTextIcon,
-      title: "Transparent Permissions Usage",
-      description: "Crow&apos;s Eye requests permissions transparently and only for features essential to its functionality. These include instagram_basic, instagram_content_publish, instagram_manage_comments, instagram_manage_insights, pages_read_engagement, and instagram_business_manage_messages."
-    }
-  ]
-
-  const dataRights = [
-    "Right to Access: Export your data at any time through the app",
-    "Right to Erasure (Deletion): Delete your data using the Factory Reset feature or by requesting deletion via Meta&apos;s channels",
-    "Right to Portability: Receive your data in a common, machine-readable JSON format",
-    "Right to Correction: Update and correct your personal information",
-    "Right to Restriction: Limit how your data is processed",
-    "Right to Object: Withdraw consent for data processing"
-  ]
-
+const PrivacyPolicyPage = () => {
   return (
-    <div className="min-h-screen py-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-6">
-            Your Privacy &amp; Data Compliance at Crow&apos;s Eye
+    <div className="min-h-screen bg-gray-900 text-white">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl sm:text-4xl font-bold text-center mb-2 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+            Privacy Policy
           </h1>
-          <p className="text-xl text-gray-300 max-w-4xl mx-auto">
-            At Crow&apos;s Eye, we are deeply committed to protecting your privacy and ensuring our 
-            practices align with all relevant regulations, including the Meta Developer Platform policies.
-          </p>
-        </div>
+          <p className="text-center text-gray-400 mb-8">Last Updated: July 7, 2025</p>
 
-        {/* Our Commitment */}
-        <div className="mb-16">
-          <div className="feature-card rounded-lg p-8">
-            <h2 className="text-2xl font-bold text-white mb-6">Our Commitment to Your Privacy</h2>
-            <p className="text-gray-300 leading-relaxed mb-6">
-              Your trust is paramount. Our comprehensive Privacy Policy details how we collect, use, store, 
-              and protect your personal information. It also outlines your rights concerning your data and 
-              our responsibilities as a service provider.
+          <div className="bg-gray-800/50 p-6 sm:p-8 rounded-lg shadow-lg prose prose-invert prose-lg max-w-none">
+            <p className="text-gray-400">
+              This Privacy Policy describes how Crow's Eye ("we," "us," or "our") collects, uses, and discloses your information when you use our website and services (the "Services"). By using our Services, you agree to the collection and use of information in accordance with this policy. This document is intended to be a clear and transparent explanation of our data practices; for full legal compliance, we recommend consulting with a legal professional.
             </p>
-            <Link
-              href="/privacy-policy-details"
-              className="inline-flex items-center text-primary-400 hover:text-primary-300 font-medium"
-            >
-              View Our Full Privacy Policy
-              <DocumentTextIcon className="h-5 w-5 ml-2" />
-            </Link>
-          </div>
-        </div>
 
-        {/* Meta Platform Compliance */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-white text-center mb-12">
-            Meta Platform Compliance
-          </h2>
-          <p className="text-gray-300 text-center mb-12 max-w-3xl mx-auto">
-            Crow&apos;s Eye is designed and maintained to be fully compliant with Meta Developer Platform requirements.
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {complianceFeatures.map((feature, index) => (
-              <div key={index} className="feature-card rounded-lg p-6">
-                <div className="flex items-start mb-4">
-                  <feature.icon className="h-8 w-8 text-primary-500 mr-4 mt-1 flex-shrink-0" />
-                  <h3 className="text-lg font-semibold text-white">{feature.title}</h3>
-                </div>
-                <p className="text-gray-300 text-sm leading-relaxed">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+            <h2>1. Information We Collect</h2>
+            <p>We collect several different types of information for various purposes to provide and improve our Services to you.</p>
+            
+            <h4>a. Information You Provide to Us</h4>
+            <ul>
+              <li>
+                <strong>Account Information:</strong> When you register for an account, we collect your first name, last name, email address, and password.
+              </li>
+              <li>
+                <strong>Google Account Information:</strong> If you register or log in using Google, we collect the name, email address, and profile picture associated with your Google account, as authorized by you during the sign-in process.
+              </li>
+              <li>
+                <strong>Payment and Subscription Information:</strong> When you subscribe to a paid plan, our third-party payment processor, Stripe, will collect your payment details. We do not store your full credit card information. We do receive and store subscription-related information, such as your plan type, subscription status, and a unique Stripe customer identifier.
+              </li>
+              <li>
+                <strong>User-Generated Content:</strong> We collect the content you create, upload, or post while using our Services. This includes text, images, videos, audio files, and any other media or data you submit ("Content").
+              </li>
+            </ul>
 
-        {/* Data Retention & Sharing */}
-        <div className="mb-16">
-          <div className="bg-gradient-to-r from-primary-900/20 to-primary-600/20 rounded-2xl p-8">
-            <h3 className="text-2xl font-bold text-white text-center mb-6">
-              Data Retention & Sharing
-            </h3>
-            <div className="max-w-3xl mx-auto text-center">
-              <p className="text-gray-300 mb-4">
-                Our data retention policies are detailed in our full Privacy Policy. We confirm 
-                <strong className="text-white"> no third-party data sharing</strong> of Meta platform data.
-              </p>
-              <p className="text-gray-300">
-                All data retrieved via Meta APIs is used solely for app functionality and is not sold or shared.
-              </p>
-            </div>
-          </div>
-        </div>
+            <h4>b. Information We Collect Automatically</h4>
+            <ul>
+              <li>
+                <strong>Usage Data:</strong> We automatically collect information about how you access and use the Services. This may include your IP address, browser type, device type, operating system, pages viewed, and the dates/times of your visits.
+              </li>
+              <li>
+                <strong>Cookies and Local Storage:</strong> We use cookies and similar tracking technologies like browser local storage to track activity on our Services and hold certain information. For example, we may use local storage to remember if you have used a promotional code. You can instruct your browser to refuse all cookies or to indicate when a cookie is being sent. However, if you do not accept cookies, you may not be able to use some portions of our Services.
+              </li>
+            </ul>
 
-        {/* Your Data Rights */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-white text-center mb-12">
-            Your Data Rights (GDPR/CCPA & Other Regulations)
-          </h2>
-          <div className="max-w-4xl mx-auto">
-            <p className="text-gray-300 text-center mb-8">
-              We uphold your rights over your personal data:
+            <h2>2. How We Use Your Information</h2>
+            <p>We use the collected data for various purposes:</p>
+            <ul>
+              <li>To provide, operate, and maintain our Services.</li>
+              <li>To create and manage your account and subscriptions.</li>
+              <li>To process your payments through our third-party service provider, Stripe.</li>
+              <li>To enable the functionality of our AI-powered tools.</li>
+              <li>To notify you about changes to our Services or your account.</li>
+              <li>To provide customer support and respond to your inquiries.</li>
+              <li>To monitor and analyze usage to improve the user experience and functionality of our Services.</li>
+              <li>To prevent, detect, and address technical issues or fraudulent activity.</li>
+            </ul>
+
+            <h2>3. How We Share Your Information</h2>
+            <p>We do not sell your personal information. We may share your information in the following limited circumstances:</p>
+            <ul>
+              <li>
+                <strong>With Service Providers:</strong> We share information with third-party vendors who perform services on our behalf. These include:
+                <ul>
+                  <li><strong>Stripe:</strong> For payment processing.</li>
+                  <li><strong>Google (Firebase):</strong> For cloud hosting, database storage, file storage, and user authentication.</li>
+                  <li><strong>Google (Gemini):</strong> To power our AI content generation features.</li>
+                </ul>
+              </li>
+              <li>
+                <strong>For Legal Reasons:</strong> We may disclose your information if we are required to do so by law or in response to valid requests by public authorities (e.g., a court or a government agency).
+              </li>
+              <li>
+                <strong>To Protect Rights:</strong> We may disclose your information if we believe it is necessary to investigate, prevent, or take action regarding potential violations of our policies, suspected fraud, or situations involving potential threats to the safety of any person.
+              </li>
+            </ul>
+
+            <h2>4. Data Security and Retention</h2>
+            <p>
+              The security of your data is important to us. We use commercially reasonable administrative, technical, and physical security measures to protect your personal information. We will retain your personal information for as long as your account is active or as needed to provide you with the Services and to comply with our legal obligations.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {dataRights.map((right, index) => (
-                <div key={index} className="flex items-start">
-                  <ShieldCheckIcon className="h-5 w-5 text-primary-500 mr-3 mt-1 flex-shrink-0" />
-                  <span className="text-gray-300 text-sm">{right}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
 
-        {/* Contact Information */}
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-white mb-8">
-            Contact Us About Privacy
-          </h2>
-          <div className="max-w-2xl mx-auto feature-card rounded-lg p-8">
-            <p className="text-gray-300 mb-6">
-              For any questions, concerns, or requests regarding your privacy or our data practices:
+            <h2>5. Children's Privacy</h2>
+            <p>
+              Our Services are not intended for use by children under the age of 13. We do not knowingly collect personally identifiable information from children under 13.
             </p>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-400 mb-1">Email:</p>
-                <a 
-                  href="mailto:privacy@crowseyeapp.com"
-                  className="text-primary-400 hover:text-primary-300 font-medium"
-                >
-                  privacy@crowseyeapp.com
-                </a>
-              </div>
-              <div>
-                <p className="text-sm text-gray-400 mb-1">Phone:</p>
-                <a 
-                  href="tel:+15551234567"
-                  className="text-primary-400 hover:text-primary-300 font-medium"
-                >
-                  (555) 123-4567
-                </a>
-              </div>
-              <div className="pt-4">
-                <Link
-                  href="/privacy-policy-details"
-                  className="text-primary-400 hover:text-primary-300 underline"
-                >
-                  View Full Privacy Policy
-                </Link>
-              </div>
-            </div>
+
+            <h2>6. Changes to This Privacy Policy</h2>
+            <p>
+              We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date at the top.
+            </p>
+
+            <h2>7. Contact Us</h2>
+            <p>
+              If you have any questions about this Privacy Policy, please contact us at: support@crowseye.tech
+            </p>
           </div>
         </div>
       </div>
     </div>
-  )
-} 
+  );
+};
+
+export default PrivacyPolicyPage;

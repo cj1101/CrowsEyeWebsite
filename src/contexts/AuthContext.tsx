@@ -236,8 +236,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { success: true, isNewUser };
     } catch (error: any) {
       console.error('❌ Login with Google failed:', error);
-      setError(error.message || 'Login with Google failed');
-      return { success: false, error: error.message || 'Login with Google failed' };
+      const customErrorMessage = "Google is currently unavailable. Please sign up regularly for now";
+      setError(customErrorMessage);
+      return { success: false, error: customErrorMessage };
     } finally {
       setLoading(false);
     }

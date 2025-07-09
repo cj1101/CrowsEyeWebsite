@@ -1,196 +1,99 @@
-'use client';
+import React from 'react';
+import { Metadata } from 'next';
 
-import Link from 'next/link';
+export const metadata: Metadata = {
+  title: 'Terms and Conditions - Crow\'s Eye',
+  description: 'Terms and Conditions for using Crow\'s Eye services.',
+};
 
-export default function TermsPage() {
+const TermsAndConditionsPage = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white/10 backdrop-blur-lg rounded-lg p-8">
-          <h1 className="text-4xl font-bold text-white mb-8">Terms of Service</h1>
-          <p className="text-gray-300 mb-6">Last updated: {new Date().toLocaleDateString()}</p>
+    <div className="min-h-screen bg-gray-900 text-white">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl sm:text-4xl font-bold text-center mb-2 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+            Terms and Conditions
+          </h1>
+          <p className="text-center text-gray-400 mb-8">Last Updated: July 7, 2025</p>
 
-          <div className="space-y-8 text-gray-300">
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">1. Acceptance of Terms</h2>
-              <p>
-                By accessing and using Crow's Eye Marketing Suite ("the Service"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">2. Description of Service</h2>
-              <p>
-                Crow's Eye Marketing Suite is an AI-powered marketing automation platform that helps users create, schedule, and manage social media content. The Service includes but is not limited to:
-              </p>
-              <ul className="list-disc list-inside mt-4 space-y-2">
-                <li>AI-powered content generation</li>
-                <li>Social media scheduling and automation</li>
-                <li>Analytics and performance tracking</li>
-                <li>Media processing and optimization</li>
-                <li>Team collaboration tools</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">3. User Accounts and Registration</h2>
-              <p>
-                To access certain features of the Service, you must register for an account. You agree to:
-              </p>
-              <ul className="list-disc list-inside mt-4 space-y-2">
-                <li>Provide accurate, current, and complete information</li>
-                <li>Maintain and update your information to keep it accurate</li>
-                <li>Maintain the security of your password and account</li>
-                <li>Accept responsibility for all activities under your account</li>
-                <li>Notify us immediately of any unauthorized use of your account</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">4. Subscription Plans and Billing</h2>
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-white">4.1 Subscription Tiers</h3>
-                <p>We offer multiple subscription tiers:</p>
-                <ul className="list-disc list-inside mt-2 space-y-1">
-                  <li><strong>Spark (Free):</strong> Limited features for personal use</li>
-                  <li><strong>Creator ($29/month):</strong> Enhanced features for content creators</li>
-                  <li><strong>Pro ($99/month):</strong> Advanced features for businesses</li>
-                  <li><strong>Enterprise:</strong> Custom pricing for large organizations</li>
-                </ul>
-
-                <h3 className="text-xl font-semibold text-white mt-6">4.2 Billing Terms</h3>
-                <ul className="list-disc list-inside mt-2 space-y-2">
-                  <li>Subscriptions are billed monthly or annually in advance</li>
-                  <li>All fees are non-refundable except as required by law</li>
-                  <li>We reserve the right to change pricing with 30 days notice</li>
-                  <li>Failed payments may result in service suspension</li>
-                </ul>
-
-
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">5. Acceptable Use Policy</h2>
-              <p>You agree not to use the Service to:</p>
-              <ul className="list-disc list-inside mt-4 space-y-2">
-                <li>Violate any laws or regulations</li>
-                <li>Infringe on intellectual property rights</li>
-                <li>Distribute spam, malware, or harmful content</li>
-                <li>Harass, abuse, or harm others</li>
-                <li>Attempt to gain unauthorized access to our systems</li>
-                <li>Use the Service for illegal or unethical marketing practices</li>
-                <li>Generate content that violates platform policies of social media networks</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">6. Intellectual Property</h2>
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-white">6.1 Our Rights</h3>
-                <p>
-                  The Service and its original content, features, and functionality are owned by Crow's Eye Marketing Suite and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws.
-                </p>
-
-                <h3 className="text-xl font-semibold text-white">6.2 Your Content</h3>
-                <p>
-                  You retain ownership of content you create using the Service. By using the Service, you grant us a limited license to process, store, and display your content solely for the purpose of providing the Service.
-                </p>
-
-                <h3 className="text-xl font-semibold text-white">6.3 AI-Generated Content</h3>
-                <p>
-                  Content generated by AI tools within the Service is provided "as is." You are responsible for reviewing and ensuring the appropriateness of AI-generated content before publication.
-                </p>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">7. Privacy and Data Protection</h2>
-              <p>
-                Your privacy is important to us. Our collection and use of personal information is governed by our <Link href="/privacy" className="text-blue-400 hover:text-blue-300 underline">Privacy Policy</Link>. By using the Service, you consent to the collection and use of information as outlined in our Privacy Policy.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">8. Third-Party Integrations</h2>
-              <p>
-                The Service integrates with third-party platforms and APIs. Your use of these integrations is subject to the respective terms of service of those platforms. We are not responsible for the availability, content, or practices of third-party services.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">9. Service Availability and Modifications</h2>
-              <ul className="list-disc list-inside space-y-2">
-                <li>We strive for 99.9% uptime but do not guarantee uninterrupted service</li>
-                <li>We may modify or discontinue features with reasonable notice</li>
-                <li>Scheduled maintenance will be announced in advance when possible</li>
-                <li>We reserve the right to suspend accounts that violate these terms</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">10. Limitation of Liability</h2>
-              <p>
-                TO THE MAXIMUM EXTENT PERMITTED BY LAW, CROW'S EYE MARKETING SUITE SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, WHETHER INCURRED DIRECTLY OR INDIRECTLY, OR ANY LOSS OF DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">11. Indemnification</h2>
-              <p>
-                You agree to defend, indemnify, and hold harmless Crow's Eye Marketing Suite from and against any claims, damages, obligations, losses, liabilities, costs, or debt, and expenses (including attorney's fees) arising from your use of the Service or violation of these Terms.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">12. Termination</h2>
-              <p>
-                We may terminate or suspend your account and access to the Service immediately, without prior notice, for conduct that we believe violates these Terms or is harmful to other users, us, or third parties, or for any other reason.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">13. Governing Law</h2>
-              <p>
-                These Terms shall be interpreted and governed by the laws of [Your Jurisdiction], without regard to its conflict of law provisions. Any disputes arising from these Terms or the Service shall be resolved in the courts of [Your Jurisdiction].
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">14. Changes to Terms</h2>
-              <p>
-                We reserve the right to modify these Terms at any time. We will notify users of significant changes via email or through the Service. Your continued use of the Service after such modifications constitutes acceptance of the updated Terms.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-white mb-4">15. Contact Information</h2>
-              <p>
-                If you have any questions about these Terms, please contact us at:
-              </p>
-              <div className="mt-4 p-4 bg-gray-800/50 rounded-lg">
-                <p><strong>Email:</strong> help@crowseye.tech</p>
-                <p><strong>Address:</strong> Austin, TX</p>
-                <p><strong>Phone:</strong> +1 (512) 987-4449</p>
-              </div>
-            </section>
-          </div>
-
-          <div className="mt-12 pt-8 border-t border-gray-600">
-            <p className="text-center text-gray-400">
-              By using Crow's Eye Marketing Suite, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
+          <div className="bg-gray-800/50 p-6 sm:p-8 rounded-lg shadow-lg prose prose-invert prose-lg max-w-none">
+            <p className="text-gray-400">
+              Welcome to Crow's Eye. These Terms and Conditions ("Terms") govern your use of our website and services (collectively, the "Services"). By accessing or using our Services, you agree to be bound by these Terms. This document is intended to be a clear and transparent explanation of our terms; for full legal compliance, we recommend consulting with a legal professional.
             </p>
-            <div className="text-center mt-6">
-              <Link 
-                href="/" 
-                className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
-              >
-                Return to Home
-              </Link>
-            </div>
+
+            <h2>1. User Accounts</h2>
+            <p>
+              To use most features of our Services, you must register for an account. You must be at least 13 years old to create an account. You agree to provide accurate and complete information during registration and to keep this information up to date. You are responsible for safeguarding your password and for all activities that occur under your account.
+            </p>
+
+            <h2>2. Subscriptions and Payments</h2>
+            <p>
+              Our Services are offered under various subscription plans ("Plans"). By selecting a paid Plan, you agree to pay the fees associated with that Plan.
+            </p>
+            <ul>
+                <li><strong>Billing:</strong> All payments are processed through our third-party payment processor, Stripe. You agree to provide them with valid and updated payment information.</li>
+                <li><strong>Automatic Renewal:</strong> Your subscription will automatically renew at the end of each billing cycle (e.g., monthly or yearly) unless you cancel it through your account settings before the end of the current period.</li>
+                <li><strong>Cancellations:</strong> You may cancel your subscription at any time. The cancellation will take effect at the end of the current billing period, and you will not be charged for the next cycle. We do not offer refunds for partial subscription periods.</li>
+            </ul>
+
+            <h2>3. User-Generated Content</h2>
+            <p>
+              You are solely responsible for all content you create, upload, or post using our Services, including text, images, and videos ("Content"). You represent and warrant that you own or have the necessary licenses, rights, and permissions to your Content.
+            </p>
+            <p>
+              You retain all ownership rights to your Content. However, by using the Services, you grant Crow's Eye a limited, worldwide, non-exclusive, royalty-free license to use, reproduce, store, and display your Content solely for the purpose of operating, providing, and improving the Services.
+            </p>
+
+            <h2>4. Use of AI Services</h2>
+            <p>
+              Our Services may include features that use artificial intelligence, such as Google Gemini, to help you generate Content. You understand and agree to the following:
+            </p>
+            <ul>
+                <li>AI-generated content is probabilistic and may not always be accurate, unique, or free from errors.</li>
+                <li>You are solely responsible for reviewing, editing, and verifying any Content generated by AI before you publish or use it.</li>
+                <li>You must ensure your use of AI-generated content complies with all applicable laws and does not infringe on the rights of any third party.</li>
+                <li>We are not liable for any damages or losses arising from your use of our AI features.</li>
+            </ul>
+
+            <h2>5. Acceptable Use Policy</h2>
+            <p>You agree not to use the Services to:</p>
+            <ul>
+              <li>Upload or share any Content that is unlawful, harmful, defamatory, obscene, or infringing on intellectual property rights.</li>
+              <li>Engage in any activity that interferes with or disrupts the Services, our servers, or networks.</li>
+              <li>Attempt to gain unauthorized access to any part of the Services or to other users' accounts.</li>
+              <li>Use any automated system ("bots", "spiders") to access the Services in a way that sends more requests to our servers than a human can reasonably produce in the same period.</li>
+              <li>Reverse engineer, decompile, or otherwise attempt to discover the source code of the Services.</li>
+            </ul>
+
+            <h2>6. Termination</h2>
+            <p>
+              We may terminate or suspend your account and access to the Services immediately, without prior notice or liability, if you breach these Terms. Upon termination, your right to use the Services will cease immediately.
+            </p>
+
+            <h2>7. Disclaimer of Warranties and Limitation of Liability</h2>
+            <p>
+              The Services are provided on an "AS IS" and "AS AVAILABLE" basis. We make no warranties, express or implied, that the Services will be uninterrupted, error-free, or secure. To the fullest extent permitted by law, Crow's Eye shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising out of or in connection with your use of the Services.
+            </p>
+            
+            <h2>8. Governing Law</h2>
+            <p>
+              These Terms shall be governed and construed in accordance with the laws of the State of Texas, United States, without regard to its conflict of law provisions.
+            </p>
+
+            <h2>9. Changes to These Terms</h2>
+            <p>
+              We reserve the right to modify or replace these Terms at any time. If a revision is material, we will make reasonable efforts to provide at least 30 days' notice prior to any new terms taking effect.
+            </p>
+
+            <h2>10. Contact Us</h2>
+            <p>
+              If you have any questions about these Terms, please contact us at: support@crowseye.tech
+            </p>
           </div>
         </div>
       </div>
     </div>
   );
-} 
+};
+
+export default TermsAndConditionsPage;
