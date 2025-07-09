@@ -42,6 +42,8 @@ import { useMediaLibrary } from '@/hooks/api/useMediaLibrary';
 import type { MediaItem } from '@/types/api';
 import { PostService } from '@/lib/firestore';
 import { auth } from '@/lib/firebase';
+import { usageService, USAGE_COSTS } from '@/services/usageService';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MediaFile {
   id: string;
@@ -433,10 +435,6 @@ export default function CreatePostTab() {
     });
   };
 
-  import { usageService, USAGE_COSTS } from '@/services/usageService';
-import { useAuth } from '@/contexts/AuthContext';
-
-// ... (inside the component)
   const { userProfile } = useAuth();
 
   const handleGenerateAICaption = async () => {
@@ -454,12 +452,89 @@ import { useAuth } from '@/contexts/AuthContext';
       // 2. Proceed with generation
       const mediaData = await Promise.all(
         mediaFiles.map(async (m) => {
-          // ... (rest of the media processing logic)
+          let data: string | undefined = undefined;
+          
+          const ext2 = m.file?.name.split('.').pop()?.toLowerCase();
+          const isImg2 = m.type === 'image' || ['heic', 'heif', 'heic-sequence', 'heif-sequence'].includes(ext2 || '');
+
+          if (
+            isImg2 &&
+            m.file &&
+            m.file.size > 0
+          ) {
+            try {
+              data = await fileToBase64(m.file);
+            } catch (error) {
+              console.warn('Failed to convert image to base64:', error);
+            }
+          }
+
+          return {
+            id: m.id,
+            type: m.type,
+            duration: m.duration,
+            filename: m.file?.name,
+            data: data
+          };
         })
       );
-      // ... (rest of the payload creation and API call)
+
+      const enabledPlatforms = selectedPlatforms.filter(p => p.enabled);
+      const primaryPlatform = enabledPlatforms.length > 0 ? enabledPlatforms[0].name.toLowerCase() : 'general';
+
+      let style: 'professional' | 'casual' | 'funny' | 'engaging' | 'creative' = 'engaging';
+      const contextLower = contextInput.toLowerCase();
+      if (contextLower.includes('funny') || contextLower.includes('humor')) {
+        style = 'funny';
+      } else if (contextLower.includes('professional')) {
+        style = 'professional';
+      } else if (contextLower.includes('creative')) {
+        style = 'creative';
+      } else if (contextLower.includes('casual')) {
+        style = 'casual';
+      }
+
+      const payload = {
+        context: contextInput || 'Create an engaging social media post',
+        media: mediaData,
+        branding: useBranding ? brandProfile : null,
+        platform: primaryPlatform,
+        style: style,
+        includeHashtags: true
+      };
+
+      const response = await fetch('/api/ai/generate-caption', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        setPostContent(result.caption || result.fullCaption);
+        if (result.hashtags && result.hashtags.length > 0) {
+          const cleanHashtags = result.hashtags.map((tag: string) => tag.replace('#', ''));
+          setHashtags(cleanHashtags);
+        }
+      } else {
+        throw new Error(result.details || 'Failed to generate caption');
+      }
+
     } catch (error) {
-      // ... (error handling)
+      console.error('Failed to generate AI caption:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to generate caption: ${errorMessage}`);
+      if (contextInput.trim()) {
+        setPostContent(contextInput.trim());
+      }
     } finally {
       setIsGeneratingAI(false);
     }

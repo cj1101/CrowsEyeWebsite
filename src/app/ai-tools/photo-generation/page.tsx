@@ -24,6 +24,8 @@ import {
 import { useRouter } from 'next/navigation';
 import { useMediaStore } from '@/stores/mediaStore';
 import { geminiAIService } from '@/services/gemini-ai';
+import { usageService, USAGE_COSTS } from '@/services/usageService';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function PhotoGenerationPage() {
   const [prompt, setPrompt] = useState('');
@@ -35,6 +37,7 @@ export default function PhotoGenerationPage() {
 
   const router = useRouter();
   const { addFiles } = useMediaStore();
+  const { userProfile } = useAuth();
 
   const imagePresets = [
     { id: 'product-shot', name: 'Product Showcase', icon: ShoppingBag, category: 'E-commerce', prompt: 'Professional studio product shot of [YOUR PRODUCT], clean background, dramatic lighting, high detail' },
@@ -54,12 +57,6 @@ export default function PhotoGenerationPage() {
   const handlePresetClick = (preset: any) => {
     setPrompt(preset.prompt);
   };
-
-  import { usageService, USAGE_COSTS } from '@/services/usageService';
-import { useAuth } from '@/contexts/AuthContext';
-
-// ... (inside the component)
-  const { userProfile } = useAuth();
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
