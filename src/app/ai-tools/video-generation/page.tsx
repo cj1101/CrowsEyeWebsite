@@ -259,6 +259,12 @@ export default function VideoGenerationPage() {
     setPrompt(preset.prompt);
   };
 
+  import { usageService, USAGE_COSTS } from '@/services/usageService';
+import { useAuth } from '@/contexts/AuthContext';
+
+// ... (inside the component)
+  const { userProfile } = useAuth();
+
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       setError('Please enter a prompt or select a preset');
@@ -270,19 +276,25 @@ export default function VideoGenerationPage() {
     setGeneratedVideo(null);
 
     try {
-      // Convert duration string to seconds for API
+      // 1. Check usage and handle cost
+      const usageResult = await usageService.handleUsage(userProfile, USAGE_COSTS.VIDEO_GENERATION);
+      if (!usageResult.success) {
+        setError(usageResult.error || 'An unknown error occurred.');
+        setIsGenerating(false);
+        return;
+      }
+
+      // 2. Proceed with generation if usage check passed
       const durationInSeconds = parseInt(duration.replace('s', ''));
       
       console.log('🎬 Starting video generation...');
       const response = await fetch('/api/ai/generate-video', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           prompt, 
           duration: durationInSeconds,
-          model: model, // Pass selected model (veo3-fast or veo3-quality)
+          model: model,
           style: 'cinematic',
           enhancePrompt: true 
         }),
@@ -292,12 +304,9 @@ export default function VideoGenerationPage() {
 
       if (data.success) {
         console.log('✅ Video generation initiated:', data.operationName);
-        
-        // If we got an operation name, start polling for completion
         if (data.operationName) {
           await pollVideoOperation(data.operationName, data);
         } else {
-          // Direct response (mock or immediate result)
           setGeneratedVideo(data);
         }
       } else {
@@ -626,6 +635,9 @@ export default function VideoGenerationPage() {
                 </>
               )}
             </Button>
+            <div className="text-center text-xs text-gray-400 mt-2">
+              Cost: $1.00 or 100 AI Credits
+            </div>
           </div>
 
           {/* Preview and Results */}

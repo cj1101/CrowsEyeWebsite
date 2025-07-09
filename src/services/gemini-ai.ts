@@ -436,6 +436,33 @@ Format as JSON:
     }
   }
 
+  // Generate Image using a placeholder as direct generation is a complex backend task
+  async generateImage(prompt: string, modelName: string = 'imagen-3-fast'): Promise<{ success: boolean; data?: { imageUrl: string }; error?: string }> {
+    try {
+      // NOTE: Direct client-side image generation with models like Imagen is not supported via the standard Gemini client SDK.
+      // This typically requires a backend service to call the Vertex AI API.
+      // The code below simulates a successful response with a placeholder image.
+      // To make this functional, you would need to create a backend API endpoint that calls the image generation model.
+      console.log(`Simulating image generation for model ${modelName} with prompt: ${prompt}`);
+      
+      // Placeholder image from a service like placehold.co
+      const placeholderUrl = `https://placehold.co/1024x1024/1a1a1a/ffffff?text=Generated+Image\n${encodeURIComponent(prompt.substring(0, 50))}`;
+
+      return {
+        success: true,
+        data: {
+          imageUrl: placeholderUrl
+        }
+      };
+    } catch (error: any) {
+      console.error('Generate image error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to generate image'
+      };
+    }
+  }
+
   // Check content compliance
   async checkCompliance(checkData: ComplianceCheck): Promise<{ success: boolean; data?: ComplianceResult; error?: string }> {
     try {

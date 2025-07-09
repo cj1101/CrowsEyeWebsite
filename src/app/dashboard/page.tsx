@@ -30,30 +30,28 @@ function DashboardContent() {
   const [activeTab, setActiveTab] = useState<string>(searchParams.get('tab') || 'overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Temporarily bypass authentication for production testing
-  const shouldBypassAuth = true; // TODO: Remove this after testing
-
   // Enhanced authentication and subscription enforcement
   useEffect(() => {
-    if (!shouldBypassAuth && !loading) {
-      // If not authenticated, redirect to pricing page
+    if (!loading) {
+      // If not authenticated, redirect to the login page.
       if (!user) {
-        router.push('/pricing?required=true');
+        router.push('/auth/login?reason=unauthenticated');
         return;
       }
 
-      // If authenticated but no valid subscription, redirect to pricing
-      if (user && userProfile && !hasValidSubscription()) {
-        // Special case: if user needs PAYG setup, send them to PAYG setup instead
-        if (needsPAYGSetup()) {
-          router.push('/payg-setup');
-        } else {
-          router.push('/pricing?required=true');
-        }
+      // If authenticated but has no valid plan, redirect to the pricing page.
+      if (user && userProfile && (!userProfile.plan || userProfile.plan === 'free')) {
+        router.push('/pricing?reason=subscription_required');
+        return;
+      }
+      
+      // If on PAYG plan but needs to set up payment method.
+      if (needsPAYGSetup()) {
+        router.push('/payg-setup');
         return;
       }
     }
-  }, [shouldBypassAuth, user, userProfile, loading, hasValidSubscription, needsPAYGSetup, router]);
+  }, [user, userProfile, loading, needsPAYGSetup, router]);
 
   // Sync activeTab when URL param changes (e.g. redirects)
   useEffect(() => {
@@ -63,24 +61,12 @@ function DashboardContent() {
     }
   }, [searchParams, activeTab]);
 
-  if (!shouldBypassAuth && loading) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="text-gray-300">Loading dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading while redirecting
-  if (!shouldBypassAuth && (!user || (userProfile && !hasValidSubscription()))) {
+  if (loading || !userProfile || (!userProfile.plan || userProfile.plan === 'free')) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto"></div>
-          <p className="text-gray-300">Redirecting...</p>
+          <p className="text-gray-300">Verifying access...</p>
         </div>
       </div>
     );
@@ -205,9 +191,9 @@ function DashboardContent() {
       <div className="flex h-[calc(100vh-73px)]">
         {/* Sidebar */}
         <aside className={`
-          ${sidebarOpen ? 'w-64' : 'w-16'} 
+          ${sidebarOpen ? 'block' : 'hidden'} md:block md:w-64
           bg-gray-900/30 border-r border-gray-800 transition-all duration-300
-          ${sidebarOpen ? 'block' : 'hidden lg:block'}
+          fixed md:relative z-30 h-full
         `}>
           <nav className="p-4 space-y-2">
             {navigationItems.map((item) => (
@@ -222,25 +208,23 @@ function DashboardContent() {
                   }
                 `}
               >
-                <item.icon className={`h-5 w-5 ${sidebarOpen ? '' : 'mx-auto'}`} />
-                {sidebarOpen && (
-                  <div className="flex-1 text-left">
-                    <div className="font-medium flex items-center">
-                      {item.label}
-                      {item.beta && (
-                        <Badge className="ml-2 bg-yellow-500/20 text-yellow-300 border-yellow-500/30 text-[10px] py-0 px-1">
-                          Beta
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="text-xs text-gray-400">{item.description}</div>
+                <item.icon className="h-5 w-5" />
+                <div className="flex-1 text-left">
+                  <div className="font-medium flex items-center">
+                    {item.label}
+                    {item.beta && (
+                      <Badge className="ml-2 bg-yellow-500/20 text-yellow-300 border-yellow-500/30 text-[10px] py-0 px-1">
+                        Beta
+                      </Badge>
+                    )}
                   </div>
-                )}
+                  <div className="text-xs text-gray-400">{item.description}</div>
+                </div>
               </button>
             ))}
           </nav>
 
-          {sidebarOpen && userProfile?.subscription_tier === 'free' && (
+          {userProfile?.subscription_tier === 'free' && (
             <div className="p-4 mt-8">
               <Card className="bg-gray-800/50 border-gray-700">
                 <CardContent className="p-4">
@@ -265,10 +249,8 @@ function DashboardContent() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-hidden">
+        <main className="flex-1 overflow-hidden md:ml-0">
           <div className="h-full overflow-y-auto">
-            {/* Debug tools removed - Media library integration fixed! */}
-            
             {activeTab === 'overview' && <DashboardOverview />}
             {activeTab === 'library' && <LibraryTab />}
             {activeTab === 'create' && <CreatePostTab />}

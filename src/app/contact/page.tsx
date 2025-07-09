@@ -72,7 +72,7 @@ export default function ContactPage() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-16">
           <div className="flex items-center justify-center gap-4 mb-8">
             <img 
-              src="/favicon.ico" 
+              src="/crows_eye_logo_transparent.png" 
               alt="Crow's Eye Logo" 
               className="h-16 w-16 md:h-20 md:w-20 opacity-90"
             />

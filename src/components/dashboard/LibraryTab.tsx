@@ -874,7 +874,7 @@ function LibraryTabContent() {
             {/* Content Display */}
             {dashboardMode === 'completed' ? (
               // Show all completed posts in a unified grid
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 {searchFilteredContent.map((item) => (
                   <MediaCard key={item.id} item={item} />
                 ))}
@@ -889,7 +889,7 @@ function LibraryTabContent() {
                       <VideoCameraIcon className="h-5 w-5 mr-2" />
                       Video Content ({filteredVideoContent.length})
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                       {filteredVideoContent.map((item) => (
                         <MediaCard key={item.id} item={item} />
                       ))}
@@ -904,7 +904,7 @@ function LibraryTabContent() {
                       <PhotoIcon className="h-5 w-5 mr-2" />
                       Images & Audio ({filteredOtherContent.length})
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                       {filteredOtherContent.map((item) => (
                         <MediaCard key={item.id} item={item} />
                       ))}
@@ -922,8 +922,8 @@ function LibraryTabContent() {
 
       {/* Upload Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-2xl w-full mx-auto max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-white">Upload Media</h3>
               <button
@@ -948,8 +948,8 @@ function LibraryTabContent() {
 
       {/* AI Processing Modal */}
       {showProcessModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full mx-auto">
             <h3 className="text-lg font-semibold text-white mb-4">AI Process Media</h3>
             <p className="text-gray-400 mb-4">Processing {selectedItems.length} selected items</p>
             <textarea
@@ -967,19 +967,22 @@ function LibraryTabContent() {
                 Process Media
               </button>
             </div>
+            <div className="text-center text-xs text-gray-400 mt-2">
+              Cost: $0.10 or 10 AI Credits per item
+            </div>
           </div>
         </div>
       )}
 
       {/* Media View Modal */}
       {showMediaModal && selectedMedia && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-4xl w-full mx-auto max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-white">{selectedMedia.name}</h3>
+              <h3 className="text-lg font-semibold text-white truncate pr-4">{selectedMedia.name}</h3>
               <button
                 onClick={() => setShowMediaModal(false)}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-gray-400 hover:text-white transition-colors flex-shrink-0"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -988,14 +991,13 @@ function LibraryTabContent() {
             </div>
             
             {/* Media Display */}
-            <div className="bg-gray-900 rounded-lg p-4 mb-4">
+            <div className="bg-gray-900 rounded-lg p-2 sm:p-4 mb-4">
               {selectedMedia.type === 'image' && selectedMedia.url ? (
                 <img
                   src={selectedMedia.url}
                   alt={selectedMedia.name}
                   className="w-full h-auto max-h-[60vh] object-contain rounded"
                   onError={(e) => {
-                    // Fallback to placeholder if image fails to load
                     (e.target as HTMLImageElement).src = '/images/placeholder-image.jpg';
                   }}
                 />
@@ -1006,9 +1008,6 @@ function LibraryTabContent() {
                   autoPlay={false}
                   preload="metadata"
                   className="w-full h-auto max-h-[60vh] object-contain rounded"
-                  onError={(e) => {
-                    console.error('Video playback error:', e);
-                  }}
                 >
                   Your browser does not support the video tag.
                 </video>
@@ -1018,9 +1017,6 @@ function LibraryTabContent() {
                   controls
                   preload="metadata"
                   className="w-full"
-                  onError={(e) => {
-                    console.error('Audio playback error:', e);
-                  }}
                 >
                   Your browser does not support the audio element.
                 </audio>
@@ -1037,7 +1033,7 @@ function LibraryTabContent() {
               )}
             </div>
 
-            {/* Post Preview (caption + hashtags) for completed items */}
+            {/* Post Preview for completed items */}
             {dashboardMode === 'completed' && (
               <div className="bg-gray-700/40 rounded-lg p-4 mb-4 text-white text-sm whitespace-pre-wrap">
                 {selectedMedia.description || 'No caption available.'}
@@ -1050,8 +1046,8 @@ function LibraryTabContent() {
             )}
 
             {/* Media Info */}
-            <div className="space-y-3 text-gray-300">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3 text-gray-300 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <span className="text-gray-400">Type:</span>
                   <span className="ml-2">{selectedMedia.subtype || selectedMedia.type}</span>
@@ -1094,7 +1090,7 @@ function LibraryTabContent() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex justify-end gap-3 mt-6">
+            <div className="flex flex-wrap justify-end gap-3 mt-6">
               <button
                 onClick={() => handleDownloadMedia(selectedMedia)}
                 className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2"

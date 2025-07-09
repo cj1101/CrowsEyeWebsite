@@ -91,27 +91,26 @@ export default function BrandingTab() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       <Card className="bg-gray-800/50 border-gray-700">
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <Palette className="h-6 w-6 text-purple-400" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <Palette className="h-6 w-6 text-purple-400 flex-shrink-0" />
             <div>
               <CardTitle className="text-white">Brand Profile</CardTitle>
               <CardDescription className="text-gray-400">
-                Define your brand details. These guidelines will be automatically
-                considered when generating media or posts.
+                Define your brand details to be used by the AI during content generation.
               </CardDescription>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-8">
           {/* General Information */}
           <section className="space-y-4">
-            <h3 className="text-lg font-semibold text-white">General Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">General Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Brand Name</label>
+                <label className="block text-sm text-gray-300 mb-2">Brand Name</label>
                 <Input
                   value={profile.name}
                   onChange={(e) => handleChange('name', e.target.value)}
@@ -119,7 +118,7 @@ export default function BrandingTab() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Tagline / Slogan</label>
+                <label className="block text-sm text-gray-300 mb-2">Tagline / Slogan</label>
                 <Input
                   value={profile.tagline}
                   onChange={(e) => handleChange('tagline', e.target.value)}
@@ -127,7 +126,7 @@ export default function BrandingTab() {
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm text-gray-300 mb-1">Brand Description</label>
+                <label className="block text-sm text-gray-300 mb-2">Brand Description</label>
                 <Textarea
                   value={profile.description}
                   onChange={(e) => handleChange('description', e.target.value)}
@@ -140,10 +139,10 @@ export default function BrandingTab() {
 
           {/* Mission & Voice */}
           <section className="space-y-4">
-            <h3 className="text-lg font-semibold text-white">Mission & Voice</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm text-gray-300 mb-1">Mission Statement</label>
+            <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">Mission & Voice</h3>
+            <div className="grid grid-cols-1 gap-6">
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">Mission Statement</label>
                 <Textarea
                   value={profile.mission}
                   onChange={(e) => handleChange('mission', e.target.value)}
@@ -151,8 +150,8 @@ export default function BrandingTab() {
                   rows={3}
                 />
               </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm text-gray-300 mb-1">Voice & Tone Guidelines</label>
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">Voice & Tone Guidelines</label>
                 <Textarea
                   value={profile.voice}
                   onChange={(e) => handleChange('voice', e.target.value)}
@@ -165,30 +164,29 @@ export default function BrandingTab() {
 
           {/* Visual Identity */}
           <section className="space-y-6">
-            <h3 className="text-lg font-semibold text-white">Visual Identity</h3>
+            <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">Visual Identity</h3>
 
-            {/* Color pickers */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {(['primaryColor', 'secondaryColor'] as (keyof BrandProfile)[]).map((field) => (
                 <div key={field} className="color-input-wrapper relative">
-                  <label className="block text-sm text-gray-300 mb-1 capitalize">
+                  <label className="block text-sm text-gray-300 mb-2 capitalize">
                     {field === 'primaryColor' ? 'Primary Color' : 'Secondary Color'}
                   </label>
-                  <Input
-                    value={profile[field] as string}
-                    onChange={(e) => handleChange(field, e.target.value)}
-                    onFocus={() => setPickerField(field)}
-                    style={{ boxShadow: `0 0 0 2px ${profile[field] as string}` }}
-                    className="pr-14"
-                    placeholder="#4F46E5"
-                  />
-                  {/* Swatch */}
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded border"
-                    style={{ backgroundColor: profile[field] as string }}
-                    onClick={() => setPickerField(field)}
-                  />
+                  <div className="relative">
+                    <Input
+                      value={profile[field] as string}
+                      onChange={(e) => handleChange(field, e.target.value)}
+                      onFocus={() => setPickerField(field)}
+                      className="pr-12"
+                      placeholder="#4F46E5"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded border border-gray-500"
+                      style={{ backgroundColor: profile[field] as string }}
+                      onClick={() => setPickerField(pickerField === field ? null : field)}
+                    />
+                  </div>
                   {pickerField === field && (
                     <div className="absolute z-50 mt-2 right-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
                       <HexColorPicker
@@ -201,12 +199,11 @@ export default function BrandingTab() {
               ))}
             </div>
 
-            {/* Brand Icon */}
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-300">Brand Icon</h4>
+            <div>
+              <h4 className="text-sm font-medium text-gray-300 mb-2">Brand Icon</h4>
               {profile.icon ? (
                 <div className="relative inline-block">
-                  <img src={profile.icon} alt="Brand Icon" className="h-24 w-24 rounded-md border" />
+                  <img src={profile.icon} alt="Brand Icon" className="h-24 w-24 rounded-md border bg-gray-700" />
                   <button
                     onClick={() => handleChange('icon', '')}
                     className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
@@ -216,12 +213,12 @@ export default function BrandingTab() {
                   </button>
                 </div>
               ) : (
-                <label className="flex items-center gap-2 cursor-pointer text-purple-300 hover:text-white">
-                  <ImageIcon className="h-4 w-4" />
-                  <span className="underline">Upload Icon</span>
+                <label className="flex items-center gap-2 cursor-pointer text-purple-300 hover:text-white p-4 border-2 border-dashed border-gray-600 rounded-lg justify-center">
+                  <ImageIcon className="h-5 w-5" />
+                  <span className="text-sm">Upload Icon</span>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/png, image/jpeg, image/webp"
                     className="hidden"
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
@@ -236,9 +233,9 @@ export default function BrandingTab() {
 
           {/* Hashtags */}
           <section className="space-y-4">
-            <h3 className="text-lg font-semibold text-white">Preferred Hashtags</h3>
+            <h3 className="text-lg font-semibold text-white border-b border-gray-700 pb-2">Preferred Hashtags</h3>
             <div>
-              <label className="block text-sm text-gray-300 mb-1">Hashtags (comma separated)</label>
+              <label className="block text-sm text-gray-300 mb-2">Hashtags (comma separated)</label>
               <Textarea
                 value={profile.hashtags}
                 onChange={(e) => handleChange('hashtags', e.target.value)}
@@ -248,20 +245,12 @@ export default function BrandingTab() {
             </div>
           </section>
 
-          {/* Save Button */}
-          <div className="flex justify-end">
+          <div className="flex justify-end pt-4 border-t border-gray-700">
             <Button onClick={handleSave} className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 flex items-center gap-2">
               <Save className="h-4 w-4" />
-              Save Profile
+              {saved ? 'Saved!' : 'Save Profile'}
             </Button>
           </div>
-
-          {/* Saved Confirmation */}
-          {saved && (
-            <div className="flex justify-end">
-              <Badge className="bg-green-600/20 text-green-300 border-green-600/30">Saved!</Badge>
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>

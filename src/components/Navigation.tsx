@@ -291,9 +291,10 @@ const Navigation = () => {
                     </Link>
                     <Link
                       href="/account/subscription"
-                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-vision-purple/20 transition-all duration-300"
+                      className="flex justify-between items-center px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-vision-purple/20 transition-all duration-300"
                       onClick={() => setIsOpen(false)}
                     >
+                      <span>Subscription</span>
                       <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30">
                         {getPlanLabel(userProfile?.subscription_tier)} Plan
                       </Badge>
