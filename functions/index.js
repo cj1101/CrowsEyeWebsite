@@ -31,4 +31,10 @@ exports.nextjsFunc2 = onRequest({
 }, async (req, res) => {
   await nextApp.prepare();
   return requestHandler(req, res);
-}); 
+});
+
+// Export the image generation function
+exports.generateImageWithImagen = require('./image-generation').generateImageWithImagen;
+
+// Export the AI tagging function
+exports.generateTagsOnUpload = require('./ai-tagging').generateTagsOnUpload; 
