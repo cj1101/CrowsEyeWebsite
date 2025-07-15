@@ -96,33 +96,37 @@ ${media.map((m, i) => `- ${m.type.toUpperCase()} ${i + 1}: ${m.filename || 'unti
 Generate ONLY the caption text, nothing else.`;
 
     let result;
+    const imageParts = [];
 
     // Handle image analysis if we have image data
-    if (media.some(m => m.type === 'image' && m.data)) {
-      const imageMedia = media.find(m => m.type === 'image' && m.data);
-      if (imageMedia?.data) {
-        // Ensure the base64 payload is non-empty after stripping header
-        const base64Payload = imageMedia.data.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
-        if (base64Payload && base64Payload.trim().length > 0) {
-          try {
-            const visionModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const imagePart = {
+    const imageMediaItems = media.filter(m => m.type === 'image' && m.data);
+
+    if (imageMediaItems.length > 0) {
+      for (const imageMedia of imageMediaItems) {
+        if (imageMedia.data) {
+          const base64Payload = imageMedia.data.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+          if (base64Payload && base64Payload.trim().length > 0) {
+            imageParts.push({
               inlineData: {
                 data: base64Payload,
                 mimeType: getMimeTypeFromBase64(imageMedia.data)
               }
-            };
-            result = await visionModel.generateContent([prompt, imagePart]);
-          } catch (imgErr) {
-            console.warn('Vision model failed, falling back to text model:', imgErr);
-            result = await model.generateContent(prompt);
+            });
           }
-        } else {
-          // Empty or invalid base64 – fall back
+        }
+      }
+
+      if (imageParts.length > 0) {
+        try {
+          // Use vision model with all image parts
+          result = await model.generateContent([prompt, ...imageParts]);
+        } catch (imgErr) {
+          console.warn('Vision model failed, falling back to text model:', imgErr);
+          // Fallback to text-only if vision fails
           result = await model.generateContent(prompt);
         }
       } else {
-        // Fallback to text-only if image data is missing
+        // Fallback if all image data was invalid
         result = await model.generateContent(prompt);
       }
     } else {
